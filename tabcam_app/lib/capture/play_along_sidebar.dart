@@ -364,6 +364,7 @@ class PlayAlongBeside extends StatelessWidget {
     this.onEdit,
     this.choose,
     this.keys = true,
+    this.onKeyPause,
   });
 
   final PlayAlong along;
@@ -377,6 +378,10 @@ class PlayAlongBeside extends StatelessWidget {
   /// Whether the player's keys work ([PlayAlongKeys]); false in a
   /// preview, where no key does anything.
   final bool keys;
+
+  /// The space bar or 1 paused the player ([PlayAlongKeys.onKeyPause]):
+  /// Cam stops the take recording.
+  final VoidCallback? onKeyPause;
 
   /// Whether the sidebar's files show Delete (those the user may delete,
   /// [mayDeleteFile]); false (a preview), none does.
@@ -562,6 +567,7 @@ class PlayAlongBeside extends StatelessWidget {
                 child: PlayAlongKeys(
                   track: along.track,
                   active: along.open && keys,
+                  onKeyPause: onKeyPause,
                   child: PlayAlongSidebar(
                     width: sidebarWidth,
                     library: along.library,
@@ -596,6 +602,10 @@ class PlayAlongBeside extends StatelessWidget {
                     onToggle: () {
                       onUse?.call();
                       unawaited(along.track.toggle());
+                    },
+                    onRestart: () {
+                      onUse?.call();
+                      unawaited(along.track.restart());
                     },
                     onSkip: (by) {
                       onUse?.call();
@@ -644,7 +654,8 @@ class PlayAlongBeside extends StatelessWidget {
 /// keyboard is but in a field being typed in: **0** goes back to the
 /// start of the file or its section, count-in and all
 /// ([BackingTrack.restart]); the **space bar** and **1** pause and play
-/// it. They get the keys first
+/// it, and a pause is told ([onKeyPause]: Cam stops the take recording).
+/// They get the keys first
 /// ([FocusManager.addEarlyKeyEventHandler]), so the screen under them
 /// doesn't (Cam's turn the tab). A tap in the sidebar takes the keyboard
 /// out of a field, so the keys are the player's again.
@@ -654,6 +665,7 @@ class PlayAlongKeys extends StatefulWidget {
     required this.track,
     required this.child,
     this.active = true,
+    this.onKeyPause,
   });
 
   final BackingTrack track;
@@ -661,6 +673,10 @@ class PlayAlongKeys extends StatefulWidget {
 
   /// Whether the sidebar shows: hidden, the keys are the screen's.
   final bool active;
+
+  /// The space bar or 1 paused the player (it played, or counted in):
+  /// Cam stops the take recording, as Stop does. Not when they play it.
+  final VoidCallback? onKeyPause;
 
   /// The keys that go back to the start: 0, on the top row or the keypad.
   static final restart = {
@@ -747,7 +763,9 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
     if (toggles) {
       // Nothing to play or pause yet (it's loading): still the player's.
       if (event is KeyDownEvent && track.canToggle) {
+        final pauses = track.playing || track.countingIn;
         unawaited(track.toggle());
+        if (pauses) widget.onKeyPause?.call();
       }
       return KeyEventResult.handled;
     }
@@ -870,6 +888,7 @@ class _BackingFrame extends StatefulWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
   });
@@ -885,6 +904,7 @@ class _BackingFrame extends StatefulWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+  final VoidCallback? onRestart;
   final VoidCallback? onPhrasesClear;
   final VoidCallback? onCountIn;
 
@@ -911,6 +931,7 @@ class _BackingFrameState extends State<_BackingFrame> {
       :onSectionHere,
       :onSectionClear,
       :onSpeed,
+      :onRestart,
       :onPhrasesClear,
       :onCountIn,
     ) = widget;
@@ -1090,6 +1111,17 @@ class _BackingFrameState extends State<_BackingFrame> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (track.canToggle) ...[
+                              // Back to the start, as the 0 key.
+                              IconButton(
+                                key: const Key('cam-along-restart'),
+                                tooltip: l10n.camAlongRestart,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.skip_previous),
+                                onPressed:
+                                    onRestart ??
+                                    () => unawaited(track.restart()),
+                              ),
                               IconButton(
                                 key: const Key('cam-along-back'),
                                 tooltip: l10n.camAlongBack,
@@ -1192,6 +1224,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
     this.width,
@@ -1245,6 +1278,10 @@ class PlayAlongSidebar extends StatelessWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+
+  /// Back to the start of what plays (its section's), as the **0** key
+  /// ([BackingTrack.restart]); null: the track goes back itself.
+  final VoidCallback? onRestart;
 
   /// Forgets the phrase passes of what plays; null: the track forgets
   /// them itself.
@@ -1306,6 +1343,7 @@ class PlayAlongSidebar extends StatelessWidget {
                           onSectionHere: onSectionHere,
                           onSectionClear: onSectionClear,
                           onSpeed: onSpeed,
+                          onRestart: onRestart,
                           onPhrasesClear: onPhrasesClear,
                           onCountIn: onCountIn,
                         ),

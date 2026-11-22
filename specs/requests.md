@@ -4912,7 +4912,83 @@ spec.
 
 ## 2026-11-22
 
-1. **"when the user places a phrase pass event, mark it in the take
+1. **"if a user is already logged in, in the index page, move to the
+   app"**. The index page (`/`) sends anyone signed in on the browser
+   (a tabs.cam session, or a Google sign-in whose token is still good:
+   the same check that showed "Open your tabs" and "Signed in as …")
+   straight on to `/app/`, from its first script, the page blank
+   meanwhile and replaced in the history so Back skips it. Those
+   signed-in touches are gone with it, as only visitors not signed in
+   see the page now; a capture's link naming the root (`/?c=…`) still
+   goes on to the app with its query. Checked in Chromium, WebKit and
+   Firefox. See [index page](index-page.md#signed-in-already).
+
+2. **"in the text tab view in the editor also let it have zoom and drag
+   controls"**. The Text view (the tab's text editor) gets a PDF view's
+   **Zoom in** and **Zoom out**, over its bottom right, with **Drag to
+   move** (a hand, a toggle) over them, in the editor and in Two columns.
+   The zoom is the text's size (50% to 300% in eight steps; zoomed, the
+   percentage shows between the buttons and, tapped, puts it back to
+   100%), so the text still edits and the widest lines don't wrap; a
+   button's zoom keeps the top left of what shows in place. A pinch (two
+   fingers or a trackpad's) and Ctrl / ⌘ + the wheel zoom too, about
+   where they are, the wheel not scrolling meanwhile. Drag to move puts
+   a layer over the text: a drag, a mouse's too, moves it any way
+   instead of selecting or editing, and the wheel still scrolls. Neither
+   is kept. Tested in `text_zoom_test.dart`. See [tab
+   recognition](tab-recognition.md#zoom-and-drag-to-move).
+
+3. **"add a "back to beggining" button to mini player sidebar (equals
+   pressing zero)"**. The play-along sidebar's frame has a **|◀** button
+   first among its controls, before «: "Back to the start (0)" (in
+   Spanish and Portuguese too), which does what the **0** key does
+   (`BackingTrack.restart`, the one method both call): back to the start
+   of the file, or of its section when one is set, count-in included;
+   paused, it stays paused there; playing, it starts over as Play starts
+   it. In every screen with the sidebar (Cam, the file screen, the
+   editor). The row of buttons still fits the narrowest sidebar (160
+   px), scaled down as before. Tested in `backing_section_test.dart`.
+   See [Cam](cam.md#playing-along-with-a-file).
+
+4. **"when spacepar is pressed to pause the mini player also stop the
+   recording"**. In Cam, the space bar pausing the play-along sidebar's
+   song (playing, or counting in) while a take records now stops the
+   take too, saved as Stop (Rec) saves it; until now the take recorded
+   on. **1**, the song's play / pause as the space bar (one key in the
+   request of 2026-11-17, one code path), does the same. Playing the
+   song with either never starts a take, and the frame's own Pause
+   button still only pauses the song. `PlayAlongKeys` tells a key's
+   pause (`onKeyPause`, through `PlayAlongBeside`), and Cam answers with
+   `CamSession.keyPaused`: Rec's Stop when a take records and Rec can
+   be pressed. The other screens with the sidebar have no take, so
+   nothing changes there. Tested in `play_along_test.dart`. See
+   [Cam](cam.md#space-stops-take).
+
+5. **"make sure that when a capture is shared all files are included,
+   including timings so that auto pass works"**. Checked end to end:
+   the capture's `event.json` reaches whoever it's shared with as a
+   whole (by email, joined, or by its link; the share API's read-only
+   credentials cover its whole folder, `<owner>/events/<id>/*`, with
+   no filter by file), and with it every page's take log and the songs'
+   phrase passes, so the shared capture itself has them all. The gap
+   was the user's **own copy** of a shared capture, where Cam records
+   (and Add adds): made once, the first time, it never took what the
+   owner added after, neither files nor timings: a copy made before the
+   owner recorded the passes had none, so auto-pass didn't turn the tab
+   there. Now the copy [catches up](library.md#catching-up) each time
+   Cam, Add or a file's edit view goes to it: the files it never had
+   (each with its take log, naming the copy's songs), the owner's passes
+   for songs it has none for, and a take's song found in its sound; what
+   the user deleted or recorded in it stays theirs. A clone keeps which
+   page of the original each of its pages is (`clonedPages`, synced),
+   and copies each page whole, as its JSON has it (any key a newer app
+   keeps with a page comes too), instead of field by field. The zip
+   download is unchanged: it's the files for people (no take logs, no
+   passes), not something tabs.cam reads back. No server change. Tested
+   in `shared_timings_test.dart`. See [library](library.md#catching-up),
+   [shared captures](shared-captures.md).
+
+6. **"when the user places a phrase pass event, mark it in the take
    track timeline just as it is marked on the mini-player timeline."**,
    then, instead: **"actually, make the time marks show in the backing
    track track, and associate with that so that users can delete their
@@ -4938,4 +5014,3 @@ spec.
    song's passes are all of theirs merged, as recorded. See
    [cam](cam.md#phrase-passes), [Cam's main row](cam.md#the-main-row),
    [video edit](video-edit.md#the-song-row), [trash](trash.md).
-

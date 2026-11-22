@@ -6,9 +6,10 @@ file, [tabcam_index/site/index.html](../tabcam_index/site/index.html),
 with its pictures in [img/](../tabcam_index/site/img); no build, no
 framework, and no third-party requests but Google's sign-in script, for
 visitors not signed in ([signing in](#signing-in-here)); the fonts are
-the device's, Roboto where it's installed. In English. It no longer redirects to the app:
-only a capture's link that names the root (`/?c=…`) is sent on to
-`/app/`, its query kept.
+the device's, Roboto where it's installed. In English. Two visits go
+straight on to the app instead, the page not shown: a capture's link
+that names the root (`/?c=…`), its query kept, and anyone
+[signed in already](#signed-in-already).
 
 ## The page
 
@@ -56,14 +57,10 @@ px a side, 12 px over its edge.
 
 ## The way in
 
-What the header and the closing section offer depends on who's there:
+What the header and the closing section offer to a visitor not signed
+in (one signed in never sees the page, [below](#signed-in-already)):
 
-- **Signed in already** on this browser (the app's tabs.cam session in
-  `localStorage` `tabcam.signed-in`, or a Google sign-in whose token is
-  good for another minute, `tabcam.session`): **Open your tabs**
-  (`/app/`), the one gold button, and "Signed in as *name*" (else the
-  email) before the header's note. Google's script isn't loaded.
-- **Not signed in, with a Google client** (the deploy's or the local
+- **With a Google client** (the deploy's or the local
   server's, below): Google's own **Continue with Google** button (white,
   English, 40 px high; "Continue as *name*" when the browser has a Google
   account), then **Open tabs.cam** beside it, an outline of the same
@@ -73,6 +70,20 @@ What the header and the closing section offer depends on who's there:
   kept (a faint box), so nothing moves.
 - **No client, or Google's script fails to load** (blocked, offline): as
   before, **Open tabs.cam** alone, gold.
+
+## Signed in already
+
+Someone signed in on this browser (the app's tabs.cam session in
+`localStorage` `tabcam.signed-in`, with its refresh token, or a Google
+sign-in whose token is good for another minute, `tabcam.session`) goes
+straight on to the app: the page's first script sends them to `/app/`
+before anything shows (the page stays blank, in its background colour,
+meanwhile), replacing the index in the history so Back doesn't land on
+it again. A link to one of the page's sections (`/#record`) goes to the
+app too. Google's script isn't loaded. Signing out in the app clears
+both keys, so the page shows again; a stale session (a refresh token
+the API no longer takes) gets the app, which asks for a sign-in. Search
+engines and other visitors with no sign-in get the page.
 
 ## Signing in here
 
