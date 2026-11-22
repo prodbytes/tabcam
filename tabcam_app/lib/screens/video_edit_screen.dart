@@ -1291,6 +1291,7 @@ class _StudioViewState extends State<StudioView> {
   /// during a download: whether it did.
   Future<bool> _switchMain(EventPage? page, {String? eventId}) async {
     if (_busy || !mounted) return false;
+    final before = _page;
     final video = _video;
     final song = _trackPlayer;
     final playback = _playback;
@@ -1306,9 +1307,14 @@ class _StudioViewState extends State<StudioView> {
     });
     final forgotten = _forgotten;
     unawaited(_cam?.setAway(page != null));
-    // The sidebar's tab follows: Download for a page, Play along for the
-    // camera.
-    _sidebarTab.value = page == null ? StudioTab.playAlong : StudioTab.download;
+    // The sidebar's tab follows what's put in the main row: Download for
+    // a page, Play along for the camera (the same page opened again, Try
+    // again, leaves it as the user had it).
+    if (page?.id != before?.id) {
+      _sidebarTab.value = page == null
+          ? StudioTab.playAlong
+          : StudioTab.download;
+    }
     // The camera back: the sidebar a take's Edit hid shows again.
     if (page == null && _alongHidden) {
       _alongHidden = false;

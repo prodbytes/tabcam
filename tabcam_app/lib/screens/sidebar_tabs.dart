@@ -78,7 +78,6 @@ class SidebarTabs extends StatelessWidget {
             final button = Semantics(
               selected: selected,
               button: true,
-              label: labels ? null : name,
               child: InkWell(
                 key: Key('sidebar-tab-${which.name}'),
                 onTap: () => tab.value = which,

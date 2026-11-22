@@ -534,10 +534,10 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('video-edit-ruler')), findsNothing);
     expect(find.byKey(const Key('video-edit-play')), findsNothing);
-    expect(
-      tester.getRect(find.byKey(const Key('video-edit-preview'))).top,
-      before.top,
-    );
+    // The picture whole, as large as before, above the keyboard.
+    final during = tester.getRect(find.byKey(const Key('video-edit-preview')));
+    expect(during.size, before.size);
+    expect(during.bottom, lessThanOrEqualTo(844 - 336));
 
     tester.view.resetViewInsets();
     await _frames(tester);
