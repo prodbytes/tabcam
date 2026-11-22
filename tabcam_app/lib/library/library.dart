@@ -132,42 +132,20 @@ class Library extends ChangeNotifier {
   /// the original. Each page is a new page, but its file isn't copied: it
   /// shows the original's ([EventPage.source], copy on write) until it has
   /// to be its own ([_keepCopies], [ownFiles]). On a capture shared with
-  /// the user, the phrase passes are theirs where they have some.
+  /// the user, the phrase passes are theirs where they have some. It
+  /// keeps which page of the original each of its pages is
+  /// ([CaptureEvent.clonedPages]), so the user's copy of a shared capture
+  /// can catch up with it ([copyToAdd]).
   Future<CaptureEvent> clone(CaptureEvent event) async {
     final now = _now();
     final id = newId();
-    final pages = <EventPage>[];
-    // A video's edit names its track by ID, and phrase times their song:
-    // the copy's.
+    // A video's edit names its track by ID, a take's log its songs, and
+    // phrase times their song: the copy's.
     final ids = {for (final page in event.pages) page.id: newId()};
-    for (final page in event.pages) {
-      if (page.isLink) {
-        pages.add(
-          EventPage.link(
-            id: ids[page.id]!,
-            url: page.url!,
-            title: page.title,
-            extra: page.extra,
-          ),
-        );
-        continue;
-      }
-      pages.add(
-        EventPage(
-          id: ids[page.id]!,
-          filter: page.filter,
-          kind: page.kind,
-          extension: page.extension,
-          title: page.title,
-          edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
-          take: page.take,
-          takeLog: page.takeLog?.withPages(ids),
-          // A clone of a clone shows the first original's file too.
-          source: page.source ?? FileOrigin(event.id, page.id),
-          extra: page.extra,
-        ),
-      );
-    }
+    final pages = [
+      for (final page in event.pages)
+        _clonePage(page, ids[page.id]!, ids, event.id),
+    ];
     final phrases = {...event.phrases, ...?event.myContribution?.phrases};
     final copy = CaptureEvent(
       id: id,
@@ -184,6 +162,7 @@ class Library extends ChangeNotifier {
         for (final MapEntry(:key, :value) in phrases.entries) ?ids[key]: value,
       },
       clonedFrom: event.id,
+      clonedPages: ids,
     );
     await _store.save(copy);
     _set([copy, ..._all]);
@@ -193,11 +172,117 @@ class Library extends ChangeNotifier {
 
   /// Where what the user adds to [event] goes: [event] itself, or, on a
   /// capture shared with them (only its owner changes it), their own copy
-  /// of it: the newest one they have ([CaptureEvent.clonedFrom]), or a new
-  /// [clone], made now.
+  /// of it: the newest one they have ([CaptureEvent.clonedFrom]), caught
+  /// up with what the owner added since ([_caughtUp]), or a new [clone],
+  /// made now.
   Future<CaptureEvent> copyToAdd(CaptureEvent event) async {
     if (!event.isShared) return event;
-    return copyOf(event.id) ?? await clone(event);
+    final copy = copyOf(event.id);
+    if (copy == null) return clone(event);
+    final caught = _caughtUp(copy, _byIdAll(event.id) ?? event);
+    return caught == null ? copy : _save(caught);
+  }
+
+  /// [page] of capture [origin] as a clone's page [id]: all of it, as its
+  /// JSON has it (so whatever a page keeps comes too, a newer app's keys
+  /// as well), but its file is the original's ([EventPage.source], copy
+  /// on write; a clone of a clone's, the first original's), without the
+  /// original's kept render (a file of the original's folder), and the
+  /// pages its edit and take log name are the clone's ([ids], the
+  /// original's page IDs to the clone's).
+  static EventPage _clonePage(
+    EventPage page,
+    String id,
+    Map<String, String> ids,
+    String origin,
+  ) {
+    final copy = EventPage.fromJson(
+      {...page.toJson(), 'id': id}
+        ..remove('source')
+        ..remove('render'),
+    );
+    if (!copy.hasFile) return copy;
+    return copy.copyWith(
+      edit: () => page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
+      takeLog: page.takeLog?.withPages(ids),
+      source: () => page.source ?? FileOrigin(origin, page.id),
+    );
+  }
+
+  /// [copy], the user's copy of [original] (a capture shared with them),
+  /// caught up with what the owner added since it was made: each of the
+  /// original's pages it has never taken ([CaptureEvent.clonedPages]),
+  /// added at its end as [clone] adds them (the original's file, its take
+  /// log); the phrase passes of each song it took, where the copy has
+  /// none of its own for it; and the song found in a take's sound (its
+  /// log's sync), where the copy's log has none. A page the user deleted
+  /// from their copy, or changed, stays as they left it. Null when there's
+  /// nothing to catch up.
+  ///
+  /// A copy made before [CaptureEvent.clonedPages] was kept knows the
+  /// pages still showing the original's files; any other page of the
+  /// original made before the copy is taken as there when it was made.
+  CaptureEvent? _caughtUp(CaptureEvent copy, CaptureEvent original) {
+    final taken = {...copy.clonedPages};
+    if (taken.isEmpty) {
+      for (final p in [...copy.pages, ...copy.deletedPages]) {
+        if (p.source case final from? when from.eventId == original.id) {
+          taken[from.pageId] = p.id;
+        }
+      }
+      for (final p in original.pages) {
+        final made = timeOfId(p.id);
+        if (made != null && !made.isAfter(copy.created)) {
+          taken.putIfAbsent(p.id, () => '');
+        }
+      }
+    }
+    final fresh = [
+      for (final p in original.pages)
+        if (!taken.containsKey(p.id)) p,
+    ];
+    for (final p in fresh) {
+      taken[p.id] = newId();
+    }
+    // The original's page IDs to the copy's, where the copy's is known.
+    final ids = {
+      for (final MapEntry(:key, :value) in taken.entries)
+        if (value.isNotEmpty) key: value,
+    };
+    final theirs = {for (final p in original.pages) p.id: p};
+    final mine = {for (final MapEntry(:key, :value) in ids.entries) value: key};
+    var changed = fresh.isNotEmpty || !mapEquals(taken, copy.clonedPages);
+
+    // A take's song found in its sound since: the owner's, where the
+    // copy's log has none.
+    final pages = <EventPage>[];
+    for (final p in copy.pages) {
+      final log = p.takeLog;
+      final sync = theirs[mine[p.id]]?.takeLog?.withPages(ids).sync;
+      if (log != null && log.sync == null && sync != null) {
+        pages.add(p.copyWith(takeLog: log.withSync(sync)));
+        changed = true;
+      } else {
+        pages.add(p);
+      }
+    }
+    for (final p in fresh) {
+      pages.add(_clonePage(p, ids[p.id]!, ids, original.id));
+    }
+
+    // The passes of the songs it took, where it has none of its own.
+    final passes = {...original.phrases, ...?original.myContribution?.phrases};
+    final phrases = {...copy.phrases};
+    for (final MapEntry(key: theirId, value: id) in ids.entries) {
+      final times = passes[theirId];
+      if (times == null || times.isEmpty) continue;
+      if (!pages.any((p) => p.id == id)) continue;
+      if (!(phrases[id]?.isEmpty ?? true)) continue;
+      phrases[id] = times;
+      changed = true;
+    }
+    if (!changed) return null;
+    return copy.copyWith(pages: pages, phrases: phrases, clonedPages: taken);
   }
 
   /// The user's newest copy of capture [id] ([CaptureEvent.clonedFrom]),
