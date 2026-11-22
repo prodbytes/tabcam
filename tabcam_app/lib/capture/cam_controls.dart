@@ -289,6 +289,41 @@ class CamStrip extends StatelessWidget {
                 null => null,
               },
             ),
+            // The . and / keys' buttons: the next take with the song back
+            // at its start, after its count-in ([CamSession.nextTake]).
+            // Redo throws the take recording away, so it's only on while
+            // one records; New take keeps it (not recording, it starts a
+            // take with the song from its start).
+            _Control(
+              key: const Key('cam-redo'),
+              icon: Icons.replay,
+              color: foreground,
+              foreground: foreground,
+              label: l10n.camRedo,
+              tooltip: l10n.camRedoTip,
+              onPressed: cam.recording && cam.canRec
+                  ? () {
+                      unawaited(cam.nextTake(keep: false));
+                      onUse();
+                    }
+                  : null,
+            ),
+            _Control(
+              key: const Key('cam-new-take'),
+              icon: Icons.video_call_outlined,
+              color: foreground,
+              foreground: foreground,
+              label: l10n.camNewTake,
+              tooltip: cam.recording
+                  ? l10n.camNewTakeTip
+                  : l10n.camNewTakeIdleTip,
+              onPressed: cam.canRec
+                  ? () {
+                      unawaited(cam.nextTake());
+                      onUse();
+                    }
+                  : null,
+            ),
             _Control(
               key: const Key('cam-play'),
               // Opening: Stop lets it go.

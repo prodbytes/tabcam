@@ -626,6 +626,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camStopKey => 'Parar · novo take (/) · refazer (.)';
 
   @override
+  String get camRedo => 'Refazer';
+
+  @override
+  String get camRedoTip =>
+      'Refazer (.): descartar este take e gravá-lo de novo do início, primeiro os 2 s de contagem';
+
+  @override
+  String get camNewTake => 'Novo take';
+
+  @override
+  String get camNewTakeTip =>
+      'Novo take (/ ou ,): salvar este take e gravar o próximo do início, primeiro os 2 s de contagem';
+
+  @override
+  String get camNewTakeIdleTip =>
+      'Novo take (/ ou ,): gravar um take com a música do início, primeiro os 2 s de contagem';
+
+  @override
   String get camMicChoose => 'Microfone';
 
   @override
@@ -2697,7 +2715,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get keysCut =>
-      'Começar um take com a música onde está; gravando, salvar o take e começar o próximo';
+      'Começar um take com a música do início; gravando, salvar o take e começar o próximo, a música de novo do início';
 
   @override
   String get keysPlayAlongCam =>

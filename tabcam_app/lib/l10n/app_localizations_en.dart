@@ -606,6 +606,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camStopKey => 'Stop · new take (/) · redo (.)';
 
   @override
+  String get camRedo => 'Redo';
+
+  @override
+  String get camRedoTip =>
+      'Redo (.): throw this take away and record it again from the start, its 2 s count-in first';
+
+  @override
+  String get camNewTake => 'New take';
+
+  @override
+  String get camNewTakeTip =>
+      'New take (/ or ,): keep this take and record the next from the start, its 2 s count-in first';
+
+  @override
+  String get camNewTakeIdleTip =>
+      'New take (/ or ,): record a take with the song from its start, its 2 s count-in first';
+
+  @override
   String get camMicChoose => 'Microphone';
 
   @override
@@ -2651,7 +2669,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keysCut =>
-      'Start a take with the song where it is; recording, save the take and start the next';
+      'Start a take with the song from its start; recording, save the take and start the next, the song from its start again';
 
   @override
   String get keysPlayAlongCam =>

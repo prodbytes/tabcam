@@ -628,6 +628,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camStopKey => 'Detener · nueva toma (/) · repetir (.)';
 
   @override
+  String get camRedo => 'Repetir';
+
+  @override
+  String get camRedoTip =>
+      'Repetir (.): descartar esta toma y grabarla de nuevo desde el principio, primero sus 2 s de cuenta previa';
+
+  @override
+  String get camNewTake => 'Nueva toma';
+
+  @override
+  String get camNewTakeTip =>
+      'Nueva toma (/ o ,): guardar esta toma y grabar la siguiente desde el principio, primero sus 2 s de cuenta previa';
+
+  @override
+  String get camNewTakeIdleTip =>
+      'Nueva toma (/ o ,): grabar una toma con la canción desde el principio, primero sus 2 s de cuenta previa';
+
+  @override
   String get camMicChoose => 'Micrófono';
 
   @override
@@ -2701,7 +2719,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keysCut =>
-      'Empezar una toma con la canción donde está; grabando, guardar la toma y empezar la siguiente';
+      'Empezar una toma con la canción desde el principio; grabando, guardar la toma y empezar la siguiente, la canción otra vez desde el principio';
 
   @override
   String get keysPlayAlongCam =>
