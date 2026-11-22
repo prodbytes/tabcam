@@ -142,7 +142,8 @@ the view shows it with the widgets in
   the button (or / and ., which start the next take). **1** is the
   song's play / pause, as the space bar
   ([the keys in every screen](#keys-in-every-screen)); until 2026-11-17
-  it was Rec / Stop. The button's tooltip names the keys: "Rec (.)",
+  it was Rec / Stop. Either, pausing the song while a take records,
+  stops the take too ([below](#space-stops-take)). The button's tooltip names the keys: "Rec (.)",
   and "Stop · new take (/) · redo (.)" while recording, in English,
   Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named by **the time
@@ -889,10 +890,15 @@ view).
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
 - **The space bar and 1** (on the top row or the keypad) pause and play
-  it while the sidebar shows (a key down; held, they don't repeat),
-  recording or not (the take records on), and don't turn the tab; with
-  the sidebar hidden, they turn the tab again. A tap in the sidebar or
-  the frame gives the keys back to Cam.
+  it while the sidebar shows (a key down; held, they don't repeat), and
+  don't turn the tab; with the sidebar hidden, they turn the tab again.
+  <a id="space-stops-take"></a>Pausing it (playing, or counting in)
+  while a take records **stops the take too**, saved as Stop (Rec)
+  saves it (`CamSession.keyPaused`, told by `PlayAlongKeys.onKeyPause`);
+  until 2026-11-22 the take recorded on. Playing it never starts a take,
+  and the frame's own **Pause** button still only pauses the song (the
+  take records on). A tap in the sidebar or the frame gives the keys
+  back to Cam.
 - **0** (on the top row or the keypad) always goes back to the
   beginning: the start of the file, or of its section when one is set,
   count-in included (`BackingTrack.restart`). Paused, it stays paused
