@@ -2353,9 +2353,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTitleOff => 'Sem título';
 
   @override
-  String get videoEditTitleDone => 'Concluído';
-
-  @override
   String get videoEditLayerWatermark => 'Marca d\'água';
 
   @override
@@ -2378,9 +2375,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditMasterAbout => 'Os dois sons juntos, até 200%';
-
-  @override
-  String get videoEditFadesEdit => 'Ajustar os fades';
 
   @override
   String get videoEditFadeIn => 'Fade de entrada';
@@ -2913,6 +2907,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get downloadSettingsHide => 'Ocultar as configurações do download';
+
+  @override
+  String get sidebarPlayAlong => 'Tocar junto';
+
+  @override
+  String get sidebarDownload => 'Download';
+
+  @override
+  String get sidebarHide => 'Ocultar a barra lateral';
+
+  @override
+  String get downloadTabCam =>
+      'O download de um take é ajustado enquanto ele é editado: o que vai sobre o vídeo, como soa e a música.';
 
   @override
   String get videoEditMore => 'Mais';

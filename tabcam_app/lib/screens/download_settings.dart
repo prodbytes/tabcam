@@ -1,23 +1,28 @@
 /// The video editor's **Download settings**: what Download puts in the
 /// file and how it sounds (what's drawn on the video, the fades, the
-/// Master, the song's details), in a sidebar that a button in the
-/// editor's app bar shows and hides, as the metronome's and the
-/// dictionary's do. Beside the viewer where the editor's room is wide,
-/// under it where it's narrow.
+/// Master, the song's details), the **Download** tab of the editor's
+/// sidebar ([SidebarTabs]): in Cam's view beside the play-along files
+/// (`PlayAlongBeside`), in the editor alone a sidebar of its own
+/// ([DownloadSidebarBeside]). A button in the editor's app bar shows it
+/// ([DownloadSettingsButton]), as the metronome's and the dictionary's
+/// do theirs.
 library;
-
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../capture/play_along_sidebar.dart';
 import '../l10n/language.dart';
+import 'sidebar_tabs.dart';
 import 'sidebar_widths.dart';
 import 'split_handle.dart';
 
-/// Whether the editor's Download settings show, app-wide for the session:
-/// open the first time, and once hidden (its button, its ✕) hidden in
-/// this editor and the next, until it's shown again. Not kept on the
-/// device: a new session opens with it showing.
+/// Whether the sidebar of the editor alone (its Download tab,
+/// [DownloadSidebarBeside]) shows, app-wide for the session: open the
+/// first time (where it leaves the editor its room: a phone opens it
+/// hidden), and once hidden (its button, its ✕) hidden in this editor and
+/// the next, until it's shown again. Not kept on the device: a new
+/// session opens with it showing. (In Cam's view, the play-along
+/// sidebar's own state says whether it shows, `PlayAlong.open`.)
 class DownloadSettingsState extends ChangeNotifier {
   DownloadSettingsState._();
 
@@ -53,90 +58,75 @@ class DownloadSettingsState extends ChangeNotifier {
   }
 }
 
-/// The editor's app bar button for its Download settings (a tune icon):
-/// shows or hides them ([DownloadSettingsBeside]), in the primary colour
-/// while they show; [onClosed] after they hide (the editor takes its
-/// keys back).
+/// The editor's app bar button for its Download settings (a tune icon,
+/// "Download settings"): shows the sidebar on its Download tab, or hides
+/// it where that tab shows ([shown], then in the primary colour, "Hide
+/// the download settings"). [onPressed] does it: the sidebar is the
+/// editor's ([SidebarTabs]).
 class DownloadSettingsButton extends StatelessWidget {
-  const DownloadSettingsButton({super.key, this.onClosed});
+  const DownloadSettingsButton({
+    super.key,
+    required this.shown,
+    required this.onPressed,
+  });
 
-  final VoidCallback? onClosed;
+  /// Whether the sidebar shows, on its Download tab.
+  final bool shown;
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final state = DownloadSettingsState.instance;
-    return ListenableBuilder(
-      listenable: state,
-      builder: (context, _) {
-        final l10n = context.l10n;
-        return IconButton(
-          key: const Key('video-edit-settings'),
-          tooltip: state.open
-              ? l10n.downloadSettingsHide
-              : l10n.downloadSettings,
-          isSelected: state.open,
-          color: state.open ? Theme.of(context).colorScheme.primary : null,
-          icon: const Icon(Icons.tune),
-          onPressed: () {
-            state.toggle();
-            if (!state.open) onClosed?.call();
-          },
-        );
-      },
+    final l10n = context.l10n;
+    return IconButton(
+      key: const Key('video-edit-settings'),
+      tooltip: shown ? l10n.downloadSettingsHide : l10n.downloadSettings,
+      isSelected: shown,
+      color: shown ? Theme.of(context).colorScheme.primary : null,
+      icon: const Icon(Icons.tune),
+      onPressed: onPressed,
     );
   }
 }
 
-/// [viewer], with the Download settings ([panel], under their title and
-/// ✕, [DownloadSettingsPanel]) while they show ([DownloadSettingsState]):
-/// [beside] it, on its right, their left edge a separator to drag
-/// ([SplitHandle]) to make them wider or narrower (never narrower than
-/// [minWidth]), kept with the other sidebars' widths
-/// ([SidebarWidths.downloadSettings]), a double tap putting the default
-/// back; or under it, the viewer [viewerHeight] high
-/// and the settings taking the rest. Hidden, or not [enabled], the viewer
-/// takes all the room. One Flex either way, the viewer first, so showing,
-/// hiding or turning them keeps the viewer (the video's picture) as it is.
-class DownloadSettingsBeside extends StatelessWidget {
-  const DownloadSettingsBeside({
+/// [child] (the editor alone: no Cam, nothing to play along with) with
+/// the editor's sidebar at its right, its Download tab alone
+/// ([SidebarTabs], ✕ hiding it) over the Download settings ([panel],
+/// built only while it shows), while it shows ([DownloadSettingsState])
+/// and is [enabled]. As wide as Cam's play-along sidebar, the same width
+/// ([SidebarWidths.playAlong]), never narrower than [minWidth]; its left
+/// edge a separator to drag ([SplitHandle]), a double tap putting the
+/// default back. Hidden, or not [enabled], [child] takes all the room.
+class DownloadSidebarBeside extends StatelessWidget {
+  const DownloadSidebarBeside({
     super.key,
-    required this.beside,
-    required this.viewer,
+    required this.child,
     required this.panel,
-    required this.viewerHeight,
+    required this.tab,
     this.enabled = true,
     this.onClosed,
   });
 
-  /// Whether they're beside the viewer (a wide room), else under it.
-  final bool beside;
+  final Widget child;
 
-  final Widget viewer;
-
-  /// The settings, under their title (built only while they show).
+  /// The Download settings (built only while they show).
   final WidgetBuilder panel;
 
-  /// How high the viewer is with the settings under it.
-  final double viewerHeight;
+  /// The sidebar's tab ([StudioTab.download], the only one here).
+  final ValueNotifier<StudioTab> tab;
 
-  /// False, the viewer shows alone (the settings' state kept app-wide).
+  /// False, [child] shows alone (the sidebar's state kept app-wide).
   final bool enabled;
 
-  /// After their own ✕ hides them.
+  /// After its ✕ hides it.
   final VoidCallback? onClosed;
 
-  /// The narrowest the viewer gets when they're dragged wider.
-  static const minViewer = 96.0;
+  /// The narrowest the sidebar is ([downloadTabLeast], as on the Download
+  /// tab in Cam's view).
+  static const minWidth = downloadTabLeast;
 
-  /// The narrowest they're dragged: their default in the narrowest wide
-  /// room (40% of 560), where the Master's slider keeps some room beside
-  /// its Mute and its level, at the largest text size too (at the other
-  /// sidebars' least, [SidebarWidths.min], it would have none).
-  static const minWidth = 224.0;
-
-  /// Their default width beside a room [room] wide: 40% of it, at most
-  /// 320 px.
-  static double widthFor(double room) => math.min(320.0, room * 0.4);
+  /// The narrowest [child] gets when the sidebar is dragged wider.
+  static const minChild = PlayAlongBeside.minChild;
 
   @override
   Widget build(BuildContext context) {
@@ -147,123 +137,61 @@ class DownloadSettingsBeside extends StatelessWidget {
       builder: (context, _) => LayoutBuilder(
         builder: (context, box) {
           final open = state.open && enabled;
-          final max = box.maxWidth - minViewer - SplitHandle.thickness;
+          final screen = MediaQuery.sizeOf(context).width;
+          final max = box.maxWidth - minChild - SplitHandle.thickness;
           final width = widths.widthOf(
-            SidebarWidths.downloadSettings,
-            fallback: widthFor(box.maxWidth),
+            SidebarWidths.playAlong,
+            fallback: PlayAlongSidebar.widthFor(screen),
             max: max,
             least: minWidth,
           );
-          Widget sidebar() => DownloadSettingsPanel(
-            onClose: () {
-              state.close();
-              onClosed?.call();
-            },
-            child: Builder(builder: panel),
-          );
-          return Flex(
-            direction: beside ? Axis.horizontal : Axis.vertical,
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: viewer),
-              if (open && beside) ...[
+              Expanded(child: child),
+              if (open) ...[
                 SplitHandle(
                   key: const Key('video-edit-settings-split'),
                   axis: Axis.horizontal,
-                  // Dragged left, the settings (on the right) get wider.
+                  color: Colors.white38,
+                  background: Colors.black,
+                  // Dragged left, the sidebar (on the right) gets wider.
                   onDrag: (dx) => widths.set(
-                    SidebarWidths.downloadSettings,
+                    SidebarWidths.playAlong,
                     (width - dx).clamp(
                       minWidth,
                       max < minWidth ? minWidth : max,
                     ),
                   ),
                   onDragEnd: widths.save,
-                  onReset: () => widths.reset(SidebarWidths.downloadSettings),
+                  onReset: () => widths.reset(SidebarWidths.playAlong),
                 ),
-                SizedBox(width: width, child: sidebar()),
-              ] else if (open)
                 SizedBox(
-                  height: math.max(0.0, box.maxHeight - viewerHeight),
-                  child: sidebar(),
+                  width: width,
+                  child: Material(
+                    key: const Key('video-edit-settings-panel'),
+                    color: sidebarColor,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SidebarTabs(
+                          tab: tab,
+                          playAlong: false,
+                          onClose: () {
+                            state.close();
+                            onClosed?.call();
+                          },
+                        ),
+                        Expanded(child: Builder(builder: panel)),
+                      ],
+                    ),
+                  ),
                 ),
+              ],
             ],
           );
         },
       ),
-    );
-  }
-}
-
-/// The Download settings' sidebar: its title ("Download settings") and
-/// ✕, then [child] (the settings, which scroll). In a place too short for
-/// its title (a phone on its side with the keyboard up), it's cut, not
-/// squeezed.
-class DownloadSettingsPanel extends StatelessWidget {
-  const DownloadSettingsPanel({
-    super.key,
-    required this.child,
-    required this.onClose,
-  });
-
-  final Widget child;
-  final VoidCallback onClose;
-
-  /// The least it's laid out in: its title, at large text sizes too.
-  static const minHeight = 72.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, box) {
-        final height = math.max(box.maxHeight, minHeight);
-        return ClipRect(
-          child: OverflowBox(
-            alignment: Alignment.topCenter,
-            minHeight: height,
-            maxHeight: height,
-            child: Material(
-              key: const Key('video-edit-settings-panel'),
-              color: theme.colorScheme.surfaceContainerLow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 4, 0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.tune,
-                          size: 18,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            l10n.downloadSettings,
-                            style: theme.textTheme.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          key: const Key('video-edit-settings-close'),
-                          tooltip: l10n.downloadSettingsHide,
-                          icon: const Icon(Icons.close),
-                          onPressed: onClose,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(child: child),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

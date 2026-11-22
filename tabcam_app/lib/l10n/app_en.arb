@@ -3191,10 +3191,6 @@
   "@videoEditTitleOff": {
     "description": "Video edit: turns the title off, keeping the text typed"
   },
-  "videoEditTitleDone": "Done",
-  "@videoEditTitleDone": {
-    "description": "Video edit: closes the title's text fields (on a phone)"
-  },
   "videoEditLayerWatermark": "Watermark",
   "@videoEditLayerWatermark": {
     "description": "Video edit: the chip of the small \"tabs.cam\" at the bottom right of the video (only Premium can turn it off)"
@@ -3227,10 +3223,6 @@
   "videoEditMasterAbout": "Both sounds together, up to 200%",
   "@videoEditMasterAbout": {
     "description": "Video edit: what the master volume does (under its name)"
-  },
-  "videoEditFadesEdit": "Change the fades",
-  "@videoEditFadesEdit": {
-    "description": "Video edit: the Fades chip's button that opens their sliders"
   },
   "videoEditFadeIn": "Fade in",
   "@videoEditFadeIn": {
@@ -3946,11 +3938,27 @@
   },
   "downloadSettings": "Download settings",
   "@downloadSettings": {
-    "description": "Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title"
+    "description": "Video edit: the app bar's button (tune icon) that shows the editor's sidebar on its Download tab (what Download puts in the file: on the video, fades, master, the song)"
   },
   "downloadSettingsHide": "Hide the download settings",
   "@downloadSettingsHide": {
-    "description": "Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button"
+    "description": "Video edit: the app bar's tune button while the sidebar shows its Download tab (a press hides the sidebar)"
+  },
+  "sidebarPlayAlong": "Play along",
+  "@sidebarPlayAlong": {
+    "description": "Video edit and Cam: the sidebar's first tab (♫), the files to play along with"
+  },
+  "sidebarDownload": "Download",
+  "@sidebarDownload": {
+    "description": "Video edit and Cam: the sidebar's tab (tune icon) with the Download settings: what Download puts in the file and how it sounds"
+  },
+  "sidebarHide": "Hide the sidebar",
+  "@sidebarHide": {
+    "description": "Video edit and Cam: the ✕ at the right of the sidebar's tabs"
+  },
+  "downloadTabCam": "A take's download is set while it's edited: what's on the video, how it sounds and its song.",
+  "@downloadTabCam": {
+    "description": "Cam, with the camera in the main row: the sidebar's Download tab says this over an Edit the take button"
   },
   "videoEditMore": "More",
   "@videoEditMore": {

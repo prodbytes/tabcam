@@ -3928,12 +3928,6 @@ abstract class AppLocalizations {
   /// **'No title'**
   String get videoEditTitleOff;
 
-  /// Video edit: closes the title's text fields (on a phone)
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get videoEditTitleDone;
-
   /// Video edit: the chip of the small "tabs.cam" at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
@@ -3975,12 +3969,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Both sounds together, up to 200%'**
   String get videoEditMasterAbout;
-
-  /// Video edit: the Fades chip's button that opens their sliders
-  ///
-  /// In en, this message translates to:
-  /// **'Change the fades'**
-  String get videoEditFadesEdit;
 
   /// Video edit: the slider of how long the start fades in from black
   ///
@@ -4822,17 +4810,41 @@ abstract class AppLocalizations {
   /// **'Kept for {output}: its takes open with it'**
   String videoEditSongDelayKept(String output);
 
-  /// Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title
+  /// Video edit: the app bar's button (tune icon) that shows the editor's sidebar on its Download tab (what Download puts in the file: on the video, fades, master, the song)
   ///
   /// In en, this message translates to:
   /// **'Download settings'**
   String get downloadSettings;
 
-  /// Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button
+  /// Video edit: the app bar's tune button while the sidebar shows its Download tab (a press hides the sidebar)
   ///
   /// In en, this message translates to:
   /// **'Hide the download settings'**
   String get downloadSettingsHide;
+
+  /// Video edit and Cam: the sidebar's first tab (♫), the files to play along with
+  ///
+  /// In en, this message translates to:
+  /// **'Play along'**
+  String get sidebarPlayAlong;
+
+  /// Video edit and Cam: the sidebar's tab (tune icon) with the Download settings: what Download puts in the file and how it sounds
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get sidebarDownload;
+
+  /// Video edit and Cam: the ✕ at the right of the sidebar's tabs
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the sidebar'**
+  String get sidebarHide;
+
+  /// Cam, with the camera in the main row: the sidebar's Download tab says this over an Edit the take button
+  ///
+  /// In en, this message translates to:
+  /// **'A take\'s download is set while it\'s edited: what\'s on the video, how it sounds and its song.'**
+  String get downloadTabCam;
 
   /// Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit
   ///

@@ -2357,9 +2357,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditTitleOff => 'Sin título';
 
   @override
-  String get videoEditTitleDone => 'Listo';
-
-  @override
   String get videoEditLayerWatermark => 'Marca de agua';
 
   @override
@@ -2382,9 +2379,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditMasterAbout => 'Los dos sonidos juntos, hasta el 200 %';
-
-  @override
-  String get videoEditFadesEdit => 'Cambiar los fundidos';
 
   @override
   String get videoEditFadeIn => 'Fundido de entrada';
@@ -2919,6 +2913,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get downloadSettingsHide => 'Ocultar los ajustes de descarga';
+
+  @override
+  String get sidebarPlayAlong => 'Tocar junto';
+
+  @override
+  String get sidebarDownload => 'Descarga';
+
+  @override
+  String get sidebarHide => 'Ocultar la barra lateral';
+
+  @override
+  String get downloadTabCam =>
+      'La descarga de una toma se ajusta mientras se edita: lo que va sobre el video, cómo suena y su canción.';
 
   @override
   String get videoEditMore => 'Más';
