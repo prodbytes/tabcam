@@ -18,11 +18,17 @@
        file and /img/ (scripts/deploy.sh uploads both); the one third-party
        request is Google's sign-in script, for visitors not signed in. -->
   <script>
-    // A capture's link that names the root goes to the app, query kept.
-    if (/[?&]c=/.test(location.search)) location.replace('/app/' + location.search);
     (function () {
       var root = document.documentElement;
       root.classList.add('js');
+      // Off to the app, this page hidden meanwhile (.to-app), replacing it
+      // in the history so Back doesn't come here again.
+      function toApp(search) {
+        root.classList.add('to-app');
+        location.replace('/app/' + search);
+      }
+      // A capture's link that names the root goes to the app, query kept.
+      if (/[?&]c=/.test(location.search)) return toApp(location.search);
       // Who the app has signed in on this browser (the same origin's
       // localStorage): a tabs.cam session, or a Google sign-in whose token
       // is still good. Null if no one, or storage is off.
@@ -43,11 +49,12 @@
         } catch (e) {}
         return null;
       }
-      var who = signedIn();
+      // Signed in already: straight on to the app. The page is for
+      // visitors who aren't.
+      if (signedIn()) return toApp('');
       var client = document.querySelector('meta[name="google-signin-client_id"]').content;
-      window.tabcam = { who: who, client: client, claims: claims };
-      if (who) root.classList.add('signed-in');
-      else if (client) root.classList.add('google');
+      window.tabcam = { client: client, claims: claims };
+      if (client) root.classList.add('google');
     })();
   </script>
   <style>
@@ -73,6 +80,9 @@
     a { color: var(--gold); }
     h1, h2 { margin: 0; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
     p { margin: 0; }
+    /* On the way to the app: nothing of the page shows. */
+    .to-app { background: var(--bg); }
+    .to-app body { visibility: hidden; }
 
     .button {
       display: inline-block;
@@ -148,9 +158,6 @@
     .google .way-in .button.primary:hover, .google .way-in .button.primary:focus-visible {
       background: var(--gold); border-color: var(--gold); color: var(--bg); transform: none;
     }
-    .way-in-note .signed-as { display: none; }
-    .signed-in .way-in-note .signed-as { display: inline; }
-    .signed-as strong { color: var(--fg); font-weight: 600; }
     /* Where Google's One Tap shows when it's on the page (browsers without
        FedCM): under the top bar on the right, not over it. With FedCM the
        browser places it. */
@@ -248,10 +255,10 @@
     yourself playing them. Share them with the people you play with.</p>
     <div class="way-in">
       <div class="gsi"></div>
-      <a class="button primary" href="/app/" data-signed-in="Open your tabs">Open tabs.cam</a>
+      <a class="button primary" href="/app/">Open tabs.cam</a>
     </div>
-    <p class="note way-in-note"><span class="signed-as">Signed in as <strong></strong>. </span>Runs
-    in your browser, on your phone or your computer.</p>
+    <p class="note">Runs in your browser, on your phone or your
+    computer.</p>
   </section>
   <div id="one-tap"></div>
 
@@ -311,7 +318,7 @@
     add yourself, kept in your own account. No ads, no tracking.</p>
     <div class="way-in">
       <div class="gsi"></div>
-      <a class="button primary" href="/app/" data-signed-in="Open your tabs">Open tabs.cam</a>
+      <a class="button primary" href="/app/">Open tabs.cam</a>
     </div>
   </section>
 
@@ -336,20 +343,14 @@
       boxes.forEach(function (box) { seen.observe(box); });
     })();
 
-    // The way in. Signed in already: "Open your tabs", and who. Otherwise,
-    // with a Google client: Google's button and One Tap; a sign-in is left
-    // where the app's Google sign-in keeps its own (localStorage
-    // tabcam.session), and the app, opened, starts its session from it.
+    // The way in. With a Google client: Google's button and One Tap; a
+    // sign-in is left where the app's Google sign-in keeps its own
+    // (localStorage tabcam.session), and the app, opened, starts its
+    // session from it. On the way to the app already (signed in, or a
+    // capture's link), no window.tabcam: nothing to offer.
     (function () {
       var tabcam = window.tabcam, root = document.documentElement;
-      if (tabcam.who) {
-        document.querySelectorAll('[data-signed-in]').forEach(function (a) {
-          a.textContent = a.getAttribute('data-signed-in');
-        });
-        document.querySelector('.signed-as strong').textContent = tabcam.who.name || tabcam.who.email;
-        return;
-      }
-      if (!tabcam.client) return;
+      if (!tabcam || !tabcam.client) return;
       function off() { root.classList.remove('google'); }
       function signedIn(response) {
         var c = response && response.credential && tabcam.claims(response.credential);

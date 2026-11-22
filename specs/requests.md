@@ -4912,7 +4912,33 @@ spec.
 
 ## 2026-11-22
 
-1. **"add a "back to beggining" button to mini player sidebar (equals
+1. **"if a user is already logged in, in the index page, move to the
+   app"**. The index page (`/`) sends anyone signed in on the browser
+   (a tabs.cam session, or a Google sign-in whose token is still good:
+   the same check that showed "Open your tabs" and "Signed in as …")
+   straight on to `/app/`, from its first script, the page blank
+   meanwhile and replaced in the history so Back skips it. Those
+   signed-in touches are gone with it, as only visitors not signed in
+   see the page now; a capture's link naming the root (`/?c=…`) still
+   goes on to the app with its query. Checked in Chromium, WebKit and
+   Firefox. See [index page](index-page.md#signed-in-already).
+
+2. **"in the text tab view in the editor also let it have zoom and drag
+   controls"**. The Text view (the tab's text editor) gets a PDF view's
+   **Zoom in** and **Zoom out**, over its bottom right, with **Drag to
+   move** (a hand, a toggle) over them, in the editor and in Two columns.
+   The zoom is the text's size (50% to 300% in eight steps; zoomed, the
+   percentage shows between the buttons and, tapped, puts it back to
+   100%), so the text still edits and the widest lines don't wrap; a
+   button's zoom keeps the top left of what shows in place. A pinch (two
+   fingers or a trackpad's) and Ctrl / ⌘ + the wheel zoom too, about
+   where they are, the wheel not scrolling meanwhile. Drag to move puts
+   a layer over the text: a drag, a mouse's too, moves it any way
+   instead of selecting or editing, and the wheel still scrolls. Neither
+   is kept. Tested in `text_zoom_test.dart`. See [tab
+   recognition](tab-recognition.md#zoom-and-drag-to-move).
+
+3. **"add a "back to beggining" button to mini player sidebar (equals
    pressing zero)"**. The play-along sidebar's frame has a **|◀** button
    first among its controls, before «: "Back to the start (0)" (in
    Spanish and Portuguese too), which does what the **0** key does
