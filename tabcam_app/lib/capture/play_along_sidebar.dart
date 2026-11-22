@@ -709,7 +709,8 @@ class PlayAlongBeside extends StatelessWidget {
   );
 
   /// The sidebar, [width] wide: [files] (the play-along list) alone; with
-  /// [download], under the tabs ([SidebarTabs]), the Download tab's
+  /// [download], under the tabs ([SidebarTabs], none in a short sidebar,
+  /// [SidebarTabs.shownFrom]), the Download tab's
   /// settings while it shows ([downloading]), the files kept meanwhile
   /// (offstage), so a link's page isn't reloaded.
   Widget _tabbed(
@@ -726,30 +727,33 @@ class PlayAlongBeside extends StatelessWidget {
       width: width,
       child: Material(
         color: sidebarColor,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SidebarTabs(
-              tab: tab,
-              onClose: () {
-                along.toggle();
-                onUse?.call();
-              },
-            ),
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Offstage(offstage: downloading, child: files),
-                  if (downloading)
-                    KeyedSubtree(
-                      key: const Key('studio-sidebar-download'),
-                      child: Builder(builder: download),
-                    ),
-                ],
+        child: LayoutBuilder(
+          builder: (context, box) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (box.maxHeight >= SidebarTabs.shownFrom)
+                SidebarTabs(
+                  tab: tab,
+                  onClose: () {
+                    along.toggle();
+                    onUse?.call();
+                  },
+                ),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Offstage(offstage: downloading, child: files),
+                    if (downloading)
+                      KeyedSubtree(
+                        key: const Key('studio-sidebar-download'),
+                        child: Builder(builder: download),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

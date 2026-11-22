@@ -1040,15 +1040,16 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// Whether the editor alone's sidebar shows by itself (it's open,
-  /// [DownloadSettingsState]): where it leaves the editor its least room
-  /// ([_leastWidth]) beside its own least ([downloadTabLeast]), not on a
-  /// phone, where the editor would be cut at its edge; there, once the
-  /// user shows it ([_sidebarAsked]).
-  bool get _sidebarFits =>
-      MediaQuery.sizeOf(context).width -
-          downloadTabLeast -
-          SplitHandle.thickness >=
-      _leastWidth;
+  /// [DownloadSettingsState]): where, as wide as it is by default
+  /// ([PlayAlongSidebar.widthFor], at least [downloadTabLeast]), it leaves
+  /// the editor its least room ([_leastWidth]); not on a phone, where the
+  /// editor would be cut at its edge: there, once the user shows it
+  /// ([_sidebarAsked]).
+  bool get _sidebarFits {
+    final screen = MediaQuery.sizeOf(context).width;
+    final sidebar = max(PlayAlongSidebar.widthFor(screen), downloadTabLeast);
+    return screen - sidebar - SplitHandle.thickness >= _leastWidth;
+  }
 
   /// Whether the editor alone's sidebar shows ([_sidebarFits]).
   bool get _aloneSidebarShown =>

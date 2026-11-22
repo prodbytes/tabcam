@@ -33,7 +33,8 @@ const sidebarColor = Color(0xFF1C1C1C);
 /// ([onClose]), which hides the sidebar. Without [playAlong] (the editor
 /// alone, where there's nothing to play along with), Download alone.
 /// Where the sidebar is too narrow for their names ([labelsFrom]), the
-/// tabs are their icons, their names in tooltips.
+/// tabs are their icons, their names in tooltips; in one too short
+/// ([shownFrom]), the sidebar has none.
 class SidebarTabs extends StatelessWidget {
   const SidebarTabs({
     super.key,
@@ -54,6 +55,12 @@ class SidebarTabs extends StatelessWidget {
   /// How wide the sidebar is before the tabs show their names beside
   /// their icons.
   static const labelsFrom = 240.0;
+
+  /// How high the sidebar is before the tabs show at its top: in a shorter
+  /// one (a phone on its side) they'd leave the play-along player no room,
+  /// so there are none, and the app bar's buttons (♫ and Download
+  /// settings) show one tab or the other.
+  static const shownFrom = 400.0;
 
   @override
   Widget build(BuildContext context) {

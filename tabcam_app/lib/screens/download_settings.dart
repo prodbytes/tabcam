@@ -91,7 +91,8 @@ class DownloadSettingsButton extends StatelessWidget {
 
 /// [child] (the editor alone: no Cam, nothing to play along with) with
 /// the editor's sidebar at its right, its Download tab alone
-/// ([SidebarTabs], ✕ hiding it) over the Download settings ([panel],
+/// ([SidebarTabs], ✕ hiding it; none in a short window,
+/// [SidebarTabs.shownFrom]) over the Download settings ([panel],
 /// built only while it shows), while it shows ([DownloadSettingsState])
 /// and is [enabled]. As wide as Cam's play-along sidebar, the same width
 /// ([SidebarWidths.playAlong]), never narrower than [minWidth]; its left
@@ -174,14 +175,15 @@ class DownloadSidebarBeside extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SidebarTabs(
-                          tab: tab,
-                          playAlong: false,
-                          onClose: () {
-                            state.close();
-                            onClosed?.call();
-                          },
-                        ),
+                        if (box.maxHeight >= SidebarTabs.shownFrom)
+                          SidebarTabs(
+                            tab: tab,
+                            playAlong: false,
+                            onClose: () {
+                              state.close();
+                              onClosed?.call();
+                            },
+                          ),
                         Expanded(child: Builder(builder: panel)),
                       ],
                     ),
