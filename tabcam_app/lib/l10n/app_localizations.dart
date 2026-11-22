@@ -1954,6 +1954,24 @@ abstract class AppLocalizations {
   /// **'Back to one column, to edit'**
   String get textViewColumnsOn;
 
+  /// Text view: tooltip of the Drag to move button (a hand, at the bottom right with the zoom buttons) while off; on, a drag moves the text instead of editing or selecting it
+  ///
+  /// In en, this message translates to:
+  /// **'Move the tab by dragging it'**
+  String get textViewDragTip;
+
+  /// Text view: tooltip of the Drag to move button while on; tapped, a drag edits or selects the text again
+  ///
+  /// In en, this message translates to:
+  /// **'Stop moving the tab'**
+  String get textViewDragOn;
+
+  /// Text view: tooltip of the zoom's percentage between Zoom in and Zoom out (shown once zoomed); tapped, the text goes back to 100%
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the usual size'**
+  String get textViewZoomReset;
+
   /// Button that corrects the tab from the song's tab online
   ///
   /// In en, this message translates to:
@@ -2410,13 +2428,13 @@ abstract class AppLocalizations {
   /// **'This PDF can\'t be shown here'**
   String get textViewCantShowPdf;
 
-  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page bigger.
+  /// A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) bigger.
   ///
   /// In en, this message translates to:
   /// **'Zoom in'**
   String get pdfZoomIn;
 
-  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page smaller.
+  /// A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) smaller.
   ///
   /// In en, this message translates to:
   /// **'Zoom out'**

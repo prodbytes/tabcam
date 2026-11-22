@@ -1202,6 +1202,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get textViewColumnsOn => 'Voltar a uma coluna, para editar';
 
   @override
+  String get textViewDragTip => 'Mover a tablatura arrastando';
+
+  @override
+  String get textViewDragOn => 'Parar de mover a tablatura';
+
+  @override
+  String get textViewZoomReset => 'Voltar ao tamanho normal';
+
+  @override
   String get textViewFix => 'Corrigir';
 
   @override

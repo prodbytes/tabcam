@@ -4922,3 +4922,18 @@ spec.
    see the page now; a capture's link naming the root (`/?c=…`) still
    goes on to the app with its query. Checked in Chromium, WebKit and
    Firefox. See [index page](index-page.md#signed-in-already).
+
+2. **"in the text tab view in the editor also let it have zoom and drag
+   controls"**. The Text view (the tab's text editor) gets a PDF view's
+   **Zoom in** and **Zoom out**, over its bottom right, with **Drag to
+   move** (a hand, a toggle) over them, in the editor and in Two columns.
+   The zoom is the text's size (50% to 300% in eight steps; zoomed, the
+   percentage shows between the buttons and, tapped, puts it back to
+   100%), so the text still edits and the widest lines don't wrap; a
+   button's zoom keeps the top left of what shows in place. A pinch (two
+   fingers or a trackpad's) and Ctrl / ⌘ + the wheel zoom too, about
+   where they are, the wheel not scrolling meanwhile. Drag to move puts
+   a layer over the text: a drag, a mouse's too, moves it any way
+   instead of selecting or editing, and the wheel still scrolls. Neither
+   is kept. Tested in `text_zoom_test.dart`. See [tab
+   recognition](tab-recognition.md#zoom-and-drag-to-move).
