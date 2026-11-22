@@ -382,7 +382,9 @@ metronome's buttons do theirs; its ✕ hides it too.
   Until it's read, and where it can't be (no reader on a desktop build,
   no sound in the file, a format not decoded), the bar shows without
   it, as before; it never holds anything back, and nothing is sent
-  anywhere.
+  anywhere. In Cam, its rows draw theirs too: the song's on the main
+  row, the take's own in the take's row's blocks
+  ([waveforms in Cam's rows](cam.md#waveforms-in-cams-rows)).
 - <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
   (magnifiers) sit in the corner left of the ruler, over the rows'
   headers, with the zoom between them once it isn't the whole video

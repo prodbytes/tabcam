@@ -605,10 +605,11 @@ section, speed, Repeat, phrase passes and keys are the player's, never
 doubled; the sidebar's player stays, the same song's picture and
 controls. The row's header has **Play the song** / **Pause the song**
 (Pause while it counts in too), as the player's Play. Its bar, as long
-as the ruler (the file's length), has the file's name, the part played
-filled (the primary colour; red while a take records) and the section,
-where one is set, outlined in the tertiary colour; the ruler's playhead
-follows the player. A tap on the bar or the ruler takes the player
+as the ruler (the file's length), has the file's name, the file's
+**waveform** (as the editor's lanes draw theirs, [waveforms](#waveforms-in-cams-rows)),
+the part played filled (the primary colour; red while a take records)
+and the section, where one is set, outlined in the tertiary colour; the
+ruler's playhead follows the player. A tap on the bar or the ruler takes the player
 there, and a drag along them follows (at most every 150 ms, the last
 where it's let go), kept within the section where one is set
 (`BackingTrack.seek`); the ruler zooms as the editor's. A link in a
@@ -618,6 +619,23 @@ capture has a file that plays, the row is a dashed **Play along with a
 song…**, which opens the sidebar with its first file loaded, paused
 (`PlayAlong.show`); with nothing in the capture that plays (only a PDF
 to follow, say) there's no row. In English, Spanish and Portuguese.
+
+<a id="waveforms-in-cams-rows"></a>**Waveforms in Cam's rows**, as the
+editor's lanes have ([video edit](video-edit.md#waveforms); in Cam's
+parts of `StudioView`, `_CamWave`): the main row's bar draws the song's
+sound across it, brighter in the section where one is set and dim
+outside it; the take's row, once the take is saved, draws the take's own
+sound in its blocks: in each part of the song it played along, the
+take's sound from when that part began, fitted to the song's speed (a
+take of the song at 0.5× has two of its seconds in each of the song's);
+on the take's clock, the take itself. None while a take records (there's
+no file yet), nor for a link in a frame, a file still loading or one
+that can't be read. Each file's sound is read once on the device, with
+the same readers as the editor's ([`SoundReader`](../tabcam_app/lib/capture/sound_reader.dart);
+none on a desktop build, where no file is even fetched for it), and the
+last six read are kept ([`WaveCache`](../tabcam_app/lib/capture/waveform.dart)),
+so a row built again, Cam opened again or a song played along again
+draws at once. Nothing is sent anywhere.
 
 <a id="the-takes-row"></a>**The take's row**, under the main row (the
 main row first, as the opened one is in the editor), is the take, in
@@ -650,7 +668,8 @@ main row first, as the opened one is in the editor), is the take, in
   [Edit](#editing-a-take-from-the-sidebar) opens it; Back puts the
   camera back and the row with it). Its bar, in the theme's secondary
   colour, has its blocks where it played along the main row's song, from
-  its log (`TakeLog.song`). Recorded with nothing with a time in the
+  its log (`TakeLog.song`), and over them the take's own sound
+  ([waveforms](#waveforms-in-cams-rows)). Recorded with nothing with a time in the
   main row, it stays on the take's clock, as long as it recorded. One
   that didn't play along the song in the main row (another song chosen
   since, the take itself chosen there, none) is its name on a dashed
