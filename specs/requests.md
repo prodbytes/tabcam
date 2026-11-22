@@ -4909,3 +4909,33 @@ spec.
    later. The privacy policy and the store notes say so. See
    [sharing](sharing.md#who-can-open-it), [shared
    captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
+
+## 2026-11-22
+
+1. **"when the user places a phrase pass event, mark it in the take
+   track timeline just as it is marked on the mini-player timeline."**,
+   then, instead: **"actually, make the time marks show in the backing
+   track track, and associate with that so that users can delete their
+   takes and keep the timings for auto pass"**. The song's phrase
+   passes (its own, kept with the capture by its page ID, as before)
+   are now marked on the video editor's song rows with the play-along
+   player's ticks (`PhraseMarks`, made public from the sidebar): on
+   Cam's main row (the backing track, on its own time; a pass recorded
+   shows at once, Clear takes them away) and on the edit view's Song
+   lane, where the song plays them along the video (moved and trimmed
+   with it, clip by clip, zoomed with the lanes; `songPhrasesOnLane`).
+   The timings were already the song's, apart from any take: deleting
+   or purging a take never touched them, and auto-pass keeps turning
+   the tab along the song with no take left (now tested). For songs
+   with none kept while their takes have passes (none noted, or
+   cleared by an older app), a take deleted, purged or deleted from the
+   user's contribution now gives the song its takes' passes, at the
+   song's times their logs noted (`songPhrasesOf`), all the capture's
+   takes along it merged oldest first as live passes are, so they
+   outlive the take. Clear on the player's bar now keeps the song as
+   cleared, an empty list in `phrases` (older apps read it as none), so
+   no take gives its passes back. Several takes along one song: the
+   song's passes are all of theirs merged, as recorded. See
+   [cam](cam.md#phrase-passes), [Cam's main row](cam.md#the-main-row),
+   [video edit](video-edit.md#the-song-row), [trash](trash.md).
+
