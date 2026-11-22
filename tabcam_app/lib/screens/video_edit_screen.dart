@@ -171,20 +171,21 @@ Future<XFile?> _pickSoundFile() async {
 /// nudged by a twentieth of a second), or a take's own song, lined up as
 /// it played while recording; its name opens Change and Remove (removed,
 /// the row goes). Each row has its volume and Mute at its left. What
-/// Download puts in the file is in the **Download settings**
-/// ([DownloadSettingsBeside]), a sidebar the app bar's tune button shows
-/// and hides (open the first time in a session), beside the viewer on a
-/// wide screen and under it on a phone: the **Master**, the rows'
-/// volume (up to 200%) and Mute, right above the fades' sliders (on a
-/// phone, above **On the video**); **On the video**: what's drawn over
-/// it, as chips: a take's tab (its style, the size, background and
-/// colours, opened by its palette button or, on a phone, a long press on
-/// the band in the preview), the title (its text typed in place of the
-/// chips on a phone, under them on a wide screen), the watermark, which
+/// Download puts in the file is in the **Download settings**, the
+/// **Download** tab of the view's sidebar ([SidebarTabs]: in Cam's view
+/// beside its Play along tab, [PlayAlongBeside]; in the editor alone, a
+/// sidebar of its own, [DownloadSidebarBeside]) that the app bar's tune
+/// button shows and hides (open the first time in a session, where it
+/// leaves the editor its room): the **Master**, the rows' volume (up to
+/// 200%) and Mute, right above the fades' sliders; **On the video**:
+/// what's drawn over it, as chips: a take's tab (its style, the size,
+/// background and colours, under the chips; on a phone, a long press on
+/// the band in the preview brings it into view), the title (its text
+/// typed under the chips), the watermark, which
 /// only Premium removes, and the **Fades**: the video fades in from
 /// black at the kept part's start and out to black at its end, both
-/// sounds with it, 3 s each by default (their sliders in place of the
-/// chips, or under them; drawn on the Take row as ramps at its ends);
+/// sounds with it, 3 s each by default (their sliders under the chips;
+/// drawn on the Take row as ramps at its ends);
 /// and the song's details, or, with no song, Add a song. A tap on the
 /// picture that opens one of them shows the settings where they're
 /// hidden. The dictionary and the metronome open beside it all, as on
@@ -823,11 +824,8 @@ class _StudioViewState extends State<StudioView> {
   /// camera's place (or the take edited, in place), as the user may edit
   /// it ([PlayAlongSidebar.mayEdit]); Back puts the camera back. Where
   /// the sidebar leaves the editor too little room (narrower than a small
-  /// phone, where it would be cut at the sidebar's edge; in a short
-  /// window, a phone on its side, too narrow for the Download settings
-  /// beside the viewer, where under it they'd leave the viewer next to
-  /// nothing), it's hidden meanwhile, and shown again with the camera
-  /// ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
+  /// phone, where it would be cut at the sidebar's edge), it's hidden
+  /// meanwhile, and shown again with the camera ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
   /// another (the copy a take recorded went to, [CamSession.lastTake]).
   /// What plays along pauses first, so only the editor's preview sounds
   /// (the sidebar's Edit pauses it too; the take row's Edit comes here
