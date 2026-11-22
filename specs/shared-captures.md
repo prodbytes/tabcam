@@ -61,7 +61,13 @@ your copy"** under the app bar.
   get copies of their own before the owner's go (the capture deleted, a
   file deleted, the share removed or left; [copy on
   write](library.md#events)). Its phrase passes start from the user's
-  own ones on the shared capture.
+  own ones on the shared capture, else the owner's, and each take keeps
+  its log. Each time Cam, Add or a file's edit view goes to it, it
+  [catches up](library.md#catching-up) with what the owner added since:
+  the files it never had (with their take logs), the owner's passes for
+  the songs it has none for, a take's song found in its sound; what the
+  user deleted or recorded there stays theirs. So auto-pass turns the
+  tab in the copy as it does on the owner's.
 - **A link to a file's edit view** (`e=1`, [sharing](sharing.md)) opens
   the video editor on the user's copy too (made then, as Adding does),
   over the copy's page of that file, in the shared capture's place; when

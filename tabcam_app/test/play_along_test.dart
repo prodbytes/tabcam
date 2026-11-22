@@ -1207,8 +1207,9 @@ B|--5--8--|
   });
 
   testWidgets('1 pauses and plays the song in the sidebar, as the space bar '
-      '(the top row\'s or the keypad\'s), and presses no Rec; with the '
-      'sidebar hidden, it turns the tab as any key', (tester) async {
+      '(the top row\'s or the keypad\'s), and presses no Rec; recording, '
+      'its pause stops the take, saved; with the sidebar hidden, it turns '
+      'the tab as any key', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     await tester.runAsync(() async {
       await library.addMedia(library.byId(id)!, [
@@ -1251,25 +1252,25 @@ B|--5--8--|
     expect(video.playing, hasLength(1));
     expect(find.text('1 / 3'), findsOneWidget);
 
-    // Recording, 1 still pauses and plays the song: the take records on.
+    // Recording, 1 pausing the song stops the take too, saved as Stop
+    // saves it.
     await tester.tap(find.byTooltip('Rec (.)'));
     await frames(tester);
     expect(camera.recording, isTrue);
     await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
-    await frames(tester);
+    await until(tester, () => recReady(tester));
     expect(video.playing, isEmpty);
-    expect(camera.recording, isTrue);
-    // Recording, it counts in first, count-in off or not.
+    expect(camera.recording, isFalse);
+    expect(library.byId(id)!.pages, hasLength(3));
+    expect(find.text('1 / 3'), findsOneWidget);
+    // Playing again starts no take.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    expect(camera.recording, isFalse);
     await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
     await frames(tester);
     expect(video.playing, isEmpty);
-    await countedIn(tester);
-    expect(video.playing, hasLength(1));
-    expect(camera.recording, isTrue);
-    expect(find.text('1 / 3'), findsOneWidget);
-    await tester.tap(_camStop);
-    await until(tester, () => recReady(tester));
-    expect(library.byId(id)!.pages, hasLength(3));
 
     // The sidebar hidden: 1 turns the tab, as any key.
     await tester.tap(find.byKey(const Key('cam-along')));
@@ -1279,6 +1280,84 @@ B|--5--8--|
     expect(find.text('2 / 3'), findsOneWidget);
     expect(camera.recording, isFalse);
     expect(video.playing, isEmpty);
+  });
+
+  testWidgets('the space bar pausing the song while a take records stops '
+      'the take, saved as Stop saves it; not recording, it only pauses; '
+      'playing starts no take; the sidebar\'s Pause button lets the take '
+      'record on', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    expect(library.byId(id)!.pages, hasLength(2));
+
+    // Not recording: space plays and pauses, no take.
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    expect(camera.recording, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(camera.recording, isFalse);
+    expect(library.byId(id)!.pages, hasLength(2));
+
+    // Rec plays the song along; space pauses it and stops the take, which
+    // is kept.
+    await tester.tap(find.byTooltip('Rec (.)'));
+    await frames(tester);
+    await countedIn(tester);
+    expect(camera.recording, isTrue);
+    expect(video.playing, hasLength(1));
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await until(tester, () => recReady(tester));
+    expect(video.playing, isEmpty);
+    expect(camera.recording, isFalse);
+    final pages = library.byId(id)!.pages;
+    expect(pages, hasLength(3));
+    expect(pages.last.kind, PageKind.video);
+
+    // Space plays it again: no take starts.
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, hasLength(1));
+    expect(camera.recording, isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await frames(tester);
+    expect(video.playing, isEmpty);
+
+    // The sidebar's own Pause, while a take records: the take records on.
+    await tester.tap(find.byTooltip('Rec (.)'));
+    await frames(tester);
+    await countedIn(tester);
+    expect(camera.recording, isTrue);
+    expect(video.playing, hasLength(1));
+    await tester.tap(find.byKey(const Key('cam-along-toggle')));
+    await frames(tester);
+    expect(video.playing, isEmpty);
+    expect(camera.recording, isTrue);
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(library.byId(id)!.pages, hasLength(4));
   });
 
   testWidgets('/ saves the take and starts a new one (the main keyboard\'s '
@@ -3528,11 +3607,13 @@ B|--5--8--|
     await tester.runAsync(() async => settings = await library.readMeta('cam'));
     expect(jsonDecode(settings!), {'autoPass': false});
 
-    // Forgotten: no marks, nothing kept.
+    // Forgotten: no marks, kept as cleared on purpose (an empty list, so
+    // a take of it deleted later doesn't bring its passes back).
     await tester.tap(find.byKey(const Key('cam-along-phrases-clear')));
     await frames(tester);
     event = library.byId(id)!;
-    expect(event.phrases.containsKey(song), isFalse);
+    expect(event.phrases[song]!.isEmpty, isTrue);
+    expect((event.toJson()['phrases']! as Map)[song], isEmpty);
     expect(find.byKey(const Key('cam-along-phrases-clear')), findsNothing);
     expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
   });

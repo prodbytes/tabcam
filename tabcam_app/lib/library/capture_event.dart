@@ -483,6 +483,7 @@ class CaptureEvent {
     this.contributions = const [],
     this.phrases = const {},
     this.clonedFrom,
+    this.clonedPages = const {},
     this.trashed,
     this.deletedPages = const [],
   }) : updated = updated ?? created;
@@ -589,6 +590,15 @@ class CaptureEvent {
   /// one, made the first time ([Library.copyToAdd]).
   final String? clonedFrom;
 
+  /// On a clone ([clonedFrom]): the pages of the original it has taken,
+  /// by their ID there, each to its own page's ID ('' for one taken before
+  /// this was kept, whose page isn't known). Made by the clone, and grown
+  /// as the user's copy of a capture shared with them catches up with it
+  /// ([Library.copyToAdd]): a page the original has and this doesn't name
+  /// is new to the copy; one it names stays as the user left it (deleted
+  /// from the copy, it stays deleted). Synced, in event.json.
+  final Map<String, String> clonedPages;
+
   /// What people added ([Contribution]), before what a reader adds went
   /// to their own copy instead: on the owner's devices, everyone's who
   /// did; on a reader's, their own (one at most), which also keeps their
@@ -681,6 +691,7 @@ class CaptureEvent {
     List<Contribution>? contributions,
     Map<String, PhraseTimes>? phrases,
     String? clonedFrom,
+    Map<String, String>? clonedPages,
     DateTime? Function()? trashed,
     List<EventPage>? deletedPages,
   }) => CaptureEvent(
@@ -706,6 +717,7 @@ class CaptureEvent {
     contributions: contributions ?? this.contributions,
     phrases: phrases ?? this.phrases,
     clonedFrom: clonedFrom ?? this.clonedFrom,
+    clonedPages: clonedPages ?? this.clonedPages,
     trashed: trashed == null ? this.trashed : trashed(),
     deletedPages: deletedPages ?? this.deletedPages,
   );
@@ -734,6 +746,7 @@ class CaptureEvent {
     if (visibility != null) 'visibility': visibility!.name,
     if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (clonedFrom != null) 'clonedFrom': clonedFrom,
+    if (clonedPages.isNotEmpty) 'clonedPages': clonedPages,
     if (trashed != null) 'trashed': trashed!.toUtc().toIso8601String(),
     if (deletedPages.isNotEmpty)
       'deletedPages': [for (final p in deletedPages) p.toJson()],
@@ -796,6 +809,17 @@ class CaptureEvent {
       clonedFrom: switch (json['clonedFrom']) {
         final String id when _id.hasMatch(id) => id,
         _ => null,
+      },
+      clonedPages: switch (json['clonedPages']) {
+        final Map<Object?, Object?> taken => {
+          for (final MapEntry(:key, :value) in taken.entries)
+            if (key is String &&
+                _id.hasMatch(key) &&
+                value is String &&
+                (value.isEmpty || _id.hasMatch(value)))
+              key: value,
+        },
+        _ => const {},
       },
     );
   }

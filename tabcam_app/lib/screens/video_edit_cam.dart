@@ -646,6 +646,22 @@ class _AlongBarState extends State<_AlongBar> {
                           ),
                         ),
                       ),
+                    // The song's phrase passes, as the player's bar marks
+                    // them, on the song's own time: the same ticks.
+                    if (track.phrases case final phrases
+                        when phrases.isNotEmpty)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            key: const Key('video-edit-main-phrase-marks'),
+                            painter: PhraseMarks(
+                              [for (final p in phrases.passes) p.at],
+                              length,
+                              scheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned.fill(
                       child: IgnorePointer(
                         child: _name(scheme.onPrimaryContainer),

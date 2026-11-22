@@ -1051,6 +1051,13 @@ class CamSession extends ChangeNotifier {
       _player == null &&
       _opening == null;
 
+  /// The song paused by the space bar or 1 ([PlayAlongKeys.onKeyPause]):
+  /// recording, the take stops and is saved, as Stop (Rec) does. Not
+  /// recording, nothing more: playing never starts a take.
+  Future<void> keyPaused() async {
+    if (_recording && canRec) await rec();
+  }
+
   /// Rec: records a take, or, recording, stops and saves it.
   Future<void> rec() async {
     if (_recording) return stopRecording();
