@@ -3110,6 +3110,8 @@ class _StudioViewState extends State<StudioView> {
       // A preview has no keys; with a take edited, the keys are the
       // editor's.
       keys: gate == null && _camera,
+      // The space bar or 1 pausing the song stops the take recording.
+      onKeyPause: () => unawaited(cam.keyPaused()),
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back, nor during a
       // download; the page edited shows neither Delete nor Edit, nor do
