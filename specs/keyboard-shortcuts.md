@@ -14,7 +14,10 @@ key, opens an overlay listing that screen's keys
 - the **video editor** ([video edit](video-edit.md)), before About (on
   a phone, before its More menu).
 
-Home has no keys, so no button.
+Home has no keys, so no button. Nor does a capture opened by its link
+signed out (or a file opened from it): the help, button and H key, is
+signed-in users', as the dictionary and the metronome are
+([sharing](sharing.md#opening-a-link)).
 
 **Cam's view and the editor's are one** ([Cam's view](cam.md#cams-view),
 [in Cam](video-edit.md#in-cam)), and its keys go by what's in its main

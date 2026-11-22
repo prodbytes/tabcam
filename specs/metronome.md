@@ -13,7 +13,10 @@ nothing leaves it, and no server is involved.
   after **Dictionary**; in the primary colour while its sidebar shows.
   On a phone's Text view, and in the video editor on a phone, it's in
   the **More** menu (⋮), with Dictionary. The button shows and hides the
-  sidebar.
+  sidebar. Signed in only: a capture opened by its link signed out (and
+  a file opened from it) has neither the button nor the sidebar, and
+  counts as a place without the metronome
+  ([sharing](sharing.md#opening-a-link)).
 - The sidebar opens on the right of the screen, beside the content; with
   the dictionary open too, the metronome's is the rightmost (and, the
   dictionary turned into its panel under the screen, at the right of the
