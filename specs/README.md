@@ -94,8 +94,9 @@ review notes ([app stores](app-stores.md)).
   fretboard (both worked out on the device); anything else is searched
   among tabs.cam's public captures, on YouTube and on Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
-  play-along player, the video editor's Download settings) is resizable
-  by dragging its edge, the width kept on the device.
+  play-along player and the video editor's, whose tabs are Play along
+  and Download) is resizable by dragging its edge, the width kept on
+  the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
   (signed in) opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
   with −, + and a slider (30–250), the common time signatures (2/4 to
@@ -107,9 +108,10 @@ review notes ([app stores](app-stores.md)).
   listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
-  top, with the Download settings (the master, what's drawn on the
-  video, the fades, the song's details) in a sidebar beside it or under
-  it, shown and hidden by a tune button in the app bar; and docked at
+  top, the editor's sidebar at the right (its Download tab: the master,
+  what's drawn on the video, the fades, the song's details; in Cam's
+  view beside its Play along tab), shown and hidden by a tune button in
+  the app bar (a phone opens it hidden); and docked at
   the bottom the transport (To the start, Play /
   Pause, To the end; the space bar, Home, End and the arrows) right
   over the rows, on one time axis (a click on it moves the playhead,

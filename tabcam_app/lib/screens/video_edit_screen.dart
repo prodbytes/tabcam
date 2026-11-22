@@ -46,6 +46,8 @@ import '../library/library.dart';
 import '../metronome/metronome.dart';
 import '../recognition/necklines.dart';
 import 'download_settings.dart';
+import 'sidebar_tabs.dart';
+import 'split_handle.dart';
 import 'edited_playback.dart';
 import 'file_screen.dart';
 import 'media_url.dart';
@@ -169,20 +171,21 @@ Future<XFile?> _pickSoundFile() async {
 /// nudged by a twentieth of a second), or a take's own song, lined up as
 /// it played while recording; its name opens Change and Remove (removed,
 /// the row goes). Each row has its volume and Mute at its left. What
-/// Download puts in the file is in the **Download settings**
-/// ([DownloadSettingsBeside]), a sidebar the app bar's tune button shows
-/// and hides (open the first time in a session), beside the viewer on a
-/// wide screen and under it on a phone: the **Master**, the rows'
-/// volume (up to 200%) and Mute, right above the fades' sliders (on a
-/// phone, above **On the video**); **On the video**: what's drawn over
-/// it, as chips: a take's tab (its style, the size, background and
-/// colours, opened by its palette button or, on a phone, a long press on
-/// the band in the preview), the title (its text typed in place of the
-/// chips on a phone, under them on a wide screen), the watermark, which
+/// Download puts in the file is in the **Download settings**, the
+/// **Download** tab of the view's sidebar ([SidebarTabs]: in Cam's view
+/// beside its Play along tab, [PlayAlongBeside]; in the editor alone, a
+/// sidebar of its own, [DownloadSidebarBeside]) that the app bar's tune
+/// button shows and hides (open the first time in a session, where it
+/// leaves the editor its room): the **Master**, the rows' volume (up to
+/// 200%) and Mute, right above the fades' sliders; **On the video**:
+/// what's drawn over it, as chips: a take's tab (its style, the size,
+/// background and colours, under the chips; on a phone, a long press on
+/// the band in the preview brings it into view), the title (its text
+/// typed under the chips), the watermark, which
 /// only Premium removes, and the **Fades**: the video fades in from
 /// black at the kept part's start and out to black at its end, both
-/// sounds with it, 3 s each by default (their sliders in place of the
-/// chips, or under them; drawn on the Take row as ramps at its ends);
+/// sounds with it, 3 s each by default (their sliders under the chips;
+/// drawn on the Take row as ramps at its ends);
 /// and the song's details, or, with no song, Add a song. A tap on the
 /// picture that opens one of them shows the settings where they're
 /// hidden. The dictionary and the metronome open beside it all, as on
@@ -460,22 +463,18 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// Whether the take's tab is drawn over it (where it can be,
-  /// [tabOffered]), how it looks, and whether its style's controls are
-  /// open in place of the chips (on a phone).
+  /// [tabOffered]), and how it looks.
   bool _tab = true; // reset in _forgetPage
   EditTabStyle _tabStyle = EditTabStyle.standard; // reset in _forgetPage
-  bool _editingTabStyle = false; // reset in _forgetPage
 
   /// The title: whether it's on, and the text typed for it (null: the
-  /// capture's name, [_captureTitle]); its fields, and whether they're
-  /// open in place of the chips (on a phone).
+  /// capture's name, [_captureTitle]), and its fields.
   bool _titleOn = true; // reset in _forgetPage
   List<String>? _titleLines; // reset in _forgetPage
   final _title1 = TextEditingController(); // text reset in _forgetPage
   final _title2 = TextEditingController(); // text reset in _forgetPage
   final _titleFocus = FocusNode();
   final _title2Focus = FocusNode();
-  bool _editingTitle = false; // reset in _forgetPage
 
   /// Whether the watermark is drawn (only Premium turns it off).
   bool _watermark = true; // reset in _forgetPage
@@ -487,13 +486,11 @@ class _StudioViewState extends State<StudioView> {
   double _resizeFrom = EditTabStyle.standard.size; // reset in _forgetPage
 
   /// How long the video fades in from black, and out to black (both
-  /// sounds with it); the fades the Fades chip puts back when turned on
-  /// again; and whether their sliders are open in place of the chips (on
-  /// a phone).
+  /// sounds with it), and the fades the Fades chip puts back when turned
+  /// on again.
   Duration _fadeIn = PageEdit.defaultFade; // reset in _forgetPage
   Duration _fadeOut = PageEdit.defaultFade; // reset in _forgetPage
   (Duration, Duration)? _fadesBack; // reset in _forgetPage
-  bool _editingFades = false; // reset in _forgetPage
 
   /// The layers the preview draws, and what they were worked out from;
   /// the title's picture, for a tap on it.
@@ -635,6 +632,18 @@ class _StudioViewState extends State<StudioView> {
   /// [_wide] is measured on it.
   double? _boxWidth;
 
+  /// Which of the sidebar's tabs shows ([SidebarTabs]): Download with a
+  /// page in the main row, Play along with the camera ([_switchMain] turns
+  /// it), until the user picks the other.
+  late final _sidebarTab = ValueNotifier(
+    widget.page != null ? StudioTab.download : StudioTab.playAlong,
+  );
+
+  /// Whether the user showed the editor alone's sidebar in this editor
+  /// (its button, a tap on the picture), where it doesn't show by itself
+  /// ([_sidebarFits]: a phone).
+  bool _sidebarAsked = false;
+
   /// The title's fields, the fades' sliders and the tab's style in the
   /// Download settings, brought into view as a tap on the picture shows
   /// them hidden ([_showSettings]).
@@ -725,11 +734,9 @@ class _StudioViewState extends State<StudioView> {
   /// Whether this user can leave the watermark off ([watermarkUnlocked]).
   bool get _unlocked => watermarkUnlocked(widget.ocr);
 
-  /// Whether the title's text is being edited: its fields open (a phone),
-  /// or one of them focused (a wide screen). The preview then shows it
-  /// as it ends up, not fading in.
-  bool get _titleBeingEdited =>
-      _editingTitle || _titleFocus.hasFocus || _title2Focus.hasFocus;
+  /// Whether the title's text is being edited: one of its fields focused.
+  /// The preview then shows it as it ends up, not fading in.
+  bool get _titleBeingEdited => _titleFocus.hasFocus || _title2Focus.hasFocus;
 
   /// The fades as the kept part plays them (none longer than half of it).
   Fades get _fades {
@@ -754,7 +761,6 @@ class _StudioViewState extends State<StudioView> {
     widget.ocr?.addListener(_onPremium);
     _titleFocus.addListener(_onTitleFocus);
     _title2Focus.addListener(_onTitleFocus);
-    DownloadSettingsState.instance.addListener(_onSettings);
     if (widget.cam case final setup?) _startCam(setup);
     unawaited(_open());
     if (_inEdit) unawaited(_loadFormats());
@@ -818,16 +824,19 @@ class _StudioViewState extends State<StudioView> {
   /// camera's place (or the take edited, in place), as the user may edit
   /// it ([PlayAlongSidebar.mayEdit]); Back puts the camera back. Where
   /// the sidebar leaves the editor too little room (narrower than a small
-  /// phone, where it would be cut at the sidebar's edge; in a short
-  /// window, a phone on its side, too narrow for the Download settings
-  /// beside the viewer, where under it they'd leave the viewer next to
-  /// nothing), it's hidden meanwhile, and shown again with the camera
-  /// ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
+  /// phone, where it would be cut at the sidebar's edge), it's hidden
+  /// meanwhile, and shown again with the camera ([_alongHidden]). The take is in Cam's capture, unless [eventId] says
   /// another (the copy a take recorded went to, [CamSession.lastTake]).
   /// What plays along pauses first, so only the editor's preview sounds
   /// (the sidebar's Edit pauses it too; the take row's Edit comes here
-  /// straight, right after Stop, with the song playing on).
-  Future<void> _editTake(EventPage take, {String? eventId}) async {
+  /// straight, right after Stop, with the song playing on). With
+  /// [keepSidebar] (the Download tab's Edit the take), the sidebar stays,
+  /// on its Download tab.
+  Future<void> _editTake(
+    EventPage take, {
+    String? eventId,
+    bool keepSidebar = false,
+  }) async {
     final cam = _cam;
     final event = cam == null ? null : _library.byId(eventId ?? cam.eventId);
     if (event == null || !PlayAlongSidebar.mayEdit(event, take) || _busy) {
@@ -840,19 +849,17 @@ class _StudioViewState extends State<StudioView> {
       await _switchMain(take, eventId: event.id);
       return;
     }
-    _roomToEdit(along);
+    if (!keepSidebar) _roomToEdit(along);
     await _go(take, eventId: event.id);
   }
 
   /// A page about to take the camera's place: where the play-along
-  /// sidebar would leave the editor too little room ([_editTake]), it's
-  /// hidden meanwhile ([_alongHidden]).
+  /// sidebar would leave the editor narrower than its least
+  /// ([_leastWidth]: a phone, where it would be cut at the sidebar's
+  /// edge), it's hidden meanwhile ([_alongHidden]).
   void _roomToEdit(PlayAlong along) {
-    final screen = MediaQuery.sizeOf(context);
-    final room = _boxWidth ?? screen.width;
-    if (along.open &&
-        (room < _leastWidth ||
-            (screen.height < _shortBelow && room < _wideShortFrom))) {
+    final room = _boxWidth ?? MediaQuery.sizeOf(context).width;
+    if (along.open && room < _leastWidth) {
       _alongHidden = true;
       along.toggle();
     }
@@ -1030,25 +1037,73 @@ class _StudioViewState extends State<StudioView> {
     if (mounted) setState(() {});
   }
 
-  /// The Download settings shown or hidden: hidden, the fields one of
-  /// their chips opened in their place (on a phone) close, as Done closes
-  /// them, so the preview stops showing the title as it's edited.
-  void _onSettings() {
-    if (!mounted || DownloadSettingsState.instance.open) return;
-    if (!_editingTitle && !_editingFades && !_editingTabStyle) return;
-    setState(() {
-      _editingTitle = false;
-      _editingFades = false;
-      _editingTabStyle = false;
-    });
+  /// Whether the editor alone's sidebar shows by itself (it's open,
+  /// [DownloadSettingsState]): where, as wide as it is by default
+  /// ([PlayAlongSidebar.widthFor], at least [downloadTabLeast]), it leaves
+  /// the editor its least room ([_leastWidth]); not on a phone, where the
+  /// editor would be cut at its edge: there, once the user shows it
+  /// ([_sidebarAsked]).
+  bool get _sidebarFits {
+    final screen = MediaQuery.sizeOf(context).width;
+    final sidebar = max(PlayAlongSidebar.widthFor(screen), downloadTabLeast);
+    return screen - sidebar - SplitHandle.thickness >= _leastWidth;
   }
 
-  /// Shows the Download settings where they're hidden, then brings [at]
-  /// (the part a tap on the picture opened) into view in them.
+  /// Whether the editor alone's sidebar shows ([_sidebarFits]).
+  bool get _aloneSidebarShown =>
+      DownloadSettingsState.instance.open && (_sidebarFits || _sidebarAsked);
+
+  /// Whether the sidebar shows its Download tab: in Cam's view, the
+  /// play-along sidebar open on it; in the editor alone, its sidebar
+  /// ([_aloneSidebarShown]).
+  bool get _downloadShown {
+    if (_sidebarTab.value != StudioTab.download) return false;
+    final along = _along;
+    return along != null ? along.open : _aloneSidebarShown;
+  }
+
+  /// Shows the sidebar on its Download tab: in Cam's view, the play-along
+  /// sidebar, nothing loaded in its player for it ([PlayAlong.show]).
+  void _showDownload() {
+    _sidebarTab.value = StudioTab.download;
+    final along = _along;
+    if (along != null) {
+      along.show(load: false);
+      return;
+    }
+    setState(() => _sidebarAsked = true);
+    DownloadSettingsState.instance.show();
+  }
+
+  /// The sidebar hidden (its ✕, the Download button); the editor takes
+  /// its keys back.
+  void _hideSidebar() {
+    final along = _along;
+    if (along != null) {
+      if (along.open) along.toggle();
+    } else {
+      setState(() => _sidebarAsked = false);
+      DownloadSettingsState.instance.close();
+    }
+    _keys.requestFocus();
+  }
+
+  /// The app bar's **Download settings**: the sidebar on its Download
+  /// tab, or hidden where that shows.
+  void _toggleDownload() {
+    if (_downloadShown) {
+      _hideSidebar();
+    } else {
+      _showDownload();
+    }
+  }
+
+  /// Shows the sidebar on its Download tab where it isn't showing it
+  /// ([_showDownload]), then brings [at] (the part a tap on the picture
+  /// opened) into view in it.
   void _showSettings(GlobalKey at) {
-    final settings = DownloadSettingsState.instance;
-    if (settings.open) return;
-    settings.show();
+    if (_downloadShown) return;
+    _showDownload();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final shown = at.currentContext;
       if (mounted && shown != null && shown.mounted) {
@@ -1234,6 +1289,7 @@ class _StudioViewState extends State<StudioView> {
   /// during a download: whether it did.
   Future<bool> _switchMain(EventPage? page, {String? eventId}) async {
     if (_busy || !mounted) return false;
+    final before = _page;
     final video = _video;
     final song = _trackPlayer;
     final playback = _playback;
@@ -1249,6 +1305,14 @@ class _StudioViewState extends State<StudioView> {
     });
     final forgotten = _forgotten;
     unawaited(_cam?.setAway(page != null));
+    // The sidebar's tab follows what's put in the main row: Download for
+    // a page, Play along for the camera (the same page opened again, Try
+    // again, leaves it as the user had it).
+    if (page?.id != before?.id) {
+      _sidebarTab.value = page == null
+          ? StudioTab.playAlong
+          : StudioTab.download;
+    }
     // The camera back: the sidebar a take's Edit hid shows again.
     if (page == null && _alongHidden) {
       _alongHidden = false;
@@ -1309,17 +1373,14 @@ class _StudioViewState extends State<StudioView> {
     // What's on the video, and the fields open in the settings.
     _tab = true;
     _tabStyle = EditTabStyle.standard;
-    _editingTabStyle = false;
     _titleOn = true;
     _titleLines = null;
     _title1.clear();
     _title2.clear();
-    _editingTitle = false;
     _watermark = true;
     _fadeIn = PageEdit.defaultFade;
     _fadeOut = PageEdit.defaultFade;
     _fadesBack = null;
-    _editingFades = false;
     _picked = null;
     _resizeFrom = EditTabStyle.standard.size;
     // The waves, the zoom and what's worked out from the page.
@@ -1404,7 +1465,7 @@ class _StudioViewState extends State<StudioView> {
     _trackPlayer?.dispose();
     _headAt.dispose();
     widget.ocr?.removeListener(_onPremium);
-    DownloadSettingsState.instance.removeListener(_onSettings);
+    _sidebarTab.dispose();
     _title1.dispose();
     _title2.dispose();
     _titleFocus.dispose();
@@ -1574,17 +1635,9 @@ class _StudioViewState extends State<StudioView> {
   /// Whether the take's tab can be drawn over it, so styled.
   bool get _tabStyleOffered => _take && tabOffered(_takeLog);
 
-  /// Opens the tab's style in place of the chips (on a phone: on a wide
-  /// screen, it's under them always), the Download settings shown.
-  void _editTabStyle() {
-    _showSettings(_tabStyleAt);
-    if (_wide) return;
-    setState(() {
-      _editingTabStyle = true;
-      _editingTitle = false;
-      _editingFades = false;
-    });
-  }
+  /// Shows the tab's style, under the chips in the sidebar's Download
+  /// tab, the sidebar shown on it.
+  void _editTabStyle() => _showSettings(_tabStyleAt);
 
   /// The sizes the Size slider offers over the video's frame: from the
   /// smallest it can be read at ([TabLayout.minSizeOf]) to the largest
@@ -1613,9 +1666,6 @@ class _StudioViewState extends State<StudioView> {
     _changed();
   }
 
-  /// **Done**: the tab's style closes.
-  void _tabStyleDone() => setState(() => _editingTabStyle = false);
-
   /// The title's fields show its text as it is now (setState's).
   void _fillTitle() {
     final lines = _titleLines ?? _captureTitle;
@@ -1635,16 +1685,10 @@ class _StudioViewState extends State<StudioView> {
     _changed();
   }
 
-  /// Opens the title's fields: in place of the chips on a phone; on a
-  /// wide screen, they're beside them already, the first one focused. The
-  /// Download settings show, where they were hidden.
+  /// Brings the title's fields (under the chips) into view, the first one
+  /// focused, the sidebar shown on its Download tab where it wasn't.
   void _editTitle() {
     _showSettings(_titleAt);
-    setState(() {
-      _editingTitle = !_wide;
-      _editingFades = false;
-      _editingTabStyle = false;
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _titleFocus.requestFocus();
     });
@@ -1672,20 +1716,11 @@ class _StudioViewState extends State<StudioView> {
     _changed();
   }
 
-  /// **No title**: off, its text kept; the fields close.
+  /// **No title**: off, its text kept; the keyboard closes.
   void _noTitle() {
-    setState(() {
-      _titleOn = false;
-      _editingTitle = false;
-    });
+    setState(() => _titleOn = false);
     FocusManager.instance.primaryFocus?.unfocus();
     _changed();
-  }
-
-  /// **Done**: the fields close.
-  void _titleDone() {
-    setState(() => _editingTitle = false);
-    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   /// The Fades chip: off, both fades are none (kept, to put back); on,
@@ -1708,17 +1743,6 @@ class _StudioViewState extends State<StudioView> {
     _changed();
   }
 
-  /// Opens the fades' sliders: in place of the chips on a phone (a wide
-  /// screen has them beside the chips already).
-  void _editFades() {
-    if (_wide) return;
-    setState(() {
-      _editingFades = true;
-      _editingTitle = false;
-      _editingTabStyle = false;
-    });
-  }
-
   /// A fade's slider moved: the fade in ([end] false) or out, to [seconds]
   /// (to the tenth of a second); the preview plays it at once, nothing
   /// sought again.
@@ -1737,9 +1761,6 @@ class _StudioViewState extends State<StudioView> {
 
   /// **No fades**: both none; the sliders stay open.
   void _noFades() => _setFades(false);
-
-  /// **Done**: the fades' sliders close.
-  void _fadesDone() => setState(() => _editingFades = false);
 
   /// The Watermark chip: for a user with Premium, it on or off; for
   /// anyone else, it stays on and the Premium card says how to remove it.
@@ -1777,9 +1798,10 @@ class _StudioViewState extends State<StudioView> {
     );
   }
 
-  /// Whether the editor is wide: the Download settings beside the viewer.
-  /// So is a short landscape window (a phone on its side), where there's
-  /// no room for them under the viewer. How wide is the editor's own room
+  /// Whether the editor is wide: its rows' names wider, a tap that picks
+  /// the tab's band on the picture showing its style in the sidebar (on a
+  /// phone, a long press or the band's palette button does). So is a short
+  /// landscape window (a phone on its side). How wide is the editor's own room
   /// ([_boxWidth]: narrower than the screen with the dictionary's or the
   /// metronome's sidebar beside it), else the screen's; how short, the
   /// window's, which the on-screen keyboard doesn't change (the body's
@@ -2577,15 +2599,12 @@ class _StudioViewState extends State<StudioView> {
       _song = null;
       _tab = true;
       _tabStyle = EditTabStyle.standard;
-      _editingTabStyle = false;
       _titleOn = true;
       _titleLines = null;
-      _editingTitle = false;
       _watermark = true;
       _fadeIn = PageEdit.defaultFade;
       _fadeOut = PageEdit.defaultFade;
       _fadesBack = null;
-      _editingFades = false;
       _fillTitle();
       _clearSong();
       _songComing = song != null;
@@ -2822,11 +2841,8 @@ class _StudioViewState extends State<StudioView> {
   static const _transportTimeLeast = 48.0;
 
   /// The least the viewer keeps before the rows, then the transport, give
-  /// way (a tiny window), and the least the Download settings keep under
-  /// the viewer on a phone, their title included (a tall video takes the
-  /// rest).
+  /// way (a tiny window).
   static const _viewerLeast = 96.0;
-  static const _inspectorLeast = 160.0;
 
   /// To the start / To the end: this close to the kept part's end counts
   /// as there (the next press goes on to the video's end).
@@ -3012,13 +3028,27 @@ class _StudioViewState extends State<StudioView> {
       actions: [
         if (ready) ...[
           _appBarActions(l10n),
-          DownloadSettingsButton(onClosed: _keys.requestFocus),
+          ListenableBuilder(
+            listenable: Listenable.merge([
+              _sidebarTab,
+              _along,
+              DownloadSettingsState.instance,
+            ]),
+            builder: (context, _) => DownloadSettingsButton(
+              shown: _downloadShown,
+              onPressed: _toggleDownload,
+            ),
+          ),
         ],
         if (!menu) ...[
           DictionaryButton(onClosed: _keys.requestFocus),
           MetronomeButton(onClosed: _keys.requestFocus),
           if (along != null)
-            PlayAlongButton(along: along, onPressed: _keys.requestFocus),
+            PlayAlongButton(
+              along: along,
+              tab: _sidebarTab,
+              onPressed: _keys.requestFocus,
+            ),
           IconButton(
             key: const Key('video-edit-share'),
             tooltip: l10n.eventShare,
@@ -3078,7 +3108,11 @@ class _StudioViewState extends State<StudioView> {
         DictionaryButton(onClosed: _keys.requestFocus),
         MetronomeButton(onClosed: _keys.requestFocus),
         if (_setup?.gate == null)
-          PlayAlongButton(along: cam.along, onPressed: _keys.requestFocus),
+          PlayAlongButton(
+            along: cam.along,
+            tab: _sidebarTab,
+            onPressed: _keys.requestFocus,
+          ),
         KeysHelpButton(screen: KeysScreen.cam, onClosed: _keys.requestFocus),
         if (cam.heads case final heads?)
           ValueListenableBuilder(
@@ -3114,17 +3148,102 @@ class _StudioViewState extends State<StudioView> {
     );
   }
 
-  /// [content], in Cam's view beside the play-along sidebar
-  /// ([PlayAlongBeside]: a file tapped there plays in the main row,
-  /// [_choose]; a take's Edit opens it in the camera's place, [_editTake]),
-  /// and in its preview under the Premium card ([PremiumGate]); the
-  /// editor's alone, as it is.
+  /// The take's row's take ([CamSession.lastTake]), as its capture has it
+  /// now, when it can be edited now: one the user may edit
+  /// ([PlayAlongSidebar.mayEdit]), with no take recording or saving
+  /// ([CamSession.canDelete]), and no download. Null otherwise.
+  EventPage? _offeredTake(CamSession cam) {
+    final last = cam.lastTake;
+    if (last == null || _busy || !cam.canDelete) return null;
+    final event = _library.byId(last.eventId);
+    final take = event?.pages.where((p) => p.id == last.page.id).firstOrNull;
+    if (event == null || take == null) return null;
+    return PlayAlongSidebar.mayEdit(event, take) ? take : null;
+  }
+
+  /// The sidebar's **Download** tab: with a page in the main row, its
+  /// Download settings, scrolling: **On the video** (its chips, the
+  /// title's fields, the Master, the fades' sliders, the tab's style) and
+  /// the song's details, or, with no song, Add a song ([_songSection]);
+  /// with the camera in its place, that a take's download is set as it's
+  /// edited, with **Edit the take** (the take's row's take, in the
+  /// camera's place, the sidebar staying on this tab), greyed while
+  /// there's none, or while Edit can't be ([_offeredTake]).
+  Widget _downloadTab(BuildContext context) {
+    final l10n = context.l10n;
+    final cam = _cam;
+    if (cam != null && _camera) {
+      final last = cam.lastTake;
+      final take = _offeredTake(cam);
+      return ListView(
+        key: const Key('video-edit-download-cam'),
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            l10n.downloadTabCam,
+            style: const TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FilledButton.tonalIcon(
+              key: const Key('video-edit-download-edit'),
+              icon: const Icon(Icons.content_cut),
+              label: Text(l10n.videoEditRecEdit),
+              onPressed: last == null || take == null
+                  ? null
+                  : () => unawaited(
+                      _editTake(take, eventId: last.eventId, keepSidebar: true),
+                    ),
+            ),
+          ),
+        ],
+      );
+    }
+    final ready = _inEdit && _video != null && _error == null;
+    if (!ready) return const SizedBox.shrink();
+    return ListView(
+      key: const Key('video-edit-side'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      children: [
+        _onTheVideo(l10n),
+        if (_songSection(l10n) case final song?) ...[
+          const SizedBox(height: 16),
+          song,
+        ],
+      ],
+    );
+  }
+
+  /// [content] beside the view's sidebar: in Cam's view the play-along
+  /// sidebar ([PlayAlongBeside]: a file tapped there plays in the main
+  /// row, [_choose]; a take's Edit opens it in the camera's place,
+  /// [_editTake]), its Download tab beside its files ([SidebarTabs],
+  /// [_downloadTab]), and in its preview under the Premium card
+  /// ([PremiumGate]), with no Download tab; in the editor alone, a
+  /// sidebar with the Download tab alone ([DownloadSidebarBeside]), once
+  /// the page's video is open, shown by itself only where it fits
+  /// ([_sidebarFits]).
   Widget _beside(AppLocalizations l10n, Widget content) {
     final cam = _cam;
     final setup = _setup;
-    if (cam == null || setup == null) return content;
+    if (cam == null || setup == null) {
+      final ready = _inEdit && _video != null && _error == null;
+      return DownloadSidebarBeside(
+        tab: _sidebarTab,
+        enabled: ready && (_sidebarFits || _sidebarAsked),
+        onClosed: () {
+          setState(() => _sidebarAsked = false);
+          _keys.requestFocus();
+        },
+        panel: _downloadTab,
+        child: content,
+      );
+    }
     final gate = setup.gate;
     final beside = PlayAlongBeside(
+      download: gate == null ? _downloadTab : null,
+      tab: _sidebarTab,
       along: cam.along,
       linkFrame: setup.linkFrame,
       pdfView: setup.pdfView,
@@ -3228,9 +3347,11 @@ class _StudioViewState extends State<StudioView> {
           item(
             'cam-along',
             Icons.queue_music,
-            along.open ? l10n.camAlongHide : l10n.camAlong,
+            PlayAlongButton.shows(along, _sidebarTab)
+                ? l10n.camAlongHide
+                : l10n.camAlong,
             () {
-              along.toggle();
+              PlayAlongButton.press(along, _sidebarTab);
               _keys.requestFocus();
             },
           ),
@@ -3305,15 +3426,11 @@ class _StudioViewState extends State<StudioView> {
   /// ([_viewer]), and at the bottom edge the dock: with a page in the main
   /// row, the transport and the rows ([_rows]: the dock as high as they
   /// need, so a video alone leaves the viewer more room); with the camera
-  /// in its place, Cam's controls and the main row ([_camDock]). With a
-  /// page, the Download settings ([DownloadSettingsBeside]) are beside
-  /// the viewer where the view's room is [_wide], else under it (the
-  /// master, **On the video** or the fields one of its chips opened, the
-  /// song's details or Add a song), scrolling; hidden, they leave the
-  /// viewer all the room. While the on-screen keyboard is open (the title
-  /// typed in), the transport and the rows give their room to the viewer
-  /// and the field; in a tiny window the rows go first, then the
-  /// transport. Squeezed narrower than a small phone by the dictionary's
+  /// in its place, Cam's controls and the main row ([_camDock]). The
+  /// Download settings are in the sidebar beside it all ([_beside],
+  /// [_downloadTab]). While the on-screen keyboard is open (the title
+  /// typed in the sidebar), the transport and the rows give their room to
+  /// the viewer; in a tiny window the rows go first, then the transport. Squeezed narrower than a small phone by the dictionary's
   /// or the metronome's sidebar, the editor is laid out that wide and cut
   /// at the sidebar's edge, not squeezed ([_leastWidth]); Cam's view
   /// keeps to its room (its controls' names shorten).
@@ -3330,11 +3447,9 @@ class _StudioViewState extends State<StudioView> {
             ? box.maxWidth
             : max(box.maxWidth, min(_leastWidth, screen));
         _boxWidth = width;
-        final wide = _wide;
         final video = _video;
         final ready = _inEdit && video != null && _error == null;
         Widget? dock;
-        var viewer = 0.0;
         var phrase = false;
         if (ready) {
           final rows = _rows(l10n);
@@ -3345,9 +3460,6 @@ class _StudioViewState extends State<StudioView> {
               !keyboard && height >= _transportHeight + _viewerLeast;
           final showDock = showTransport && fits(dockHeight);
           final showSteps = showDock && fits(dockHeight + _cutStepsHeight);
-          final docked =
-              (showDock ? dockHeight + inset : 0) +
-              (showSteps ? _cutStepsHeight : 0);
           dock = showTransport
               ? _panel(
                   video,
@@ -3356,17 +3468,6 @@ class _StudioViewState extends State<StudioView> {
                   steps: showSteps,
                 )
               : null;
-          // Under the viewer, it's as high as the picture needs, leaving
-          // the settings their least (a tall video takes the rest).
-          final free =
-              height - (showTransport ? _transportHeight + 1 : 0) - docked;
-          final aspect = video.value.aspectRatio > 0
-              ? video.value.aspectRatio
-              : 16 / 9;
-          viewer = max(
-            0.0,
-            min(width / aspect, free - min(_inspectorLeast, free * 0.45)),
-          );
         } else if (cam != null) {
           // Cam's controls always show, and the phrase under the camera
           // wherever it fits, the camera taking what room is left; only
@@ -3401,55 +3502,7 @@ class _StudioViewState extends State<StudioView> {
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: DownloadSettingsBeside(
-                beside: wide,
-                enabled: ready,
-                viewerHeight: viewer,
-                viewer: _viewer(l10n, phrase: phrase),
-                onClosed: _keys.requestFocus,
-                panel: (context) => wide
-                    ? ListView(
-                        key: const Key('video-edit-side'),
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                        children: [
-                          _onTheVideo(l10n, wide: true),
-                          if (_songSection(l10n) case final song?) ...[
-                            const SizedBox(height: 16),
-                            song,
-                          ],
-                        ],
-                      )
-                    : ListView(
-                        key: const Key('video-edit-inspector'),
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        children: [
-                          _masterFields(l10n),
-                          const SizedBox(height: 8),
-                          _editingTitle
-                              ? KeyedSubtree(
-                                  key: _titleAt,
-                                  child: _titleFields(l10n),
-                                )
-                              : _editingFades
-                              ? KeyedSubtree(
-                                  key: _fadesAt,
-                                  child: _fadeFields(l10n),
-                                )
-                              : _editingTabStyle && _tabStyleOffered
-                              ? KeyedSubtree(
-                                  key: _tabStyleAt,
-                                  child: _tabStyleFields(l10n),
-                                )
-                              : _onTheVideo(l10n),
-                          if (_songSection(l10n) case final song?) ...[
-                            const SizedBox(height: 8),
-                            song,
-                          ],
-                        ],
-                      ),
-              ),
-            ),
+            Expanded(child: _viewer(l10n, phrase: phrase)),
             ?dock,
           ],
         );
@@ -3982,25 +4035,21 @@ class _StudioViewState extends State<StudioView> {
     return null;
   }
 
-  /// The fade badge tapped: the fades' sliders (in place of the chips on
-  /// a phone; beside them, always, on a wide screen), the Download
-  /// settings shown.
-  void _editFadesHere() {
-    _showSettings(_fadesAt);
-    _editFades();
-  }
+  /// The fade badge tapped: the fades' sliders, the sidebar shown on its
+  /// Download tab.
+  void _editFadesHere() => _showSettings(_fadesAt);
 
-  /// **On the video**: what's drawn over it, as chips (and, on a [wide]
-  /// screen, the title's fields under them). A take's **Tab** ([_tabChip]).
+  /// **On the video**: what's drawn over it, as chips. A take's **Tab**
+  /// ([_tabChip]).
   /// **Title** ✎: on by default, with the capture's name (none when it's
   /// the name the app gave it: the chip then adds one); tapped, it's on
   /// or off, its text kept; ✎ (or a tap on the title in the preview)
   /// edits its text. **Watermark**: for a user with Premium, on or off;
   /// for anyone else, locked on, and a tap shows the Premium card.
-  /// **Fades** (on by default): tapped, on or off; its button opens their
-  /// sliders on a phone (on a wide screen, they're under the title's
-  /// fields).
-  Widget _onTheVideo(AppLocalizations l10n, {bool wide = false}) {
+  /// **Fades** (on by default): tapped, on or off. Under the chips, the
+  /// title's fields, the Master, the fades' sliders and the tab's style
+  /// (where the tab can be drawn).
+  Widget _onTheVideo(AppLocalizations l10n) {
     final theme = Theme.of(context);
     final text = _titleText;
     final locked = !_unlocked;
@@ -4015,7 +4064,7 @@ class _StudioViewState extends State<StudioView> {
           spacing: 8,
           runSpacing: 4,
           children: [
-            ?_tabChip(l10n, wide: wide),
+            ?_tabChip(l10n),
             InputChip(
               key: const Key('video-edit-title'),
               avatar: text.isEmpty ? const Icon(Icons.add, size: 18) : null,
@@ -4047,29 +4096,18 @@ class _StudioViewState extends State<StudioView> {
               tooltip: l10n.videoEditFadesAbout,
               selected: fading,
               onSelected: _setFades,
-              deleteIcon: wide
-                  ? null
-                  : const Icon(
-                      Icons.tune,
-                      key: Key('video-edit-fades-edit'),
-                      size: 18,
-                    ),
-              onDeleted: wide ? null : _editFades,
-              deleteButtonTooltipMessage: l10n.videoEditFadesEdit,
             ),
           ],
         ),
-        if (wide) ...[
-          const SizedBox(height: 12),
-          KeyedSubtree(key: _titleAt, child: _titleFields(l10n)),
+        const SizedBox(height: 12),
+        KeyedSubtree(key: _titleAt, child: _titleFields(l10n)),
+        const SizedBox(height: 16),
+        _masterFields(l10n),
+        const SizedBox(height: 8),
+        KeyedSubtree(key: _fadesAt, child: _fadeFields(l10n)),
+        if (_tabStyleOffered) ...[
           const SizedBox(height: 16),
-          _masterFields(l10n),
-          const SizedBox(height: 8),
-          KeyedSubtree(key: _fadesAt, child: _fadeFields(l10n)),
-          if (_tabStyleOffered) ...[
-            const SizedBox(height: 16),
-            KeyedSubtree(key: _tabStyleAt, child: _tabStyleFields(l10n)),
-          ],
+          KeyedSubtree(key: _tabStyleAt, child: _tabStyleFields(l10n)),
         ],
       ],
     );
@@ -4079,8 +4117,7 @@ class _StudioViewState extends State<StudioView> {
   /// level kept; Unmute puts it back, or, after a slide down to 0%, the
   /// level before it) and its volume, 0% to 200% in steps of 5% (sliding
   /// unmutes it), its level beside it, in the primary colour when it's
-  /// not 100%, or muted. Right above the fades' sliders (on a phone, above
-  /// **On the video**, where the Fades chip opens them). The preview plays
+  /// not 100%, or muted. Right above the fades' sliders. The preview plays
   /// nothing louder than the lanes are; Download's file is.
   Widget _masterFields(AppLocalizations l10n) {
     final theme = Theme.of(context);
@@ -4162,11 +4199,9 @@ class _StudioViewState extends State<StudioView> {
   /// end out to black (both sounds with it), 0 to 10 s by tenths of a
   /// second, never more than half the kept part (a longer one kept plays
   /// that long, and is back when the kept part is long enough again); **No
-  /// fades**; on a phone, in place of the chips, with **Done** to close
-  /// them.
+  /// fades**.
   Widget _fadeFields(AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final inline = _wide;
     final most = _fadeMost;
     final tenths = most.inMilliseconds ~/ 100;
     final fades = _fades;
@@ -4190,14 +4225,7 @@ class _StudioViewState extends State<StudioView> {
       key: const Key('video-edit-fade-fields'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          inline
-              ? l10n.videoEditFadesAbout
-              : '${l10n.videoEditFades} · ${l10n.videoEditFadesAbout}',
-          style: inline
-              ? theme.textTheme.bodySmall
-              : theme.textTheme.titleSmall,
-        ),
+        Text(l10n.videoEditFadesAbout, style: theme.textTheme.bodySmall),
         slider(l10n.videoEditFadeIn, _fadeIn, end: false),
         slider(l10n.videoEditFadeOut, _fadeOut, end: true),
         Wrap(
@@ -4209,12 +4237,6 @@ class _StudioViewState extends State<StudioView> {
               onPressed: fades.any ? _noFades : null,
               child: Text(l10n.videoEditFadesOff),
             ),
-            if (!inline)
-              FilledButton.tonal(
-                key: const Key('video-edit-fades-done'),
-                onPressed: _fadesDone,
-                child: Text(l10n.videoEditTitleDone),
-              ),
           ],
         ),
       ],
@@ -4294,11 +4316,9 @@ class _StudioViewState extends State<StudioView> {
   /// the background fades out), each its name and value over its slider,
   /// **Colours** (two swatches, each a bit of band in its colours) and
   /// **Alignment** (the text to the left, the default, centre or right);
-  /// **Default style**; on a phone, in place of the chips, with **Done**
-  /// to close it. The preview draws each change at once.
+  /// **Default style**. The preview draws each change at once.
   Widget _tabStyleFields(AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final inline = _wide;
     final style = _tabStyle;
     String percent(double v) => l10n.videoEditTabPercent((v * 100).round());
     // Only the sizes that change the band over this video: shown as drawn
@@ -4310,13 +4330,9 @@ class _StudioViewState extends State<StudioView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          inline
-              ? l10n.videoEditTabStyleAbout
-              : '${l10n.videoEditTabStyle} · ${l10n.videoEditTabStyleAbout}',
+          l10n.videoEditTabStyleAbout,
           key: const Key('video-edit-tab-style'),
-          style: inline
-              ? theme.textTheme.bodySmall
-              : theme.textTheme.titleSmall,
+          style: theme.textTheme.bodySmall,
         ),
         const SizedBox(height: 8),
         _sliderRow(
@@ -4410,12 +4426,6 @@ class _StudioViewState extends State<StudioView> {
                   : () => _setTabStyle(EditTabStyle.standard),
               child: Text(l10n.videoEditTabStyleReset),
             ),
-            if (!inline)
-              FilledButton.tonal(
-                key: const Key('video-edit-tab-style-done'),
-                onPressed: _tabStyleDone,
-                child: Text(l10n.videoEditTitleDone),
-              ),
           ],
         ),
       ],
@@ -4432,25 +4442,16 @@ class _StudioViewState extends State<StudioView> {
       };
 
   /// The title's text: two fields (typing shows it in the preview at
-  /// once), **Use the capture's name** and **No title**; on a phone, in
-  /// place of the chips, with **Done** to close them.
+  /// once), **Use the capture's name** and **No title**.
   Widget _titleFields(AppLocalizations l10n) {
     final theme = Theme.of(context);
-    final inline = _wide;
     InputDecoration field(String label) =>
         InputDecoration(labelText: label, isDense: true, counterText: '');
     return Column(
       key: const Key('video-edit-title-fields'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          inline
-              ? l10n.videoEditTitleAbout
-              : '${l10n.videoEditLayerTitle} · ${l10n.videoEditTitleAbout}',
-          style: inline
-              ? theme.textTheme.bodySmall
-              : theme.textTheme.titleSmall,
-        ),
+        Text(l10n.videoEditTitleAbout, style: theme.textTheme.bodySmall),
         const SizedBox(height: 8),
         TextField(
           key: const Key('video-edit-title-1'),
@@ -4471,7 +4472,7 @@ class _StudioViewState extends State<StudioView> {
           decoration: field(l10n.videoEditTitleLine2),
           textInputAction: TextInputAction.done,
           onChanged: _typed,
-          onSubmitted: (_) => _titleDone(),
+          onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         ),
         const SizedBox(height: 4),
         Wrap(
@@ -4490,12 +4491,6 @@ class _StudioViewState extends State<StudioView> {
               onPressed: _titleOn ? _noTitle : null,
               child: Text(l10n.videoEditTitleOff),
             ),
-            if (!inline)
-              FilledButton.tonal(
-                key: const Key('video-edit-title-done'),
-                onPressed: _titleDone,
-                child: Text(l10n.videoEditTitleDone),
-              ),
           ],
         ),
       ],
@@ -4503,14 +4498,13 @@ class _StudioViewState extends State<StudioView> {
   }
 
   /// The **Tab** chip (on by default): where the take's log has its tab,
-  /// not in its picture already, with its style's button (on a phone; on
-  /// a wide screen the style is under the chips already); off and
+  /// not in its picture already (its style is under the chips); off and
   /// disabled, its tooltip saying why, on a take whose tab is burned in
   /// as it was saved, or one saved before takes kept their tab apart. (A
   /// disabled chip shows no tooltip of its own, so it's in one.) None on
   /// a video that isn't a take, nor on a take without a tab: its log has
   /// none, or, with no log, its capture has none to show.
-  Widget? _tabChip(AppLocalizations l10n, {bool wide = false}) {
+  Widget? _tabChip(AppLocalizations l10n) {
     if (!_take) return null;
     final log = _takeLog;
     final offered = tabOffered(log);
@@ -4521,22 +4515,12 @@ class _StudioViewState extends State<StudioView> {
         necklines(_library.byId(_eventId)?.tabText ?? '').isEmpty) {
       return null;
     }
-    final styled = offered && !wide;
     final chip = InputChip(
       key: const Key('video-edit-tab'),
       label: Text(l10n.videoEditLayerTab),
       tooltip: offered ? l10n.videoEditLayerTabAbout : null,
       selected: offered && _tab,
       onSelected: offered ? _setTab : null,
-      deleteIcon: styled
-          ? const Icon(
-              Icons.palette_outlined,
-              key: Key('video-edit-tab-style-edit'),
-              size: 18,
-            )
-          : null,
-      onDeleted: styled ? _editTabStyle : null,
-      deleteButtonTooltipMessage: l10n.videoEditTabStyleEdit,
     );
     if (offered) return chip;
     return Tooltip(

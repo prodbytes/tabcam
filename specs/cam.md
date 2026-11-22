@@ -597,9 +597,23 @@ capture's, theirs being the more recent), but not one published (the
 capture's copy is listed) (`PlayAlong.filesOf`). Each file's row ends
 in [Delete](#deleting-from-the-sidebar). The list
 scrolls, the frame stays.
-**Play along** (♫ in the app bar, in the primary colour while open)
-hides and shows the sidebar, frame and all; hiding it pauses what plays
-(kept offstage, so a link's page isn't reloaded). A capture with none of
+<a id="the-sidebars-tabs"></a>**In Cam's view the sidebar has two tabs**
+at its top: **Play along** (♫: the frame and the list above) and
+**Download** (a tune icon: the video editor's [Download
+settings](video-edit.md#download-settings), for the take edited in the
+camera's place; with the camera there, **Edit the take**, which opens
+the [take's row](#the-takes-row)'s take, staying on that tab), then ✕,
+which hides the sidebar. A take's Edit turns it to Download, the camera
+back to Play along; the files stay loaded while Download shows. The
+tabs show their names from 240 px wide (icons alone, named in tooltips,
+when narrower), and none in a sidebar under 400 px high (a phone on its
+side), where the app bar's buttons switch. On the Download tab it's at
+least 224 px wide. (Beside the Text view and on the file screen the
+sidebar is the files alone, no tabs.)
+**Play along** (♫ in the app bar, in the primary colour while its files
+show) hides and shows the sidebar, frame and all (in Cam's view, on the
+Download tab, it turns to Play along instead); hiding it pauses what
+plays (kept offstage, so a link's page isn't reloaded). A capture with none of
 them has no sidebar and no ♫, unless it has a text tab: then ♫ is
 there, and the sidebar, opened with it, lists the text to
 [follow](#following-the-text) (the text alone doesn't open it by
@@ -761,7 +775,8 @@ after Stop the song plays on), so only the editor's preview sounds
 in the camera's place, with no screen pushed over Cam
 ([Cam's view](#cams-view)): the take in the viewer with its tab, title
 and watermark, the editor's transport, its rows (Take, then the song
-lined up) and the cut's steps in the dock, the Download settings, and
+lined up) and the cut's steps in the dock, the sidebar turned to its
+Download tab (the Download settings), and
 the editor's app bar (Reset, Download, Download settings, Dictionary,
 Metronome, Play along, Share, the keyboard button, About; on a phone
 [Rec over this](video-edit.md#rec-over-this), Dictionary, Metronome,
@@ -770,8 +785,8 @@ start. The take's edit is as it was left, its
 song lined up, the same edit as on its file screen. The keys are the
 editor's ([keyboard shortcuts](keyboard-shortcuts.md)): the space bar
 plays its preview; Cam's (/, ., the tab's) and the player's (1, 0)
-do nothing. The sidebar stays at the right, the take edited without
-Edit or Delete (nor has any page Back is still to bring back, such as
+do nothing. The sidebar stays at the right, its Play along tab's files
+listing the take edited without Edit or Delete (nor has any page Back is still to bring back, such as
 the one [Rec over this](video-edit.md#rec-over-this) left); another
 take's Edit takes its place in the main row
 (the first's edit kept). The song in the take's Song row, deleted in
@@ -787,9 +802,8 @@ camera back, the song in the main row as it was, its gestures watching
 again, Cam's keys back; a file tapped in the sidebar does the same,
 then plays in the main row.
 On a phone, where the sidebar would leave the editor narrower than 360
-points, or on its side, too narrow for the Download settings beside
-the viewer, the Edit hides the sidebar, and it shows again with the
-camera. During a download (the editor's), Back does nothing and the
+points, the Edit hides the sidebar (the Download tab's Edit the take
+keeps it, on that tab), and it shows again with the camera. During a download (the editor's), Back does nothing and the
 sidebar takes no taps. **Beside the Text view** and on a recording's
 **file screen** it opens the editor over the screen, exactly as
 **Edit** on the take's own [file screen](event-screen.md#file-screen)
