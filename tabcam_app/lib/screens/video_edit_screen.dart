@@ -27,6 +27,7 @@ import '../capture/play_along_sidebar.dart'
         PlayAlongBeside,
         PlayAlongButton,
         PlayAlongSidebar,
+        PhraseMarks,
         isTake,
         pdfViewFor;
 import '../capture/song_sync.dart';
@@ -283,12 +284,13 @@ class StudioView extends StatefulWidget {
 /// A lane's level: its [volume] (0 to 1; the master's, 0 to 2), whether
 /// it's [muted] (the level kept), the level Unmute puts back after a
 /// slide down to 0% ([unmuted]), and a lane's [stereo] (its channels and
-/// balance).
+/// balance) and [stems] (its instruments, when it's split).
 class _Level {
   _Level([
     this.volume = 1,
     this.muted = false,
     this.stereo = LaneStereo.standard,
+    this.stems = LaneStems.none,
   ]) : unmuted = volume > 0 ? volume : 1,
        master = false;
 
@@ -296,7 +298,8 @@ class _Level {
   _Level.master([this.volume = 1, this.muted = false])
     : unmuted = volume > 0 ? volume : 1,
       master = true,
-      stereo = LaneStereo.standard;
+      stereo = LaneStereo.standard,
+      stems = LaneStems.none;
 
   /// Whether it's the master's (up to 200%).
   final bool master;
@@ -305,6 +308,7 @@ class _Level {
   bool muted;
   double unmuted;
   LaneStereo stereo;
+  LaneStems stems;
 
   /// Whether it's heard.
   bool get silent => muted || volume <= 0;
@@ -1142,12 +1146,18 @@ class _StudioViewState extends State<StudioView> {
         if (edit != null) {
           _start = _clamp(edit.start, Duration.zero, length);
           _end = _clamp(edit.end, _start, length);
-          _own = _Level(edit.ownVolume, edit.ownMuted, edit.ownStereo);
+          _own = _Level(
+            edit.ownVolume,
+            edit.ownMuted,
+            edit.ownStereo,
+            edit.ownStems,
+          );
           _song = edit.song;
           _songLevel = _Level(
             edit.trackVolume,
             edit.songMuted,
             edit.songStereo,
+            edit.songStems,
           );
           _master = _Level.master(edit.masterVolume, edit.masterMuted);
           _tab = edit.tab;
@@ -1411,6 +1421,7 @@ class _StudioViewState extends State<StudioView> {
     ownVolume: _own.volume,
     ownMuted: _own.muted,
     ownStereo: _own.stereo,
+    ownStems: _own.stems,
     song: _song,
     songMuted: _songLevel.muted,
     trackId: _trackId,
@@ -1419,6 +1430,7 @@ class _StudioViewState extends State<StudioView> {
     offset: _offset,
     trackVolume: _songLevel.volume,
     songStereo: _songLevel.stereo,
+    songStems: _songLevel.stems,
     masterVolume: _master.volume,
     masterMuted: _master.muted,
     tab: _tab,
@@ -1783,6 +1795,14 @@ class _StudioViewState extends State<StudioView> {
   static const _wideFrom = 840.0;
   static const _wideShortFrom = 560.0;
   static const _shortBelow = 480.0;
+
+  /// Keeps the edit with the page now, when a change waits to be kept
+  /// ([_changed]).
+  Future<void> _keepNow() async {
+    if (!(_saveTimer?.isActive ?? false)) return;
+    _saveTimer!.cancel();
+    await _keep();
+  }
 
   /// Keeps the edit with the page, when it changed.
   Future<void> _keep() async {
@@ -2234,6 +2254,8 @@ class _StudioViewState extends State<StudioView> {
       if (from == null) {
         _song = SongMode.manual;
         _songLevel.muted = false;
+        // Another song isn't split as the one before was.
+        _songLevel.stems = LaneStems.none;
       }
     });
     _changed();
@@ -2524,6 +2546,14 @@ class _StudioViewState extends State<StudioView> {
     _changed();
   }
 
+  /// [level]'s lane split into its instruments, or put back together, or
+  /// an instrument's level changed: as [stems] says.
+  void _setStems(_Level level, LaneStems stems) {
+    if (stems == level.stems) return;
+    setState(() => level.stems = stems);
+    _changed();
+  }
+
   /// [level] muted, or heard again as loud as it was.
   void _mute(_Level level) {
     setState(level.toggleMute);
@@ -2642,7 +2672,10 @@ class _StudioViewState extends State<StudioView> {
   /// alone, in [_formats]. A plan that's a passthrough (the video as it
   /// is, already an MP4 or M4V, or in the format made here: a WebM where
   /// the browser records WebM) downloads the file as it is; anything else
-  /// is made (a WebM, or a MOV, as an MP4).
+  /// is made (a WebM, or a MOV, as an MP4). The video as edited, once
+  /// saved, is kept with the page too ([Library.keepRender]): it plays in
+  /// the page's place (the file list, the file screen, other devices and
+  /// those it's shared with) until the edit changes.
   Future<void> _download(RenderKind what) async {
     final editor = _editor;
     final event = _library.byId(_eventId);
@@ -2663,6 +2696,8 @@ class _StudioViewState extends State<StudioView> {
     });
     XFile? made;
     try {
+      // The edit as it is, kept now: the copy kept says what it's made of.
+      await _keepNow();
       final input = await _fileOf(event, page);
       // Each download is named for when it's made, so renders don't clash.
       final label = timestamped(fileLabel(l10n, event, page));
@@ -2671,6 +2706,8 @@ class _StudioViewState extends State<StudioView> {
         await Downloads.saveFile(_library, event, page, label);
         return;
       }
+      final edit = _pageEdit;
+      final title = shownTitle(_planEdit, _captureTitle).join('\n');
       final out = made = await editor.render(
         plan,
         onProgress: (done) {
@@ -2678,11 +2715,27 @@ class _StudioViewState extends State<StudioView> {
         },
       );
       final format = plan.format;
-      await Downloads.saveBytes(
-        safeFileName(label, Media.of(out)?.extension ?? format.extension),
+      final extension = Media.of(out)?.extension ?? format.extension;
+      final saved = await Downloads.saveBytes(
+        safeFileName(label, extension),
         await out.readAsBytes(),
         out.mimeType ?? format.mimeType,
       );
+      if (saved && what == RenderKind.video) {
+        try {
+          await _library.keepRender(
+            event.id,
+            page.id,
+            out,
+            extension: extension,
+            edit: edit,
+            title: title,
+          );
+        } on Object catch (e) {
+          // Downloaded all the same: the page plays its edit, as before.
+          debugPrint('TabCam: video edit: the download not kept: $e');
+        }
+      }
     } on Object catch (e, stack) {
       debugPrint(
         'TabCam: video edit: ${l10n.videoEditCouldntDownload}: $e\n$stack',
@@ -3079,6 +3132,8 @@ class _StudioViewState extends State<StudioView> {
       // A preview has no keys; with a take edited, the keys are the
       // editor's.
       keys: gate == null && _camera,
+      // The space bar or 1 pausing the song stops the take recording.
+      onKeyPause: () => unawaited(cam.keyPaused()),
       // Not in a preview, nor while a take records, saves (or is saved
       // for the next, until it starts) or plays back, nor during a
       // download; the page edited shows neither Delete nor Edit, nor do
@@ -4827,6 +4882,8 @@ class _StudioViewState extends State<StudioView> {
           muted: _own.muted,
           stereo: _own.stereo,
           onStereo: (v) => _setStereo(_own, v),
+          stems: _own.stems,
+          onStems: (v) => _setStems(_own, v),
           onChanged: (v) => _slide(_own, v),
           onChangeStart: _own.keep,
           onMute: () => _mute(_own),
@@ -4943,6 +5000,8 @@ class _StudioViewState extends State<StudioView> {
           muted: _songLevel.muted,
           stereo: _songLevel.stereo,
           onStereo: (v) => _setStereo(_songLevel, v),
+          stems: _songLevel.stems,
+          onStems: (v) => _setStems(_songLevel, v),
           onChanged: (v) => _slide(_songLevel, v),
           onChangeStart: _songLevel.keep,
           onMute: () => _mute(_songLevel),
@@ -4955,7 +5014,32 @@ class _StudioViewState extends State<StudioView> {
           ),
           if (_trackLength > Duration.zero && _songWaveId == _trackId)
             _waveOver('video-edit-song-wave', _songWave, _songSpans),
+          if (_trackLength > Duration.zero) ?_songPhraseMarks(length),
         ],
+      ),
+    );
+  }
+
+  /// The song's phrase passes on the Song lane ([length] across it), as
+  /// the player's bar marks them ([PhraseMarks]): the song's own
+  /// ([Library.phrasesOf], its times in the song) put where the song
+  /// plays along the video ([songPhrasesOnLane]: moved with it, those in
+  /// a part trimmed off left out). None for a song without passes.
+  Widget? _songPhraseMarks(Duration length) {
+    final id = _trackId;
+    if (id == null) return null;
+    final at = songPhrasesOnLane(_songSpans, _library.phrasesOf(_eventId, id));
+    if (at.isEmpty) return null;
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: CustomPaint(
+          key: const Key('video-edit-song-phrase-marks'),
+          painter: PhraseMarks(
+            at,
+            length,
+            Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
@@ -5761,7 +5845,10 @@ class _LaneHeader extends StatelessWidget {
 /// (Stereo, Left, Right, Mono: which of its sound's channels play on both
 /// sides) and **Balance** (left 100% to right 100%, in steps of 5%), with a
 /// note, once either is changed, that only Download has them (the players
-/// can't pan). Its keys name its [lane]
+/// can't pan); then **Split into instruments**, a switch: on, its
+/// [stems], each instrument ([Stem]) with a Mute and a slider of its own,
+/// 0% to 100% in steps of 5% (sliding unmutes it), and a note, once one
+/// isn't as it is, that only Download has them. Its keys name its [lane]
 /// (`video-edit-take-…`, `video-edit-song-…`), so there can be two. It
 /// fits its bar's height at any text size: the level stays on one line,
 /// and the two shrink together when the text is too large.
@@ -5773,6 +5860,8 @@ class _LaneVolume extends StatelessWidget {
     required this.muted,
     required this.stereo,
     required this.onStereo,
+    required this.stems,
+    required this.onStems,
     required this.onChanged,
     required this.onChangeStart,
     required this.onMute,
@@ -5789,6 +5878,10 @@ class _LaneVolume extends StatelessWidget {
   final bool muted;
   final LaneStereo stereo;
   final void Function(LaneStereo stereo) onStereo;
+
+  /// Its instruments, when it's split ([LaneStems]).
+  final LaneStems stems;
+  final void Function(LaneStems stems) onStems;
   final void Function(double volume) onChanged;
 
   /// A slide starts, before [onChanged].
@@ -5809,7 +5902,91 @@ class _LaneVolume extends StatelessWidget {
           ? Icons.volume_down_outlined
           : Icons.volume_up_outlined,
     );
-    final changed = volume != 1 || muted || !stereo.isStandard;
+    final changed = volume != 1 || muted || !stereo.isStandard || stems.split;
+    final stemNames = {
+      Stem.vocals: l10n.videoEditStemVocals,
+      Stem.drums: l10n.videoEditStemDrums,
+      Stem.bass: l10n.videoEditStemBass,
+      Stem.other: l10n.videoEditStemOther,
+    };
+    // An instrument's row: its Mute (heard again as loud as it was, or at
+    // 100% from 0%), its name, its slider and its level.
+    Widget stemRow(Stem stem) {
+      final name = stemNames[stem]!;
+      final at = stems.of(stem);
+      final percent = (at.volume * 100).round();
+      final level = l10n.videoEditTrackVolumeLevel(percent);
+      final silent = at.muted || at.volume <= 0;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              key: Key('video-edit-$lane-${stem.name}-mute'),
+              tooltip: silent
+                  ? l10n.videoEditLaneUnmute(name)
+                  : l10n.videoEditLaneMute(name),
+              icon: Icon(
+                silent
+                    ? Icons.volume_off_outlined
+                    : at.volume < 0.5
+                    ? Icons.volume_down_outlined
+                    : Icons.volume_up_outlined,
+              ),
+              onPressed: () => onStems(
+                stems.withLevel(
+                  stem,
+                  silent
+                      ? StemLevel(volume: at.volume > 0 ? at.volume : 1)
+                      : at.copyWith(muted: true),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 64,
+              child: Text(
+                name,
+                style: theme.textTheme.labelMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(
+              width: 136,
+              child: Slider(
+                key: Key('video-edit-$lane-${stem.name}-slider'),
+                max: 100,
+                divisions: 20,
+                value: percent.clamp(0, 100).toDouble(),
+                label: level,
+                semanticFormatterCallback: (v) =>
+                    l10n.videoEditTrackVolumeLevel(v.round()),
+                onChanged: (v) =>
+                    onStems(stems.withLevel(stem, StemLevel(volume: v / 100))),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              child: Text(
+                level,
+                key: Key('video-edit-$lane-${stem.name}-level'),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  color: at.isFull ? null : theme.colorScheme.primary,
+                  decoration: at.muted ? TextDecoration.lineThrough : null,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+      );
+    }
+
     final balance = (stereo.balance * 100).round();
     String balanceOf(int balance) => balance == 0
         ? l10n.videoEditBalanceCentre
@@ -5969,6 +6146,47 @@ class _LaneVolume extends StatelessWidget {
           )
         else
           const SizedBox(height: 8),
+        // Split into instruments: the switch, then each instrument.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+          child: SizedBox(
+            width: 296,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message: l10n.videoEditStemsTip,
+                    child: Text(
+                      l10n.videoEditStemsSplit,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+                Switch(
+                  key: Key('video-edit-$lane-stems'),
+                  value: stems.split,
+                  onChanged: (on) =>
+                      onStems(on ? LaneStems.all : LaneStems.none),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (stems.split) ...[for (final s in Stem.values) stemRow(s)],
+        if (stems.changes)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: SizedBox(
+              width: 296,
+              child: Text(
+                l10n.videoEditStemsPreviewNote,
+                key: Key('video-edit-$lane-stems-note'),
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 8),
       ],
       builder: (context, menu, _) => Semantics(
         button: true,
@@ -6020,6 +6238,25 @@ class _LaneVolume extends StatelessWidget {
 /// time (m:ss) as often as there's room for one. Tapped or dragged, the
 /// preview goes there ([onSeek]: at once for a tap or as a drag ends, not
 /// [exact] while it drags).
+/// Song phrase passes ([times], at the song's own times) where the song
+/// plays along the video, as the Song lane draws its sound ([spans]: from
+/// [WaveSpan.at] to [WaveSpan.end] in the video, the song from
+/// [WaveSpan.from]): each pass in a span at `at + (pass - from)`, those
+/// outside every span (trimmed off, or past the song's part used) left
+/// out; in order.
+List<Duration> songPhrasesOnLane(List<WaveSpan> spans, PhraseTimes times) {
+  final out = <Duration>[];
+  for (final p in times.passes) {
+    for (final span in spans) {
+      final into = p.at - span.from;
+      if (into < Duration.zero || span.at + into > span.end) continue;
+      out.add(span.at + into);
+      break;
+    }
+  }
+  return out..sort();
+}
+
 class _Ruler extends StatefulWidget {
   const _Ruler({
     required this.length,

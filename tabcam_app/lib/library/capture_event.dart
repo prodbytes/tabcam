@@ -32,6 +32,7 @@ class EventPage {
     this.take = false,
     this.takeLog,
     this.source,
+    this.render,
     this.extra = const {},
   });
 
@@ -51,7 +52,8 @@ class EventPage {
        edit = null,
        take = false,
        takeLog = null,
-       source = null;
+       source = null,
+       render = null;
 
   final String id;
 
@@ -100,6 +102,12 @@ class EventPage {
   /// page's file is its own (or it's a link).
   final FileOrigin? source;
 
+  /// For a video: the copy kept of the last video the editor's Download
+  /// made of it ([PageRender]), a file of the event's own beside the
+  /// page's, which plays in its place while the edit is still the one it
+  /// was made from. Null: none.
+  final PageRender? render;
+
   /// The keys of its JSON this version doesn't know (a newer app's, see
   /// `unknownKeys`), kept wherever the page is rebuilt (renamed, edited,
   /// copied, published, replaced) and written back as they came, after
@@ -120,6 +128,7 @@ class EventPage {
     'take',
     'takeLog',
     'source',
+    'render',
   };
 
   bool get isVideo => kind == PageKind.video;
@@ -161,12 +170,20 @@ class EventPage {
   /// The page's file name in its event's folder.
   String get fileName => '$id.$extension';
 
+  /// The files kept for it, each named as a page's ([fileName]): its own,
+  /// then its [render]'s.
+  Iterable<EventPage> get files sync* {
+    yield this;
+    if (render case final render?) yield render.file;
+  }
+
   EventPage copyWith({
     PageFilter? filter,
     String? Function()? title,
     PageEdit? Function()? edit,
     TakeLog? takeLog,
     FileOrigin? Function()? source,
+    PageRender? Function()? render,
     Map<String, Object?>? extra,
   }) => EventPage(
     id: id,
@@ -180,6 +197,7 @@ class EventPage {
     take: take,
     takeLog: takeLog ?? this.takeLog,
     source: source == null ? this.source : source(),
+    render: render == null ? this.render : render(),
     extra: extra ?? this.extra,
   );
 
@@ -195,6 +213,7 @@ class EventPage {
     if (take) 'take': true,
     if (takeLog != null) 'takeLog': takeLog!.toJson(),
     if (source != null) 'source': source!.toJson(),
+    if (render != null) 'render': render!.toJson(),
     for (final MapEntry(:key, :value) in extraEntries(extra, knownKeys))
       key: value,
   };
@@ -235,9 +254,81 @@ class EventPage {
       take: json['take'] == true,
       takeLog: TakeLog.fromJson(json['takeLog']),
       source: FileOrigin.fromJson(json['source']),
+      render: json['kind'] == 'video'
+          ? PageRender.fromJson(json['render'])
+          : null,
       extra: extra,
     );
   }
+}
+
+/// The copy kept of the last video the editor's Download made of a video
+/// page (the video as edited, its sound in it): file `<id>.<extension>`
+/// in the page's event's folder, kept and synced as page files are. It
+/// was made from the page's [edit] as it was then, its title showing
+/// [title] (the lines drawn, joined by a line break; empty: none), so it
+/// plays in the page's place only while those are still the same
+/// (`currentRender`).
+class PageRender {
+  const PageRender({
+    required this.id,
+    required this.extension,
+    this.edit,
+    this.title = '',
+  });
+
+  final String id;
+
+  /// `mp4` or `webm`, as Download made it.
+  final String extension;
+
+  /// The page's edit it was made from (null: none, the video as it is).
+  final PageEdit? edit;
+
+  /// The title it shows, its lines joined by `\n` ('': none).
+  final String title;
+
+  /// Its file, named as a page's is (the store keeps files by page).
+  EventPage get file =>
+      EventPage(id: id, kind: PageKind.video, extension: extension);
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'extension': extension,
+    if (edit != null) 'edit': edit!.toJson(),
+    if (title.isNotEmpty) 'title': title,
+  };
+
+  /// Null for anything but a well-formed render (its ID and extension
+  /// name a file).
+  static PageRender? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    final extension = json['extension'];
+    final title = json['title'];
+    if (id is! String || extension is! String) return null;
+    try {
+      return PageRender(
+        id: checkId(id),
+        extension: checkExtension(extension),
+        edit: PageEdit.fromJson(json['edit']),
+        title: title is String ? title : '',
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is PageRender &&
+      other.id == id &&
+      other.extension == extension &&
+      other.edit == edit &&
+      other.title == title;
+
+  @override
+  int get hashCode => Object.hash(id, extension, edit, title);
 }
 
 /// Where a clone's page finds its file while it's still the original's
@@ -388,9 +479,11 @@ class CaptureEvent {
     this.sharedBy,
     this.readOnly = false,
     this.linkKey,
+    this.visibility,
     this.contributions = const [],
     this.phrases = const {},
     this.clonedFrom,
+    this.clonedPages = const {},
     this.trashed,
     this.deletedPages = const [],
   }) : updated = updated ?? created;
@@ -497,6 +590,15 @@ class CaptureEvent {
   /// one, made the first time ([Library.copyToAdd]).
   final String? clonedFrom;
 
+  /// On a clone ([clonedFrom]): the pages of the original it has taken,
+  /// by their ID there, each to its own page's ID ('' for one taken before
+  /// this was kept, whose page isn't known). Made by the clone, and grown
+  /// as the user's copy of a capture shared with them catches up with it
+  /// ([Library.copyToAdd]): a page the original has and this doesn't name
+  /// is new to the copy; one it names stays as the user left it (deleted
+  /// from the copy, it stays deleted). Synced, in event.json.
+  final Map<String, String> clonedPages;
+
   /// What people added ([Contribution]), before what a reader adds went
   /// to their own copy instead: on the owner's devices, everyone's who
   /// did; on a reader's, their own (one at most), which also keeps their
@@ -536,11 +638,29 @@ class CaptureEvent {
     yield* deletedPages;
   }
 
+  /// Every file kept with the event, each named as a page's: those of
+  /// [storedPages] and their kept renders ([EventPage.files]).
+  Iterable<EventPage> get storedFiles => storedPages.expand((p) => p.files);
+
   /// The key in the capture's link (`https://tabs.cam/s/<key>`), made the
   /// first time its owner copies the link: with it, anyone holding the link may
   /// see the capture, read only, signed in or not ([CaptureLink]). Synced,
   /// so every device of the owner's copies the same link.
   final String? linkKey;
+
+  /// Who may open the capture by its link, as its owner chose in Share;
+  /// null until they choose ([shownVisibility]). Synced, so every device
+  /// of the owner's shows the same; the share API keeps what counts.
+  final CaptureVisibility? visibility;
+
+  /// [visibility], or what it is until the owner chooses: unlisted once
+  /// the capture has its link key (anyone holding the link opens it, as
+  /// before there was a choice), else private.
+  CaptureVisibility get shownVisibility =>
+      visibility ??
+      (linkKey != null
+          ? CaptureVisibility.unlisted
+          : CaptureVisibility.private);
 
   /// A file name for exports: the title, safe for any file system.
   String get fileName {
@@ -567,9 +687,11 @@ class CaptureEvent {
     String? sharedBy,
     bool? readOnly,
     String? linkKey,
+    CaptureVisibility? visibility,
     List<Contribution>? contributions,
     Map<String, PhraseTimes>? phrases,
     String? clonedFrom,
+    Map<String, String>? clonedPages,
     DateTime? Function()? trashed,
     List<EventPage>? deletedPages,
   }) => CaptureEvent(
@@ -591,9 +713,11 @@ class CaptureEvent {
     sharedBy: sharedBy ?? this.sharedBy,
     readOnly: readOnly ?? this.readOnly,
     linkKey: linkKey ?? this.linkKey,
+    visibility: visibility ?? this.visibility,
     contributions: contributions ?? this.contributions,
     phrases: phrases ?? this.phrases,
     clonedFrom: clonedFrom ?? this.clonedFrom,
+    clonedPages: clonedPages ?? this.clonedPages,
     trashed: trashed == null ? this.trashed : trashed(),
     deletedPages: deletedPages ?? this.deletedPages,
   );
@@ -619,8 +743,10 @@ class CaptureEvent {
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
     if (linkKey != null) 'linkKey': linkKey,
+    if (visibility != null) 'visibility': visibility!.name,
     if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (clonedFrom != null) 'clonedFrom': clonedFrom,
+    if (clonedPages.isNotEmpty) 'clonedPages': clonedPages,
     if (trashed != null) 'trashed': trashed!.toUtc().toIso8601String(),
     if (deletedPages.isNotEmpty)
       'deletedPages': [for (final p in deletedPages) p.toJson()],
@@ -666,6 +792,10 @@ class CaptureEvent {
         final String k when isLinkKey(k) => k,
         _ => null,
       },
+      visibility: switch (json['visibility']) {
+        final String v => CaptureVisibility.values.asNameMap()[v],
+        _ => null,
+      },
       contributions: [
         for (final c in json['contributions'] as List? ?? const [])
           Contribution.fromJson((c as Map).cast<String, Object?>()),
@@ -679,6 +809,17 @@ class CaptureEvent {
       clonedFrom: switch (json['clonedFrom']) {
         final String id when _id.hasMatch(id) => id,
         _ => null,
+      },
+      clonedPages: switch (json['clonedPages']) {
+        final Map<Object?, Object?> taken => {
+          for (final MapEntry(:key, :value) in taken.entries)
+            if (key is String &&
+                _id.hasMatch(key) &&
+                value is String &&
+                (value.isEmpty || _id.hasMatch(value)))
+              key: value,
+        },
+        _ => const {},
       },
     );
   }
@@ -704,6 +845,21 @@ class CaptureEvent {
           deletedPages: const [],
         )
       : this;
+}
+
+/// Who may open a capture by its link ([CaptureEvent.visibility]), as on
+/// YouTube.
+enum CaptureVisibility {
+  /// Anyone: it's also found by tabs.cam's search (the dictionary's) and
+  /// by search engines.
+  public,
+
+  /// Anyone holding its link.
+  unlisted,
+
+  /// Only its owner: the link opens it for nobody else, and nobody it was
+  /// shared with (by the link or by email) sees it any more.
+  private,
 }
 
 final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{12,64}$');

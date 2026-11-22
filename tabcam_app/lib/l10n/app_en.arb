@@ -1082,6 +1082,10 @@
   "@camAlongPause": {
     "description": "Cam backing track: pause; the space bar does it too"
   },
+  "camAlongRestart": "Back to the start (0)",
+  "@camAlongRestart": {
+    "description": "Play-along sidebar: the file playing along goes back to its start (its section's when it has one), counting in again if it was playing; the 0 key does it too."
+  },
   "camAlongBack": "Back 10 seconds",
   "@camAlongBack": {
     "description": "Cam: the file playing along goes 10 seconds back («)."
@@ -1590,6 +1594,18 @@
   "@textViewColumnsOn": {
     "description": "Tooltip of the Two columns button while on"
   },
+  "textViewDragTip": "Move the tab by dragging it",
+  "@textViewDragTip": {
+    "description": "Text view: tooltip of the Drag to move button (a hand, at the bottom right with the zoom buttons) while off; on, a drag moves the text instead of editing or selecting it"
+  },
+  "textViewDragOn": "Stop moving the tab",
+  "@textViewDragOn": {
+    "description": "Text view: tooltip of the Drag to move button while on; tapped, a drag edits or selects the text again"
+  },
+  "textViewZoomReset": "Back to the usual size",
+  "@textViewZoomReset": {
+    "description": "Text view: tooltip of the zoom's percentage between Zoom in and Zoom out (shown once zoomed); tapped, the text goes back to 100%"
+  },
   "textViewFix": "Fix",
   "@textViewFix": {
     "description": "Button that corrects the tab from the song's tab online"
@@ -1936,11 +1952,11 @@
   },
   "pdfZoomIn": "Zoom in",
   "@pdfZoomIn": {
-    "description": "A PDF's view (file screen, Cam's PDF pane): the button that makes the page bigger."
+    "description": "A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) bigger."
   },
   "pdfZoomOut": "Zoom out",
   "@pdfZoomOut": {
-    "description": "A PDF's view (file screen, Cam's PDF pane): the button that makes the page smaller."
+    "description": "A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) smaller."
   },
   "homePrivacyPolicy": "Privacy policy",
   "@homePrivacyPolicy": {
@@ -3555,6 +3571,34 @@
   "@videoEditStereoPreviewNote": {
     "description": "Video edit: under a lane's channels and balance, when they are changed: the preview can't play them"
   },
+  "videoEditStemsSplit": "Split into instruments",
+  "@videoEditStemsSplit": {
+    "description": "Video edit: a lane's switch (in its volume popup) that splits its sound into its instruments, each with a level of its own"
+  },
+  "videoEditStemsTip": "A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.",
+  "@videoEditStemsTip": {
+    "description": "Video edit: the tooltip of Split into instruments, saying how the sound is split"
+  },
+  "videoEditStemVocals": "Vocals",
+  "@videoEditStemVocals": {
+    "description": "Video edit: the instrument a split lane's voice is (a stem)"
+  },
+  "videoEditStemDrums": "Drums",
+  "@videoEditStemDrums": {
+    "description": "Video edit: the instrument a split lane's drums are (a stem)"
+  },
+  "videoEditStemBass": "Bass",
+  "@videoEditStemBass": {
+    "description": "Video edit: the instrument a split lane's bass is (a stem)"
+  },
+  "videoEditStemOther": "Other",
+  "@videoEditStemOther": {
+    "description": "Video edit: the rest of a split lane's sound: guitars, keys and the like (a stem)"
+  },
+  "videoEditStemsPreviewNote": "Download has the instruments' levels; the preview plays the sound as recorded.",
+  "@videoEditStemsPreviewNote": {
+    "description": "Video edit: note under a split lane's instruments once one isn't as it is"
+  },
   "videoEditBalanceLeft": "L {percent}",
   "@videoEditBalanceLeft": {
     "description": "Video edit: a lane's balance towards the left, percent 5 to 100",
@@ -3955,5 +3999,49 @@
   "videoEditRecOver": "Rec over this",
   "@videoEditRecOver": {
     "description": "Video editor: the transport's camera button (Premium): Cam's camera in the viewer's place, with the video opened as the song playing along in the main row, to record a take over it"
+  },
+  "shareWhoCanOpen": "Who can open it",
+  "@shareWhoCanOpen": {
+    "description": "Share's sheet, for the capture's owner: its heading, over the choice of who may open the capture by its link (as on YouTube)"
+  },
+  "sharePublic": "Public",
+  "@sharePublic": {
+    "description": "Share's sheet: anyone may find and open the capture (YouTube's Public)"
+  },
+  "sharePublicDetail": "Anyone can find it, in tabs.cam's dictionary and on search engines, and open it. Make public only what you have the right to share.",
+  "@sharePublicDetail": {
+    "description": "Share's sheet: what Public means"
+  },
+  "shareUnlisted": "Unlisted",
+  "@shareUnlisted": {
+    "description": "Share's sheet: anyone holding the link may open the capture (YouTube's Unlisted)"
+  },
+  "shareUnlistedDetail": "Anyone with the link can open it.",
+  "@shareUnlistedDetail": {
+    "description": "Share's sheet: what Unlisted means"
+  },
+  "sharePrivate": "Private",
+  "@sharePrivate": {
+    "description": "Share's sheet: only the owner may open the capture (YouTube's Private)"
+  },
+  "sharePrivateDetail": "Only you can open it, even with the link.",
+  "@sharePrivateDetail": {
+    "description": "Share's sheet: what Private means"
+  },
+  "shareDone": "Done",
+  "@shareDone": {
+    "description": "Share's sheet: closes it (a choice applies at once)"
+  },
+  "linkPrivate": "This capture is private: only its owner can open it.",
+  "@linkPrivate": {
+    "description": "A capture's link, opened by someone else while its owner made it private"
+  },
+  "dictionaryPublic": "Public on tabs.cam",
+  "@dictionaryPublic": {
+    "description": "Dictionary: the heading of the public tabs.cam captures found for what was typed, over YouTube's results"
+  },
+  "dictionaryPublicOpen": "Open in tabs.cam",
+  "@dictionaryPublicOpen": {
+    "description": "Dictionary: tooltip of a public capture found, which opens it"
   }
 }

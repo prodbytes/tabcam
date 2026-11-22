@@ -55,8 +55,11 @@ Google sign-in (`google_sign_in`,
 [lib/auth/](../tabcam_app/lib/auth)) per platform:
 
 - **Web**: Google Identity Services with FedCM: a quiet auto-select prompt
-  at launch (not when a [session](sessions.md) is restored), and Google's
-  rendered button. GIS keeps no session, so the app keeps the user and ID
+  (One Tap) at launch (not when a [session](sessions.md) is restored) and
+  again each time the user is signed out, once the sign-out is done
+  (`offerQuickSignIn`, [the one-click sign-in](navigation.md#the-one-click-sign-in-top-right)),
+  and Google's rendered button (also as its logo alone, the app bar's on
+  a phone). GIS keeps no session, so the app keeps the user and ID
   token in `localStorage` (`tabcam.session`) and restores it at launch
   while the token has more than a minute left. Sign out forgets it.
 
@@ -280,6 +283,7 @@ the share API (local web builds) use the sign-in's own identity instead:
 | `<identity>/events/<event id>/event.json` | the event's details, as on the device, with the folder's identity as `owner` and the people it's shared with (`shares`), whether the owner
 [hid the images](hidden-images.md) (`hideImages`), but without how it's shared with the user (`sharedBy`, `readOnly`); or its tombstone once deleted. Coming down, the folder it's in, not `owner`, says whose it is |
 | `<identity>/events/<event id>/<page id>.<extension>` | each page's file, as stored on the device, with its MIME type by extension (`image/jpeg` for scanned pages, `video/mp4`, `audio/mpeg`, `application/pdf`, ...) |
+| `<identity>/events/<event id>/<render id>.<extension>` | a video's [kept download](video-edit.md#the-kept-download) (its page's `render`), sent and brought as a page's file is (sent only from a device that has it); deleted from the folder once the page no longer names it (a new Download replaced it, the edit changed, or it was purged) |
 
 Links are in `event.json` only: they have no file. Nor does a clone's
 page whose file is still the original's (`source`, [copy on

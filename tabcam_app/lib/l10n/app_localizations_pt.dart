@@ -792,6 +792,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get camAlongPause => 'Pausar (espaço)';
 
   @override
+  String get camAlongRestart => 'Voltar ao início (0)';
+
+  @override
   String get camAlongBack => 'Voltar 10 segundos';
 
   @override
@@ -1200,6 +1203,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewColumnsOn => 'Voltar a uma coluna, para editar';
+
+  @override
+  String get textViewDragTip => 'Mover a tablatura arrastando';
+
+  @override
+  String get textViewDragOn => 'Parar de mover a tablatura';
+
+  @override
+  String get textViewZoomReset => 'Voltar ao tamanho normal';
 
   @override
   String get textViewFix => 'Corrigir';
@@ -2627,6 +2639,29 @@ class AppLocalizationsPt extends AppLocalizations {
       'O download tem os canais e o balanço; a pré-visualização toca o som como foi gravado.';
 
   @override
+  String get videoEditStemsSplit => 'Separar em instrumentos';
+
+  @override
+  String get videoEditStemsTip =>
+      'Uma separação aproximada por enquanto: o baixo abaixo de 200 Hz, a bateria acima de 4 kHz, a voz no centro da mixagem e o resto nas laterais.';
+
+  @override
+  String get videoEditStemVocals => 'Voz';
+
+  @override
+  String get videoEditStemDrums => 'Bateria';
+
+  @override
+  String get videoEditStemBass => 'Baixo';
+
+  @override
+  String get videoEditStemOther => 'Outros';
+
+  @override
+  String get videoEditStemsPreviewNote =>
+      'O download tem os níveis dos instrumentos; a pré-visualização toca o som como foi gravado.';
+
+  @override
   String videoEditBalanceLeft(int percent) {
     return 'E $percent';
   }
@@ -2916,4 +2951,38 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditRecOver => 'Gravar sobre este';
+
+  @override
+  String get shareWhoCanOpen => 'Quem pode abrir';
+
+  @override
+  String get sharePublic => 'Pública';
+
+  @override
+  String get sharePublicDetail =>
+      'Qualquer pessoa pode encontrá-la, no dicionário do tabs.cam e nos buscadores, e abri-la. Torne pública só o que você tem o direito de compartilhar.';
+
+  @override
+  String get shareUnlisted => 'Não listada';
+
+  @override
+  String get shareUnlistedDetail => 'Qualquer pessoa com o link pode abri-la.';
+
+  @override
+  String get sharePrivate => 'Privada';
+
+  @override
+  String get sharePrivateDetail => 'Só você pode abri-la, mesmo com o link.';
+
+  @override
+  String get shareDone => 'Pronto';
+
+  @override
+  String get linkPrivate => 'Esta captura é privada: só o dono pode abri-la.';
+
+  @override
+  String get dictionaryPublic => 'Públicas no tabs.cam';
+
+  @override
+  String get dictionaryPublicOpen => 'Abrir no tabs.cam';
 }

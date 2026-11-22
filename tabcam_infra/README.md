@@ -32,6 +32,7 @@ tags): `GA` for `tabcam-web`, `RC` for `tabcam-rc-web`, `dev` for
 |---|---|
 | default (`/`) | S3 `index.html`, the [index page](../tabcam_index), and its pictures under `img/` |
 | `/app/*`, `/app` | S3 `app/`, the Flutter web build (`--base-href /app/`). A CloudFront Function redirects `/app` to `/app/` and maps directory URIs to `index.html` |
+| `/s/*`, `/preview/*`, `/sitemap.xml`, `/apple/callback` | The share API (with `ShareApiDomain`): short links, link previews, public captures' sitemap (production's; the RC's is empty) and Sign in with Apple's return URL |
 
 At the old name (`OldDomainName`: tabcam.nu01.com, rc.tabcam.nu01.com),
 the same function answers the index page and the app with a permanent

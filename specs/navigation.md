@@ -66,6 +66,30 @@ the tools (Dictionary, Metronome, the keyboard shortcuts' help), which
 are signed-in users' too. Signing in opens
 Home (where a capture's link, opened signed out, then opens); signing out
 goes back to the welcome.
+
+### The one-click sign-in, top right
+
+Signed out, every screen offers a sign-in in one click at its top right
+([lib/screens/quick_sign_in.dart](../tabcam_app/lib/screens/quick_sign_in.dart)):
+the welcome (where an app bar's last button would be, above its own
+buttons), and a capture or a file opened by its link (the last button of
+the app bar, also while the capture opens or when it can't). One tap
+signs in where the user is; signed in, it's gone. It signs in with one
+provider: on the web Google's own button (Google's popup), on Android
+Google's (the "Sign in with Google" sheet), on iOS Sign in with Apple
+(Google where Apple isn't offered); with email alone there's none (a
+code to type isn't one click), and the other ways in stay on the welcome.
+On a phone (under 600 dp) it's the icon alone (Google's logo on the web,
+the sign-in icon on Android, Apple's logo on iOS), its name as a tooltip.
+
+On the web, Google's **One Tap** (FedCM; the browser shows it at the top
+right on computers, as a sheet at the bottom on phones) is offered too:
+at launch (not when a [session](sessions.md) is restored), and again each
+time the user is signed out (signing out, a session ending), once the
+sign-out is done: Google then asks before signing anyone in, so it never
+signs the user straight back in. Closing it is no error; the browser
+waits a while before showing it again (FedCM's cooldown), and the button
+stays.
 Captures already on the device stay there, and are the user's once they
 sign in. A build without sign-in set up has no welcome: the app is as it
 was, on the device only.

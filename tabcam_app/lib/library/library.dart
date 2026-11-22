@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 
 import '../capture/media.dart';
@@ -131,42 +132,20 @@ class Library extends ChangeNotifier {
   /// the original. Each page is a new page, but its file isn't copied: it
   /// shows the original's ([EventPage.source], copy on write) until it has
   /// to be its own ([_keepCopies], [ownFiles]). On a capture shared with
-  /// the user, the phrase passes are theirs where they have some.
+  /// the user, the phrase passes are theirs where they have some. It
+  /// keeps which page of the original each of its pages is
+  /// ([CaptureEvent.clonedPages]), so the user's copy of a shared capture
+  /// can catch up with it ([copyToAdd]).
   Future<CaptureEvent> clone(CaptureEvent event) async {
     final now = _now();
     final id = newId();
-    final pages = <EventPage>[];
-    // A video's edit names its track by ID, and phrase times their song:
-    // the copy's.
+    // A video's edit names its track by ID, a take's log its songs, and
+    // phrase times their song: the copy's.
     final ids = {for (final page in event.pages) page.id: newId()};
-    for (final page in event.pages) {
-      if (page.isLink) {
-        pages.add(
-          EventPage.link(
-            id: ids[page.id]!,
-            url: page.url!,
-            title: page.title,
-            extra: page.extra,
-          ),
-        );
-        continue;
-      }
-      pages.add(
-        EventPage(
-          id: ids[page.id]!,
-          filter: page.filter,
-          kind: page.kind,
-          extension: page.extension,
-          title: page.title,
-          edit: page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
-          take: page.take,
-          takeLog: page.takeLog?.withPages(ids),
-          // A clone of a clone shows the first original's file too.
-          source: page.source ?? FileOrigin(event.id, page.id),
-          extra: page.extra,
-        ),
-      );
-    }
+    final pages = [
+      for (final page in event.pages)
+        _clonePage(page, ids[page.id]!, ids, event.id),
+    ];
     final phrases = {...event.phrases, ...?event.myContribution?.phrases};
     final copy = CaptureEvent(
       id: id,
@@ -183,6 +162,7 @@ class Library extends ChangeNotifier {
         for (final MapEntry(:key, :value) in phrases.entries) ?ids[key]: value,
       },
       clonedFrom: event.id,
+      clonedPages: ids,
     );
     await _store.save(copy);
     _set([copy, ..._all]);
@@ -192,11 +172,118 @@ class Library extends ChangeNotifier {
 
   /// Where what the user adds to [event] goes: [event] itself, or, on a
   /// capture shared with them (only its owner changes it), their own copy
-  /// of it: the newest one they have ([CaptureEvent.clonedFrom]), or a new
-  /// [clone], made now.
+  /// of it: the newest one they have ([CaptureEvent.clonedFrom]), caught
+  /// up with what the owner added since ([_caughtUp]), or a new [clone],
+  /// made now.
   Future<CaptureEvent> copyToAdd(CaptureEvent event) async {
     if (!event.isShared) return event;
-    return copyOf(event.id) ?? await clone(event);
+    final copy = copyOf(event.id);
+    if (copy == null) return clone(event);
+    final caught = _caughtUp(copy, _byIdAll(event.id) ?? event);
+    return caught == null ? copy : _save(caught);
+  }
+
+  /// [page] of capture [origin] as a clone's page [id]: all of it, as its
+  /// JSON has it (so whatever a page keeps comes too, a newer app's keys
+  /// as well), but its file is the original's ([EventPage.source], copy
+  /// on write; a clone of a clone's, the first original's), without the
+  /// original's kept render (a file of the original's folder), and the
+  /// pages its edit and take log name are the clone's ([ids], the
+  /// original's page IDs to the clone's).
+  static EventPage _clonePage(
+    EventPage page,
+    String id,
+    Map<String, String> ids,
+    String origin,
+  ) {
+    final copy = EventPage.fromJson(
+      {...page.toJson(), 'id': id}
+        ..remove('source')
+        ..remove('render'),
+    );
+    if (!copy.hasFile) return copy;
+    return copy.copyWith(
+      edit: () => page.edit?.copyWith(trackId: ids[page.edit?.trackId]),
+      takeLog: page.takeLog?.withPages(ids),
+      source: () => page.source ?? FileOrigin(origin, page.id),
+    );
+  }
+
+  /// [copy], the user's copy of [original] (a capture shared with them),
+  /// caught up with what the owner added since it was made: each of the
+  /// original's pages it has never taken ([CaptureEvent.clonedPages]),
+  /// added at its end as [clone] adds them (the original's file, its take
+  /// log); the phrase passes of each song it took, where the copy has
+  /// none of its own for it; and the song found in a take's sound (its
+  /// log's sync), where the copy's log has none. A page the user deleted
+  /// from their copy, or changed, stays as they left it. Null when there's
+  /// nothing to catch up.
+  ///
+  /// A copy made before [CaptureEvent.clonedPages] was kept knows the
+  /// pages still showing the original's files; any other page of the
+  /// original made before the copy is taken as there when it was made.
+  CaptureEvent? _caughtUp(CaptureEvent copy, CaptureEvent original) {
+    final taken = {...copy.clonedPages};
+    if (taken.isEmpty) {
+      for (final p in [...copy.pages, ...copy.deletedPages]) {
+        if (p.source case final from? when from.eventId == original.id) {
+          taken[from.pageId] = p.id;
+        }
+      }
+      for (final p in original.pages) {
+        final made = timeOfId(p.id);
+        if (made != null && !made.isAfter(copy.created)) {
+          taken.putIfAbsent(p.id, () => '');
+        }
+      }
+    }
+    final fresh = [
+      for (final p in original.pages)
+        if (!taken.containsKey(p.id)) p,
+    ];
+    for (final p in fresh) {
+      taken[p.id] = newId();
+    }
+    // The original's page IDs to the copy's, where the copy's is known.
+    final ids = {
+      for (final MapEntry(:key, :value) in taken.entries)
+        if (value.isNotEmpty) key: value,
+    };
+    final theirs = {for (final p in original.pages) p.id: p};
+    final mine = {for (final MapEntry(:key, :value) in ids.entries) value: key};
+    var changed = fresh.isNotEmpty || !mapEquals(taken, copy.clonedPages);
+
+    // A take's song found in its sound since: the owner's, where the
+    // copy's log has none.
+    final pages = <EventPage>[];
+    for (final p in copy.pages) {
+      final log = p.takeLog;
+      final sync = theirs[mine[p.id]]?.takeLog?.withPages(ids).sync;
+      if (log != null && log.sync == null && sync != null) {
+        pages.add(p.copyWith(takeLog: log.withSync(sync)));
+        changed = true;
+      } else {
+        pages.add(p);
+      }
+    }
+    for (final p in fresh) {
+      pages.add(_clonePage(p, ids[p.id]!, ids, original.id));
+    }
+
+    // The passes of the songs it took, where it has none of its own (an
+    // empty list is its own too: passes the user cleared there).
+    final passes = {...original.phrases, ...?original.myContribution?.phrases};
+    final phrases = {...copy.phrases};
+    for (final MapEntry(key: theirId, value: id) in ids.entries) {
+      final times = passes[theirId];
+      if (times == null || times.isEmpty) continue;
+      if (!pages.any((p) => p.id == id)) continue;
+      if (phrases.containsKey(id)) continue;
+      phrases[id] = times;
+      changed = true;
+    }
+    if (!changed) return null;
+    return copy.copyWith(pages: pages, phrases: phrases, clonedPages: taken);
   }
 
   /// The user's newest copy of capture [id] ([CaptureEvent.clonedFrom]),
@@ -281,15 +368,19 @@ class Library extends ChangeNotifier {
     final mine = now.myContribution ?? Contribution(updated: _now());
     final pages = change(mine.pages);
     final kept = {for (final p in pages) p.id};
+    final gone = [
+      for (final p in mine.pages)
+        if (!kept.contains(p.id)) p,
+    ];
     final updated = _update(
       now.copyWith(
         contributions: [
           mine.copyWith(
             pages: pages,
-            phrases: _phrasesWithout(mine.phrases, [
-              for (final p in mine.pages)
-                if (!kept.contains(p.id)) p,
-            ]),
+            phrases: _phrasesWithout(
+              _songPhrasesKept(now, mine.phrases, gone),
+              gone,
+            ),
             updated: _now(),
           ),
         ],
@@ -313,6 +404,51 @@ class Library extends ChangeNotifier {
     };
   }
 
+  /// [phrases] (the capture's, or the user's own contribution's) with, for
+  /// each song a take of [gone] played along with that has no passes kept
+  /// (none recorded for it, as by apps before songs kept them; not one
+  /// cleared on purpose, which keeps an empty list), the passes the
+  /// capture's takes made while it played ([songPhrasesOf]: each take's
+  /// own, on its clock, put at the song's times its log noted), oldest
+  /// take first, merged as passes recorded live are. So a take deleted or
+  /// purged leaves the song its timings, and auto-pass turns the tab along
+  /// it as before.
+  static Map<String, PhraseTimes> _songPhrasesKept(
+    CaptureEvent event,
+    Map<String, PhraseTimes> phrases,
+    Iterable<EventPage> gone,
+  ) {
+    final mine = event.myContribution;
+    final goneIds = {for (final p in gone) p.id};
+    final stored = {
+      for (final p in [...event.storedPages, ...?mine?.pages]) p.id: p,
+    };
+    final songs = {
+      for (final take in gone)
+        for (final s in take.takeLog?.song ?? const <SongSegment>[])
+          if (!goneIds.contains(s.page) &&
+              stored.containsKey(s.page) &&
+              !phrases.containsKey(s.page) &&
+              mine?.phrases[s.page] == null &&
+              event.phrases[s.page] == null)
+            s.page,
+    };
+    if (songs.isEmpty) return phrases;
+    final out = {...phrases};
+    for (final song in songs) {
+      var times = PhraseTimes.none;
+      for (final take in stored.values) {
+        final log = take.takeLog;
+        if (log == null || take.id == song) continue;
+        final own = mine?.phrases[take.id] ?? event.phrases[take.id];
+        if (own == null || own.isEmpty) continue;
+        times = songPhrasesOf(own, log.song, song, into: times);
+      }
+      if (times.isNotEmpty) out[song] = times;
+    }
+    return out;
+  }
+
   /// The [PhraseTimes] of song [pageId] of event [eventId], its file's own
   /// (each file keeps its own, by its page ID): the user's, on a capture
   /// they contribute to (else the owner's), or the capture's.
@@ -328,18 +464,30 @@ class Library extends ChangeNotifier {
   /// none): with the capture, or, on one shared with the user (only its
   /// owner changes it), with their own contribution to it, which keeps
   /// them. Songs since deleted are let go of meanwhile.
-  Future<void> setPhrases(
+  Future<void> setPhrases(String eventId, String pageId, PhraseTimes? times) =>
+      _putPhrases(eventId, pageId, times);
+
+  /// Clears song [pageId]'s passes on purpose (Clear on the player's bar):
+  /// none, kept as an empty list, so a take of it deleted later doesn't
+  /// give it the take's again ([_songPhrasesKept]).
+  Future<void> clearPhrases(String eventId, String pageId) =>
+      _putPhrases(eventId, pageId, PhraseTimes.none, cleared: true);
+
+  Future<void> _putPhrases(
     String eventId,
     String pageId,
-    PhraseTimes? times,
-  ) async {
+    PhraseTimes? times, {
+    bool cleared = false,
+  }) async {
     Map<String, PhraseTimes> changed(
       Map<String, PhraseTimes> now,
       Set<String> songs,
     ) => {
       for (final MapEntry(:key, :value) in now.entries)
         if (key != pageId && songs.contains(key)) key: value,
-      if (times != null && times.isNotEmpty && songs.contains(pageId))
+      if (times != null &&
+          (times.isNotEmpty || cleared) &&
+          songs.contains(pageId))
         pageId: times,
     };
     final now = _byIdAll(eventId);
@@ -558,20 +706,90 @@ class Library extends ChangeNotifier {
   }
 
   /// Keeps [edit] with video [pageId] of event [eventId] (null: none, the
-  /// video plays as it is).
+  /// video plays as it is). A kept render made from another edit
+  /// ([EventPage.render]) no longer plays in its place: it goes, with its
+  /// file.
   Future<CaptureEvent?> setPageEdit(
     String eventId,
     String pageId,
     PageEdit? edit,
-  ) => patch(
-    eventId,
-    (now) => now.copyWith(
-      pages: [
-        for (final p in now.pages)
-          p.id == pageId ? p.copyWith(edit: () => edit) : p,
-      ],
-    ),
-  );
+  ) async {
+    // Read as patch will see it: nothing runs in between.
+    final stale = switch (_pageOf(eventId, pageId)?.render) {
+      final render? when render.edit != edit => render,
+      _ => null,
+    };
+    final updated = await patch(
+      eventId,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            p.id == pageId
+                ? p.copyWith(
+                    edit: () => edit,
+                    render: stale == null ? null : () => null,
+                  )
+                : p,
+        ],
+      ),
+    );
+    if (updated != null && stale != null) {
+      await _dropFiles(updated, [stale.file]);
+    }
+    return updated;
+  }
+
+  /// Page [pageId] of event [eventId], as it is now; null when either is
+  /// gone.
+  EventPage? _pageOf(String eventId, String pageId) =>
+      _byIdAll(eventId)?.pages.where((p) => p.id == pageId).firstOrNull;
+
+  /// Keeps [file], the video the editor's Download just made of video
+  /// [pageId] of event [eventId] from its [edit] (its title showing
+  /// [title]), as the page's render ([EventPage.render]): it plays in the
+  /// page's place while the edit is still that one (`currentRender`), on
+  /// this device and, synced, the others, and for those the capture is
+  /// shared with. The render it replaces goes, with its file. Null when
+  /// the page is gone (then nothing is kept).
+  Future<CaptureEvent?> keepRender(
+    String eventId,
+    String pageId,
+    XFile file, {
+    required String extension,
+    PageEdit? edit,
+    String title = '',
+  }) async {
+    bool takes(CaptureEvent? event) =>
+        event != null &&
+        !event.isShared &&
+        event.pages.any((p) => p.id == pageId && p.isVideo);
+    if (!takes(_byIdAll(eventId))) return null;
+    final render = PageRender(
+      id: newId(),
+      extension: checkExtension(extension),
+      edit: edit,
+      title: title,
+    );
+    await _store.putPageFile(eventId, render.file, file);
+    // Gone while it was stored: so is its copy.
+    if (!takes(_byIdAll(eventId))) {
+      await _store.deletePage(eventId, render.file);
+      return null;
+    }
+    // Read as patch will see it: nothing runs in between.
+    final old = _pageOf(eventId, pageId)?.render;
+    final updated = await patch(
+      eventId,
+      (now) => now.copyWith(
+        pages: [
+          for (final p in now.pages)
+            p.id == pageId ? p.copyWith(render: () => render) : p,
+        ],
+      ),
+    );
+    if (updated != null && old != null) await _dropFiles(updated, [old.file]);
+    return updated;
+  }
 
   /// Applies [change] to the event [id] as it is now, so changes made
   /// meanwhile (pages added while a read ran) aren't overwritten by an
@@ -687,7 +905,9 @@ class Library extends ChangeNotifier {
   /// Deletes [page] from [event]: it goes to the event's trash
   /// ([CaptureEvent.deletedPages]) with its file and phrase passes, which
   /// stay (on the device and in the cloud) until it's restored
-  /// ([restorePage]) or the trash is purged ([purge]).
+  /// ([restorePage]) or the trash is purged ([purge]). A take's songs
+  /// with no passes kept get those it and the other takes made along them
+  /// ([_songPhrasesKept]), so they outlive it.
   Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) => _save(
     event.copyWith(
       pages: [
@@ -695,6 +915,7 @@ class Library extends ChangeNotifier {
           if (p.id != page.id) p,
       ],
       deletedPages: [...event.deletedPages, page],
+      phrases: _songPhrasesKept(event, event.phrases, [page]),
     ),
   );
 
@@ -712,12 +933,13 @@ class Library extends ChangeNotifier {
         );
       });
 
-  /// Deletes the files of [gone] (pages [event] had) that it no longer
-  /// keeps: a published page and its contribution share one file.
+  /// Deletes the files of [gone] (pages [event] had, and their kept
+  /// renders, [EventPage.files]) that it no longer keeps: a published page
+  /// and its contribution share one file.
   Future<void> _dropFiles(CaptureEvent event, Iterable<EventPage> gone) async {
-    final kept = {for (final p in event.storedPages) p.fileName};
-    for (final p in gone) {
-      if (kept.contains(p.fileName)) continue;
+    final kept = {for (final p in event.storedFiles) p.fileName};
+    for (final p in gone.expand((p) => p.files)) {
+      if (!kept.add(p.fileName)) continue;
       await _deleteFile(event.id, p);
     }
   }
@@ -841,7 +1063,10 @@ class Library extends ChangeNotifier {
         e.id,
         (now) => now.copyWith(
           deletedPages: const [],
-          phrases: _phrasesWithout(now.phrases, gone),
+          phrases: _phrasesWithout(
+            _songPhrasesKept(now, now.phrases, gone),
+            gone,
+          ),
         ),
       );
       if (updated != null) await _dropFiles(updated, gone);
@@ -867,7 +1092,7 @@ class Library extends ChangeNotifier {
   }
 
   Future<void> _removePages(CaptureEvent event) async {
-    for (final p in {for (final p in event.storedPages) p.fileName: p}.values) {
+    for (final p in {for (final p in event.storedFiles) p.fileName: p}.values) {
       await _deleteFile(event.id, p);
     }
   }

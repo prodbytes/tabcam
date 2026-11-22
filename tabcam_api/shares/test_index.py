@@ -32,6 +32,7 @@ class Table:
         self.items = {}
         # Queries answer this many items a page, as DynamoDB pages by size.
         self.page_size = page_size
+        self.queries = 0
 
     def put_item(self, Item):
         # DynamoDB hands numbers back as Decimals.
@@ -46,8 +47,22 @@ class Table:
         item = self.items.get((Key["capture"], Key["email"]))
         return {"Item": item} if item else {}
 
+    def update_item(self, Key, UpdateExpression, ExpressionAttributeNames,
+                    ConditionExpression=None, ExpressionAttributeValues=None):
+        """`SET #a = :v` or `REMOVE #a`, on an item that must be there."""
+        k = (Key["capture"], Key["email"])
+        if ConditionExpression == "attribute_exists(#c)" and k not in self.items:
+            raise ConditionalCheckFailedException()
+        action, name, *rest = UpdateExpression.split()
+        attr = ExpressionAttributeNames[name]
+        if action == "SET":
+            self.items[k][attr] = ExpressionAttributeValues[rest[1]]
+        else:
+            self.items[k].pop(attr, None)
+
     def query(self, KeyConditionExpression, ExpressionAttributeNames,
               ExpressionAttributeValues, IndexName=None, ExclusiveStartKey=None):
+        self.queries += 1
         name = list(ExpressionAttributeNames.values())[0]
         value = list(ExpressionAttributeValues.values())[0]
         items = [i for i in self.items.values() if i[name] == value]
@@ -95,6 +110,36 @@ class KeyTable:
         attr = self.indexes[IndexName]
         value = list(ExpressionAttributeValues.values())[0]
         return {"Items": [dict(i) for i in self.items.values() if i.get(attr) == value]}
+
+
+class Captures(KeyTable):
+    """The captures table: each capture's visibility, its owner index, and
+    the sparse public index (only items with `listed`), by updatedAt."""
+
+    def __init__(self):
+        super().__init__("capture", {"byOwner": "owner"})
+        # Items the public index handed out, and at most how many a page.
+        self.read = 0
+        self.page_size = None
+
+    def query(self, IndexName, KeyConditionExpression, ExpressionAttributeNames,
+              ExpressionAttributeValues, ExclusiveStartKey=None, ScanIndexForward=True,
+              Limit=None):
+        if IndexName != "public":
+            return super().query(IndexName, KeyConditionExpression, ExpressionAttributeNames,
+                                 ExpressionAttributeValues, ExclusiveStartKey)
+        assert ExpressionAttributeNames == {"#l": "listed"}
+        value = ExpressionAttributeValues[":l"]
+        items = sorted((i for i in self.items.values() if i.get("listed") == value),
+                       key=lambda i: (i["updatedAt"], i["capture"]),
+                       reverse=not ScanIndexForward)
+        start = ExclusiveStartKey or 0
+        end = len(items) if Limit is None else min(len(items), start + Limit)
+        if self.page_size is not None:
+            end = min(end, start + self.page_size)
+        self.read += end - start
+        return {"Items": [dict(i) for i in items[start:end]],
+                **({"LastEvaluatedKey": end} if end < len(items) else {})}
 
 
 class FakeRbacr:
@@ -291,6 +336,7 @@ class ShareApiTest(unittest.TestCase):
                                               OTHER: "olga@example.com"}),
                         "store": store(), "rbacr": FakeRbacr(), "s3": S3(),
                         "links": KeyTable("keyHash", {"byOwner": "owner"}),
+                        "captures": Captures(),
                         "kms": Kms()}
         self.clients["keys"] = self.clients["store"].keys
         self.objects = Objects()
@@ -413,7 +459,7 @@ class ShareApiTest(unittest.TestCase):
         self.share_both_ways()
         status, body = self.call("DELETE /account", "julio@example.com")
         self.assertEqual(status, 200)
-        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0,
+        self.assertEqual(body, {"grantsMade": 2, "grantsToMe": 1, "links": 0, "captures": 0,
                                 "contributions": 0, "appleTokensRevoked": False})
         # Olga's share with Ana stays; everything of Julio's is gone.
         self.assertEqual(self.grants_left(), [(f"{OTHER}#xyz", "ana@example.com")])
@@ -800,6 +846,7 @@ class ShareApiTest(unittest.TestCase):
         response = index.handler(event, None, self.clients)
         self.assertEqual(response["statusCode"], 200)
         self.assertIn("text/html", response["headers"]["content-type"])
+        self.response = response
         return response["body"], used
 
     RIFF = {
@@ -840,10 +887,11 @@ class ShareApiTest(unittest.TestCase):
 
     # --- short links: /s/<key> redirects to the full link -------------------
 
-    def short(self, key, query=None):
-        """GET /s/{key}: its status and headers."""
+    def short(self, key, query=None, site=None):
+        """GET /s/{key} (from [site]'s CloudFront): its status and headers."""
         event = {"routeKey": index.SHORT_ROUTE, "pathParameters": {"key": key},
-                 "queryStringParameters": query}
+                 "queryStringParameters": query,
+                 "headers": {"x-tabcam-site": site} if site else {}}
         response = index.handler(event, None, self.clients)
         return response["statusCode"], response["headers"]
 
@@ -884,6 +932,23 @@ class ShareApiTest(unittest.TestCase):
             self.assertEqual(headers["location"], "/app/")
             self.assertEqual(headers["cache-control"], "public, max-age=60")
 
+    def test_only_a_public_captures_short_link_on_tabs_cam_is_indexed(self):
+        self.publish()
+        _, headers = self.short(self.KEY, site="tabs.cam")
+        self.assertEqual(headers["x-robots-tag"], "noindex")  # unlisted
+        self.visible("public", title="Morning Riff")
+        _, headers = self.short(self.KEY, site="tabs.cam")
+        self.assertNotIn("x-robots-tag", headers)
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+        for site in ("rc.tabs.cam", None):
+            _, headers = self.short(self.KEY, site=site)
+            self.assertEqual(headers["x-robots-tag"], "noindex", site)
+        self.visible("private")
+        _, headers = self.short(self.KEY, site="tabs.cam")
+        self.assertEqual(headers["x-robots-tag"], "noindex")
+        # Private still redirects: the owner opens their own link.
+        self.assertEqual(headers["location"], f"/app/?c=abc&k={self.KEY}")
+
     def test_a_deleted_capture_previews_as_tabcam(self):
         self.publish()
         page, _ = self.preview(capture_json={"id": "abc", "deleted": 1})
@@ -892,7 +957,7 @@ class ShareApiTest(unittest.TestCase):
     def test_a_malformed_link_previews_as_tabcam(self):
         page, used = self.preview(capture="<script>", key="k")
         self.assertIn('<meta property="og:title" content="tabs.cam">', page)
-        self.assertNotIn("<script>", page.split("<script>location")[0])
+        self.assertEqual(page.count("<script>"), 1)  # the page's own alone
         self.assertEqual(used, [])
 
     def test_a_published_link_gives_anyone_read_only_credentials(self):
@@ -1043,6 +1108,270 @@ class ShareApiTest(unittest.TestCase):
         self.assertEqual(self.open_link()[0], 404)
         status, _ = self.open_link(capture="xyz", key="olgakey-0123456789abcdefghijklmnopqrstu")
         self.assertEqual(status, 200)
+
+    # --- visibility: a link is private, unlisted or public --------------------
+
+    def visible(self, visibility, capture="abc", key=None, token="owner-token",
+                email="julio@example.com", **fields):
+        """PUT /links/{captureId} with a visibility (and a title, an artist)."""
+        body = {"key": key or self.KEY, "visibility": visibility, **fields}
+        return self.call("PUT /links/{captureId}", email, token=token,
+                         path={"captureId": capture}, body=body)
+
+    def kept(self, capture="abc", owner=OWNER):
+        """The capture's item in the captures table, or None."""
+        return self.clients["captures"].items.get(f"{owner}#{capture}")
+
+    def find(self, q):
+        """GET /public?q=, without a token: the captures found."""
+        event = {"routeKey": index.SEARCH_ROUTE,
+                 "queryStringParameters": None if q is None else {"q": q}}
+        response = index.handler(event, None, self.clients)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertEqual(response["headers"]["cache-control"], "public, max-age=60")
+        return json.loads(response["body"])["captures"]
+
+    def site_map(self, site=None):
+        """GET /sitemap.xml as the site's CloudFront asks: its URLs."""
+        import xml.etree.ElementTree as ET
+        event = {"routeKey": index.SITEMAP_ROUTE,
+                 "headers": {"x-tabcam-site": site} if site else {}}
+        response = index.handler(event, None, self.clients)
+        self.assertEqual(response["statusCode"], 200)
+        self.assertEqual(response["headers"]["content-type"], "application/xml")
+        self.assertEqual(response["headers"]["cache-control"], "public, max-age=3600")
+        ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+        root = ET.fromstring(response["body"])
+        return [(u.find("s:loc", ns).text, u.find("s:lastmod", ns).text)
+                for u in root.findall("s:url", ns)]
+
+    def published(self, capture, title, artist="", when=0, visibility="public",
+                  token="owner-token", email="julio@example.com", owner=OWNER):
+        """A capture made [visibility] with its title and artist, changed
+        [when] seconds after 1_800_000_000; its key."""
+        key = f"{capture}key-0123456789ab"
+        status, _ = self.visible(visibility, capture=capture, key=key, title=title,
+                                 artist=artist, token=token, email=email)
+        self.assertEqual(status, 200)
+        self.kept(capture, owner)["updatedAt"] = Decimal(1_800_000_000 + when)
+        return key
+
+    def test_an_older_apps_link_is_unlisted(self):
+        status, body = self.publish()  # the key alone
+        self.assertEqual((status, body), (200, {"published": True, "visibility": "unlisted"}))
+        self.assertEqual(self.kept()["visibility"], "unlisted")
+        self.assertEqual(set(self.kept()), {"capture", "owner", "captureId", "visibility", "updatedAt"})
+        # A link from before visibilities (nothing in the table): unlisted.
+        self.clients["captures"].items.clear()
+        self.assertEqual(self.open_link()[0], 200)
+        self.assertEqual(self.join()[0], 200)
+
+    def test_a_links_visibility_is_kept_and_changed(self):
+        for visibility in ("private", "public", "unlisted", "private"):
+            status, body = self.visible(visibility)
+            self.assertEqual((status, body), (200, {"published": True, "visibility": visibility}))
+            item = self.kept()
+            self.assertEqual((item["visibility"], item["owner"], item["captureId"]),
+                             (visibility, OWNER, "abc"))
+        for bad in ("secret", "PUBLIC", "", 3, ["public"]):
+            self.assertEqual(self.visible(bad)[0], 400, bad)
+        self.assertEqual(self.visible("public", title=3)[0], 400)
+        self.assertEqual(self.kept()["visibility"], "private")
+        # Another capture's key: nothing kept for this one.
+        self.assertEqual(self.visible("public", capture="xyz")[0], 409)
+        self.assertIsNone(self.kept("xyz"))
+
+    def test_a_private_capture_opens_for_its_owner_alone(self):
+        self.visible("private")
+        status, body = self.open_link()
+        self.assertEqual((status, body["message"]), (403, "That capture is private"))
+        self.assertEqual(self.clients["sts"].calls, [])
+        status, body = self.join()
+        self.assertEqual((status, body["message"]), (403, "That capture is private"))
+        self.assertEqual(self.clients["table"].items, {})
+        self.assertEqual(self.join("julio@example.com", "owner-token")[1]["own"], True)
+        # Its preview is tabs.cam's own, and never indexed.
+        page, used = self.preview(capture_json=self.RIFF, site="tabs.cam")
+        self.assertIn('<meta property="og:title" content="tabs.cam">', page)
+        self.assertIn('<meta property="og:url" content="https://tabs.cam/app/">', page)
+        self.assertNotIn("Morning", page)
+        self.assertEqual(used, [])
+        self.assertEqual(self.response["headers"]["x-robots-tag"], "noindex")
+        # The short link still goes to the app, which says it's private.
+        self.assertEqual(self.short(self.KEY)[1]["location"], f"/app/?c=abc&k={self.KEY}")
+        # Unlisted again: the same key opens it.
+        self.visible("unlisted")
+        self.assertEqual(self.open_link()[0], 200)
+        self.assertEqual(self.join()[0], 200)
+
+    def test_a_private_capture_suspends_every_grant_until_it_isnt(self):
+        self.call("GET /profile", "julio@example.com")
+        self.store_capture()
+        self.publish()
+        self.grant("olga@example.com")  # by email, before
+        self.join()  # Kim, by the link
+        readers = (("olga@example.com", "other-token"), ("kim@example.com", "kim"))
+        self.assertEqual(self.visible("private")[0], 200)
+        for email, token in readers:
+            self.assertEqual(self.call("GET /shared", email, token=token)[1]["shared"], [])
+            self.assertEqual(self.reader_credentials(email, token)[0], 404)
+        self.assertEqual(self.key_of("other-token", "olga@example.com")[0], 404)
+        self.assertEqual(self.key_of()[0], 200)  # its owner's, still
+        _, grants = self.call("GET /shares/{captureId}", "julio@example.com", path={"captureId": "abc"})
+        self.assertEqual([g.get("suspended") for g in grants["grants"]], [True, True])
+        # Not private any more: the same grants work again.
+        self.assertEqual(self.visible("unlisted")[0], 200)
+        for email, token in readers:
+            shared = self.call("GET /shared", email, token=token)[1]["shared"]
+            self.assertEqual([(s["owner"], s["captureId"]) for s in shared], [(OWNER, "abc")])
+            self.assertEqual(self.reader_credentials(email, token)[0], 200)
+        self.assertEqual(self.key_of("other-token", "olga@example.com")[0], 200)
+        self.assertFalse(any("suspended" in i for i in self.clients["table"].items.values()))
+        # Public lifts it the same way.
+        self.visible("private")
+        self.visible("public", title="Morning Riff")
+        self.assertEqual(self.reader_credentials("kim@example.com", "kim")[0], 200)
+
+    def test_a_grant_to_a_private_capture_waits_until_it_isnt(self):
+        self.visible("private")
+        self.grant("ana@example.com")
+        self.assertEqual(self.call("GET /shared", "ana@example.com", token="ana")[1]["shared"], [])
+        self.visible("unlisted")
+        self.assertEqual(len(self.call("GET /shared", "ana@example.com", token="ana")[1]["shared"]), 1)
+
+    def test_grants_are_looked_at_only_when_private_comes_or_goes(self):
+        self.grant("ana@example.com")
+        table = self.clients["table"]
+        before = table.queries
+        self.publish()
+        for visibility in ("unlisted", "public", "public", "unlisted"):
+            self.visible(visibility, title="Morning Riff")
+        self.assertEqual(table.queries, before)
+        self.visible("private")
+        self.assertEqual(table.queries, before + 1)
+        self.visible("private")
+        self.assertEqual(table.queries, before + 1)
+        self.visible("public")
+        self.assertEqual(table.queries, before + 2)
+
+    def test_a_reader_who_left_meanwhile_isnt_granted_again(self):
+        self.publish()
+        table = self.clients["table"]
+        query = table.query
+        gone = {"capture": f"{OWNER}#abc", "email": "gone@example.com", "owner": OWNER,
+                "captureId": "abc", "ownerEmail": "julio@example.com", "role": "read",
+                "via": "link", "grantedAt": Decimal(1)}
+        # Listed by the query, deleted before its update.
+        table.query = lambda **kw: {"Items": query(**kw)["Items"] + [gone]}
+        self.assertEqual(self.visible("private")[0], 200)
+        self.assertEqual(table.items, {})
+
+    def test_a_public_capture_keeps_its_title_and_artist_for_search(self):
+        self.visible("public", title="  Riff #1 (Live!) ", artist="Zoë Ünder")
+        item = self.kept()
+        self.assertEqual((item["title"], item["artist"]), ("Riff #1 (Live!)", "Zoë Ünder"))
+        self.assertEqual(item["search"], "riff 1 live zoe under")
+        self.assertEqual((item["key"], item["listed"]), (self.KEY, "public"))
+        self.visible("public", title="x" * 300)
+        self.assertEqual(self.kept()["title"], "x" * 200)
+        self.assertEqual(self.kept()["artist"], "")
+        # Unlisted or private again: no title, artist or key is kept.
+        for visibility in ("unlisted", "private"):
+            self.visible(visibility, title="Riff #1", artist="Zoë Ünder")
+            self.assertEqual(set(self.kept()),
+                             {"capture", "owner", "captureId", "visibility", "updatedAt"})
+
+    def searchable(self):
+        """Public captures of two owners, an unlisted one and a private one."""
+        self.published("morning", "Morning Riff", "Zoë Ünder", when=1)
+        self.published("evening", "Evening Riff", "Kim Lee", when=2)
+        self.published("riffing", "Riffing Along", "Olga", when=3, token="other-token",
+                       email="olga@example.com", owner=OTHER)
+        self.published("waltz", "Quiet Waltz", "Zoë Ünder", when=4)
+        self.published("secret", "Secret Riff", "Zoë Ünder", when=5, visibility="unlisted")
+        self.published("hidden", "Hidden Riff", "Zoë Ünder", when=6, visibility="private")
+
+    def test_search_finds_public_captures_by_title_and_artist(self):
+        self.searchable()
+        ids = lambda q: [c["captureId"] for c in self.find(q)]
+        # Newest first; a word is the start of one of theirs.
+        self.assertEqual(ids("riff"), ["riffing", "evening", "morning"])
+        self.assertEqual(ids("RIFFI"), ["riffing"])
+        self.assertEqual(ids("iff"), [])
+        # By the artist, accents and case aside; every word must match.
+        self.assertEqual(ids("zoe"), ["waltz", "morning"])
+        self.assertEqual(ids("ZOË"), ["waltz", "morning"])
+        self.assertEqual(ids("Ünder, morning!"), ["morning"])
+        self.assertEqual(ids("zoe evening"), [])
+        # What an answer holds.
+        self.assertEqual(self.find("waltz"), [{
+            "captureId": "waltz", "key": "waltzkey-0123456789ab", "title": "Quiet Waltz",
+            "artist": "Zoë Ünder", "updatedAt": 1_800_000_004}])
+        # Never an unlisted or a private one.
+        self.assertEqual(ids("secret"), [])
+        self.assertEqual(ids("hidden"), [])
+        # Under 2 characters: nothing.
+        for q in (None, "", "r", " é ", "!!"):
+            self.assertEqual(self.find(q), [], q)
+
+    def test_search_answers_20_at_most_and_reads_2000_at_most(self):
+        self.clients["captures"].page_size = 3  # pages of 3
+        for n in range(25):
+            self.published(f"r{n}", f"Riff {n}", when=n)
+        found = self.find("riff")
+        self.assertEqual(len(found), 20)
+        self.assertEqual((found[0]["captureId"], found[-1]["captureId"]), ("r24", "r5"))
+        old = index.SEARCH_READ
+        index.SEARCH_READ = 5
+        try:
+            self.clients["captures"].read = 0
+            self.assertEqual(self.find("waltz"), [])
+            self.assertEqual(self.clients["captures"].read, 5)
+        finally:
+            index.SEARCH_READ = old
+
+    def test_the_sitemap_lists_public_short_links_on_tabs_cam_alone(self):
+        self.searchable()
+        self.assertEqual(self.site_map("tabs.cam")[:2], [
+            ("https://tabs.cam/s/waltzkey-0123456789ab", "2027-01-15"),
+            ("https://tabs.cam/s/riffingkey-0123456789ab", "2027-01-15"),
+        ])
+        self.kept("morning")["updatedAt"] = Decimal(1_800_000_000 + 3 * 86400)
+        urls = self.site_map("tabs.cam")
+        self.assertEqual(urls[0], ("https://tabs.cam/s/morningkey-0123456789ab", "2027-01-18"))
+        self.assertEqual(len(urls), 4)
+        self.assertFalse(any("secret" in u or "hidden" in u for u, _ in urls))
+        # The RC's, or a request that doesn't name the site: empty.
+        for site in ("rc.tabs.cam", None, "evil.example.com"):
+            self.assertEqual(self.site_map(site), [], site)
+
+    def test_a_public_captures_preview_is_indexed_on_tabs_cam_alone(self):
+        self.visible("public", title="Morning Riff")
+        page, _ = self.preview(capture_json=self.RIFF, site="tabs.cam")
+        self.assertIn("<title>Morning &lt;riff&gt; – Me</title>", page)
+        self.assertNotIn("x-robots-tag", self.response["headers"])
+        # Crawlers that run scripts stay on the page; people go on to the app.
+        self.assertIn("if (!/bot|crawl|spider|preview|facebookexternalhit|whatsapp|slack/i"
+                      ".test(navigator.userAgent)) location.replace(", page)
+        for site in ("rc.tabs.cam", None):
+            self.preview(capture_json=self.RIFF, site=site)
+            self.assertEqual(self.response["headers"]["x-robots-tag"], "noindex", site)
+        # A wrong key, or an unlisted capture: never indexed.
+        self.preview(key="x" * 32, capture_json=self.RIFF, site="tabs.cam")
+        self.assertEqual(self.response["headers"]["x-robots-tag"], "noindex")
+        self.visible("unlisted")
+        self.preview(capture_json=self.RIFF, site="tabs.cam")
+        self.assertEqual(self.response["headers"]["x-robots-tag"], "noindex")
+
+    def test_deleting_the_account_deletes_its_captures_visibilities(self):
+        self.published("abc", "Morning Riff")
+        self.published("xyz", "Evening Riff", visibility="private")
+        self.published("olga", "Riffing Along", token="other-token", email="olga@example.com",
+                       owner=OTHER)
+        status, body = self.call("DELETE /account", "julio@example.com")
+        self.assertEqual((status, body["captures"]), (200, 2))
+        self.assertEqual(list(self.clients["captures"].items), [f"{OTHER}#olga"])
+        self.assertEqual([c["captureId"] for c in self.find("riff")], ["olga"])
 
 
 class AppleCallbackTest(unittest.TestCase):

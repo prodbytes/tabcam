@@ -34,6 +34,7 @@ import 'recognition/auto_reader.dart';
 import 'screens/home_screen.dart';
 import 'screens/messages.dart';
 import 'screens/sidebar_widths.dart';
+import 'screens/quick_sign_in.dart';
 import 'screens/welcome_screen.dart';
 
 void main() {
@@ -306,7 +307,10 @@ class TabCamApp extends StatelessWidget {
       builder: (context, child) {
         showingL10n(AppLocalizations.of(context));
         // Messages at the top, over every screen and dialog.
-        return TopMessages(child: child!);
+        final shown = TopMessages(child: child!);
+        // Signed out, every screen's top right signs in (QuickSignIn).
+        final auth = this.auth;
+        return auth == null ? shown : SignInScope(auth: auth, child: shown);
       },
       debugShowCheckedModeBanner: false,
       theme: theme(Brightness.light),

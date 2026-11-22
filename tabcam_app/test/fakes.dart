@@ -11,6 +11,7 @@ import 'package:tabcam_app/cloud/cognito.dart';
 import 'package:tabcam_app/cloud/s3.dart';
 import 'package:tabcam_app/cloud/share_api.dart';
 import 'package:tabcam_app/cloud/sigv4.dart';
+import 'package:tabcam_app/library/capture_event.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -242,6 +243,12 @@ class FakeAuth extends AuthService {
   @override
   Widget? buildSignInButton([AuthProvider provider = AuthProvider.google]) =>
       null;
+
+  /// How many times the one-click sign-in was offered.
+  int offers = 0;
+
+  @override
+  Future<void> offerQuickSignIn() async => offers++;
 }
 
 /// The share API, in memory: grants by `<owner>/<capture>`, then email.
@@ -300,7 +307,9 @@ class FakeShareApi extends ShareApi {
   @override
   Future<List<SharedCapture>> shared(String token) async => [
     for (final MapEntry(:key, :value) in grantsBy.entries)
-      if (value[email] case final role?)
+      // A private capture's grants are suspended.
+      if (value[email] case final role?
+          when visibilities[key] != CaptureVisibility.private)
         SharedCapture(
           owner: key.split('/').first,
           captureId: key.split('/').last,
@@ -316,17 +325,57 @@ class FakeShareApi extends ShareApi {
   /// Published links, shared by every device: key -> `<owner>/<capture>`.
   static final Map<String, String> links = {};
 
+  /// Who may open each capture by its link, shared by every device:
+  /// `<owner>/<capture>` -> its visibility (unlisted when missing).
+  static final Map<String, CaptureVisibility> visibilities = {};
+
+  /// The public captures, as tabs.cam's search finds them: `<owner>/<capture>`
+  /// -> the capture.
+  static final Map<String, PublicCapture> public = {};
+
   /// Thrown by the next [publishLink], once.
   Object? failPublish;
 
   @override
-  Future<void> publishLink(String token, String captureId, String key) async {
+  Future<void> publishLink(
+    String token,
+    String captureId,
+    String key, {
+    CaptureVisibility visibility = CaptureVisibility.unlisted,
+    String? title,
+    String? artist,
+  }) async {
     if (failPublish case final e?) {
       failPublish = null;
       throw e;
     }
-    calls.add('publish $captureId');
-    links[key] = '$identity/$captureId';
+    calls.add('publish $captureId ${visibility.name}');
+    final capture = '$identity/$captureId';
+    links[key] = capture;
+    visibilities[capture] = visibility;
+    if (visibility == CaptureVisibility.public) {
+      public[capture] = PublicCapture(
+        captureId: captureId,
+        key: key,
+        title: title ?? '',
+        artist: artist ?? '',
+      );
+    } else {
+      public.remove(capture);
+    }
+  }
+
+  @override
+  Future<List<PublicCapture>> searchPublic(String query) async {
+    final words = query.toLowerCase().split(RegExp(r'\s+'))
+      ..removeWhere((w) => w.isEmpty);
+    return [
+      for (final c in public.values.toList().reversed)
+        if (words.every(
+          (w) => '${c.title} ${c.artist}'.toLowerCase().contains(w),
+        ))
+          c,
+    ];
   }
 
   @override
@@ -334,6 +383,9 @@ class FakeShareApi extends ShareApi {
     final found = links[key];
     if (found == null || found.split('/').last != captureId) {
       throw ShareApiException(404, 'No such link');
+    }
+    if (visibilities[found] == CaptureVisibility.private) {
+      throw ShareApiException(403, 'That capture is private');
     }
     return LinkedCapture(
       found.split('/').first,
@@ -453,6 +505,9 @@ class FakeShareApi extends ShareApi {
     );
   }
 
+  /// Called with `<owner>/<capture>` as someone joins it, first.
+  void Function(String capture)? beforeJoin;
+
   @override
   Future<JoinedCapture> joinLink(
     String token,
@@ -466,6 +521,10 @@ class FakeShareApi extends ShareApi {
     final owner = found.split('/').first;
     if (owner == identity) {
       return JoinedCapture(owner: owner, captureId: captureId, own: true);
+    }
+    beforeJoin?.call(found);
+    if (visibilities[found] == CaptureVisibility.private) {
+      throw ShareApiException(403, 'That capture is private');
     }
     (grantsBy[found] ??= {}).putIfAbsent(email, () => ShareRole.read);
     return JoinedCapture(owner: owner, captureId: captureId);

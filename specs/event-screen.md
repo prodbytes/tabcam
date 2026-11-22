@@ -91,7 +91,9 @@ plays along.
   **Playing from the list**: a video's or recording's row has a **play /
   pause** button (before the rename pencil); it plays the file right
   there ([`ListPlayer`](../tabcam_app/lib/screens/mini_player.dart),
-  `video_player`), a video in its thumbnail's place, with a scrubbable
+  `video_player`; a video whose editor's last Download is
+  [kept](video-edit.md#the-kept-download), and still its edit's, plays
+  that file instead), a video in its thumbnail's place, with a scrubbable
   progress bar and the time ("0:12 / 3:04") under its name. One plays at
   a time: playing another stops the first; opening a file (its own
   screen has its own player) and leaving the capture stop it too. At the
@@ -239,7 +241,8 @@ The file is shown whole, as what it is:
   by pinching, or with **Zoom in** (+) and **Zoom out** (−) at its bottom
   right, one over the other, each going to the viewer's next zoom step.
   Every PDF view has them: this screen's, and the PDF pane beside Cam
-  and the Text view.
+  and the Text view. The Text view has its own, with Drag to move
+  ([zoom and drag to move](tab-recognition.md#zoom-and-drag-to-move)).
   A PDF that can't be read says so. When the capture has recordings,
   videos or links, the play-along sidebar is beside it, open, with **Play
   along** (♫) in the app bar, as in [Cam](cam.md#playing-along-with-a-file).
@@ -249,9 +252,12 @@ The file is shown whole, as what it is:
   [follow beside the file](cam.md#following-the-text) in a pane on its
   left (then ♫ is there even with nothing to play, the sidebar opened
   by it); no PDFs or pages to follow.
-- **Videos** show a play button; tapped, they play in place, looping
-  (as their [edit](video-edit.md) says: the kept part, its own sound and
-  its song mixed, each at its volume, and a take's tab and the title
+- **Videos** show a play button; tapped, they play in place, looping:
+  the file the editor's last Download made, when it's
+  [kept](video-edit.md#the-kept-download) and still the edit's, as
+  downloaded (nothing drawn over it, its watermark and fades in it);
+  otherwise as their [edit](video-edit.md) says (the kept part, its own
+  sound and its song mixed, each at its volume, and a take's tab and the title
   drawn over it, [layers](video-edit.md#layers), also with no edit; the
   watermark and the [fades](video-edit.md#fades) are the editor's
   preview's and Download's only), with a bar at the bottom: a **play / pause**

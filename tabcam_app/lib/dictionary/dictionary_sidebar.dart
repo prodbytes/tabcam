@@ -3,9 +3,10 @@
 /// player opens (or, turned by its Rotate button, the panel under the
 /// screen), where the user types a chord, a scale or anything else.
 /// A chord shows its notes and voicings, a scale its notes on the neck;
-/// anything else is searched on YouTube and Cifra Club (the one thing
-/// that leaves the device): once typing stops for a couple of seconds,
-/// their results show under the field ([YouTubeSearch], then
+/// anything else is searched on YouTube and Cifra Club, and among
+/// tabs.cam's public captures (the one thing that leaves the device): once
+/// typing stops for a couple of seconds, their results show under the
+/// field ([PublicSearch], when it finds any, [YouTubeSearch], then
 /// [CifraClubSearch]).
 library;
 
@@ -15,6 +16,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import '../cloud/share_api.dart';
+import '../export/incoming_links.dart';
 import '../l10n/language.dart';
 import '../screens/link_page.dart';
 import '../screens/sidebar_widths.dart';
@@ -22,6 +25,7 @@ import '../screens/split_handle.dart';
 import 'cifraclub_search.dart';
 import 'diagrams.dart';
 import 'music_theory.dart';
+import 'public_search.dart';
 import 'voicings.dart';
 import 'youtube_search.dart';
 
@@ -367,6 +371,11 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
   bool _searchingSongs = false;
   bool _failedSongs = false;
 
+  /// tabs.cam's public captures, likewise (shown only once some are
+  /// found).
+  List<PublicCapture>? _captures;
+  bool _searchingCaptures = false;
+
   /// Until typing has stopped for [YouTubeSearch.wait].
   Timer? _wait;
 
@@ -390,10 +399,14 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     _wait?.cancel();
     final youTube = YouTubeSearch.instance;
     final cifraClub = CifraClubSearch.instance;
+    final tabsCam = PublicSearch.instance;
     final song = lookup is Other && query.trim().isNotEmpty;
     final searches = song && youTube.available;
     final cached = searches ? youTube.cached(query) : null;
     final cachedSongs = song ? cifraClub.cached(query) : null;
+    final publicSearch =
+        song && tabsCam.available && PublicSearch.searches(query);
+    final cachedCaptures = publicSearch ? tabsCam.cached(query) : null;
     setState(() {
       _lookup = lookup;
       _voicings = switch (lookup) {
@@ -406,8 +419,10 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
       _songs = cachedSongs;
       _searchingSongs = song && cachedSongs == null;
       _failedSongs = false;
+      _captures = cachedCaptures;
+      _searchingCaptures = publicSearch && cachedCaptures == null;
     });
-    if (_searching || _searchingSongs) {
+    if (_searching || _searchingSongs || _searchingCaptures) {
       _wait = Timer(YouTubeSearch.wait, () => _search(query));
     }
   }
@@ -417,6 +432,21 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
     _wait?.cancel();
     if (_searching) unawaited(_searchYouTube(query));
     if (_searchingSongs) unawaited(_searchCifraClub(query));
+    if (_searchingCaptures) unawaited(_searchPublic(query));
+  }
+
+  Future<void> _searchPublic(String query) async {
+    List<PublicCapture>? captures;
+    try {
+      captures = await PublicSearch.instance.search(query);
+    } on PublicSearchFailed {
+      captures = null;
+    }
+    if (!mounted || _controller.text != query) return;
+    setState(() {
+      _captures = captures;
+      _searchingCaptures = false;
+    });
   }
 
   Future<void> _searchCifraClub(String query) async {
@@ -616,10 +646,16 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
                       title: widget.title,
                       onExample: _set,
                     ),
+                    // tabs.cam's public captures (when it finds some),
                     // YouTube's videos, and Cifra Club's tabs under them.
                     Other() => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_captures case final captures?
+                            when captures.isNotEmpty) ...[
+                          _PublicResult(captures: captures),
+                          const SizedBox(height: 20),
+                        ],
                         _YouTubeResult(
                           query: query,
                           videos: _videos,
@@ -1171,6 +1207,82 @@ class _VideoTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Over YouTube's results, once it finds some: tabs.cam's public captures
+/// ([captures]), each opening in the app as its link does (signed in, it
+/// joins it: it's then in Home's Shared with me).
+class _PublicResult extends StatelessWidget {
+  const _PublicResult({required this.captures});
+
+  final List<PublicCapture> captures;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return Column(
+      key: const Key('dictionary-public'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.dictionaryPublic, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        for (final capture in captures)
+          Tooltip(
+            message: l10n.dictionaryPublicOpen,
+            waitDuration: const Duration(milliseconds: 600),
+            child: InkWell(
+              key: Key('dictionary-public-${capture.captureId}'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => IncomingLinks.instance.open(capture.link()),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: ColoredBox(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.public),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            capture.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          if (capture.artist.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              capture.artist,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

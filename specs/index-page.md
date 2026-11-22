@@ -6,9 +6,10 @@ file, [tabcam_index/site/index.html](../tabcam_index/site/index.html),
 with its pictures in [img/](../tabcam_index/site/img); no build, no
 framework, and no third-party requests but Google's sign-in script, for
 visitors not signed in ([signing in](#signing-in-here)); the fonts are
-the device's, Roboto where it's installed. In English. It no longer redirects to the app:
-only a capture's link that names the root (`/?c=…`) is sent on to
-`/app/`, its query kept.
+the device's, Roboto where it's installed. In English. Two visits go
+straight on to the app instead, the page not shown: a capture's link
+that names the root (`/?c=…`), its query kept, and anyone
+[signed in already](#signed-in-already).
 
 ## The page
 
@@ -16,8 +17,9 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
 `#FBF7EF`, gold `#E0A030`), from top to bottom:
 
 - **Top bar**, kept at the top while scrolling: the
-  [logo](app-icon.md), links to the three features (Scan, Record, Share;
-  hidden on phones) and **Open the app** (`/app/`).
+  [logo](app-icon.md), links to the three features and the open source
+  box (Scan, Record, Share, Open; hidden on phones), each scrolling its
+  section to just below the bar, and **Open the app** (`/app/`).
 - **Header**: "For guitar and bass players", the title **A camera for
   your guitar tabs**, a sentence on what it does, **the way in** (below),
   "Runs in your browser, on your phone or your computer", and a faint
@@ -39,6 +41,13 @@ Dark, in the brand's colours ([app icon](app-icon.md): `#1E1A15`, cream
      friends, read only; playing a recording or video above the tab;
      what they record goes to their own copy. Its picture is yet to
      come: until then its box stands alone, centred.
+- **Open source and learnable** (`#open`, the top bar's **Open**): a
+  box like the features' (numbered 04, no picture, centred), saying the
+  code is open under the MIT License, to read, run and learn from, and
+  that the Production Bytes newsletter tells how it's built and shipped.
+  Its two points are links: **The code, on GitHub**
+  (https://github.com/prodbytes/tabcam) and **How it's made, on
+  Production Bytes** (https://prodbytes.substack.com/).
 - **The way in, again**: "Start with the tab on your music stand", that
   tabs.cam comes with no songs (everything is what the user scans or
   adds, in their own account), no ads, no tracking, and the way in
@@ -56,14 +65,10 @@ px a side, 12 px over its edge.
 
 ## The way in
 
-What the header and the closing section offer depends on who's there:
+What the header and the closing section offer to a visitor not signed
+in (one signed in never sees the page, [below](#signed-in-already)):
 
-- **Signed in already** on this browser (the app's tabs.cam session in
-  `localStorage` `tabcam.signed-in`, or a Google sign-in whose token is
-  good for another minute, `tabcam.session`): **Open your tabs**
-  (`/app/`), the one gold button, and "Signed in as *name*" (else the
-  email) before the header's note. Google's script isn't loaded.
-- **Not signed in, with a Google client** (the deploy's or the local
+- **With a Google client** (the deploy's or the local
   server's, below): Google's own **Continue with Google** button (white,
   English, 40 px high; "Continue as *name*" when the browser has a Google
   account), then **Open tabs.cam** beside it, an outline of the same
@@ -73,6 +78,20 @@ What the header and the closing section offer depends on who's there:
   kept (a faint box), so nothing moves.
 - **No client, or Google's script fails to load** (blocked, offline): as
   before, **Open tabs.cam** alone, gold.
+
+## Signed in already
+
+Someone signed in on this browser (the app's tabs.cam session in
+`localStorage` `tabcam.signed-in`, with its refresh token, or a Google
+sign-in whose token is good for another minute, `tabcam.session`) goes
+straight on to the app: the page's first script sends them to `/app/`
+before anything shows (the page stays blank, in its background colour,
+meanwhile), replacing the index in the history so Back doesn't land on
+it again. A link to one of the page's sections (`/#record`) goes to the
+app too. Google's script isn't loaded. Signing out in the app clears
+both keys, so the page shows again; a stale session (a refresh token
+the API no longer takes) gets the app, which asks for a sign-in. Search
+engines and other visitors with no sign-in get the page.
 
 ## Signing in here
 

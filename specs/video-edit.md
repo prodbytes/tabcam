@@ -8,7 +8,9 @@ it**, and the two sound lanes are mixed: trim the video's start and
 end, set its own sound's level, and place the song along it at a level
 of its own, each lane with its **channels** (a take recorded on
 the left only can play on both sides) and **balance**
-([stereo](#a-lanes-channels-and-balance)), both through a **master**
+([stereo](#a-lanes-channels-and-balance)), and **split into its
+instruments** if the user likes, each at a level of its own
+([instruments](stems.md)), both through a **master**
 volume (up to 200%); and,
 **on the video**, a take's tab drawn over it as
 it showed while recording (its **size**, **background** and **colours**
@@ -71,11 +73,16 @@ would get in the way of watching and playing along); it finds the
 song's length as the editor does (its player's, or, where the player
 can't say, as for a take the browser recorded, the editor's), and when
 neither can say, takes the end the edit keeps for it (none: the song
-doesn't play); elsewhere (the file list's play buttons, Cam's play
-along, the list's Download and Download all) the video's file is used
-as it is: for a take, without its tab, which [Cam](cam.md#the-tab-with-the-take)
-keeps apart from its picture; the editor's Download makes the finished
-video. A cloned capture's video keeps its edit, naming the copy's
+doesn't play). **Once the editor's Download has made the video, the
+file it made is kept** ([the kept download](#the-kept-download)): while
+the edit is still the one it was made from, the file screen's player
+and the file list's play button play that file instead, as it was
+downloaded, on every device of the user's and for everyone the capture
+is shared with. Elsewhere (the file list's play buttons with no kept
+download, Cam's play along, the list's Download and Download all) the
+video's file is used as it is: for a take, without its tab, which
+[Cam](cam.md#the-tab-with-the-take) keeps apart from its picture; the
+editor's Download makes the finished video. A cloned capture's video keeps its edit, naming the copy's
 song. An edit's keys from a newer app (a newer editor's settings) are
 kept with it and written back with every change made here, even a
 Reset: the edit then stays, as the whole video with its own sound, which
@@ -377,7 +384,9 @@ metronome's buttons do theirs; its ✕ hides it too.
   Until it's read, and where it can't be (no reader on a desktop build,
   no sound in the file, a format not decoded), the bar shows without
   it, as before; it never holds anything back, and nothing is sent
-  anywhere.
+  anywhere. In Cam, its rows draw theirs too: the song's on the main
+  row, the take's own in the take's row's blocks
+  ([waveforms in Cam's rows](cam.md#waveforms-in-cams-rows)).
 - <a id="zoom"></a>**The timeline zooms**: **Zoom out** and **Zoom in**
   (magnifiers) sit in the corner left of the ruler, over the rows'
   headers, with the zoom between them once it isn't the whole video
@@ -496,7 +505,13 @@ metronome's buttons do theirs; its ✕ hides it too.
     level; its row comes under the video's, the dock growing by it, and
     its bar shows its used part (its name on it) where it plays
     along the video, what falls outside the kept part dimmed (it's cut
-    off). **Dragged, the song moves** along the video; **dragged by
+    off). On it, the song's [phrase passes](cam.md#phrase-passes) (the
+    song's own, at its own times, kept with the capture; not a take's)
+    are marked as the play-along player's bar marks them, a tick across
+    the bar at each in the primary colour (`PhraseMarks`), where the
+    song plays them along the video (`songPhrasesOnLane`: moved with
+    the song, lined up in clips with each clip, those in a part trimmed
+    off left out; zoomed and scrolled with the lanes). **Dragged, the song moves** along the video; **dragged by
     either end, it's trimmed** (a grip at each end; the start moves
     with what's cut, so the rest stays put; at least half a second
     stays). **Its name in the row's header**, with a ⋮, opens
@@ -561,6 +576,15 @@ metronome's buttons do theirs; its ✕ hides it too.
       `video-edit-<lane>-stereo`, `-left`, `-right`, `-mono`),
       `-balance`, `-balance-level` and `-stereo-note`. The segments
       shrink to fit the popup at large text sizes.
+  - <a id="a-lanes-instruments"></a>**A lane's instruments** (in its
+    volume's popup, under its channels and balance; `LaneStems` in
+    [`page_edit.dart`](../tabcam_app/lib/library/page_edit.dart)):
+    **Split into instruments**, a switch; on, a row for each of
+    **Vocals**, **Drums**, **Bass** and **Other**, each with its Mute
+    and a slider from 0% to 100%, and a note, once one isn't at 100%,
+    that only Download has them (the preview plays the lane whole, as it
+    does its channels). A rough split for now, on the device: see
+    [instruments](stems.md).
 - <a id="master"></a>**Master**: both lanes go through it, after their own levels
   ("Master · Both sounds together, up to 200%"): **Mute** (a speaker,
   "Mute (Master)"; muted, nothing is heard and the level is kept, as a
@@ -828,7 +852,11 @@ metronome's buttons do theirs; its ✕ hides it too.
   failure says "Couldn't make the file" and why. With the watermark and
   the fades on by default, almost every Download now makes the file (on the web,
   as long as the kept part takes to play); the file list's Download and
-  Download all stay instant, the file as it is.
+  Download all stay instant, the file as it is. **The video made is
+  kept** with the page once it's saved, and plays in the video's place
+  until the edit changes ([the kept download](#the-kept-download)); the
+  video without sound, the sound only, a video downloaded as it is and
+  a download cancelled keep nothing.
 
 ### How the edit is stored
 
@@ -848,7 +876,10 @@ version 2 (`v: 2`):
   [channels](#a-lanes-channels-and-balance): `left`, `right` or `mono`;
   absent, or one this version doesn't know, `stereo`), `ownBalance` and
   `songBalance` (-1, the left only, to 1, the right only, to the
-  hundredth; absent or not a number, 0), and
+  hundredth; absent or not a number, 0), `ownStems` and `songStems`
+  (a lane [split into its instruments](stems.md#stored), written only
+  while it's split: each instrument not at 100%, e.g. `{"vocals":
+  {"muted": true}}`; `{}`, split, all at 100%), and
   `song`: `manual` (placed by hand), `off` (none; Remove) or, absent
   with a `trackId`, `auto`: a take's song [lined up by
   itself](#a-takes-song-lined-up) from its log, its track keys placing
@@ -907,6 +938,65 @@ version 2 (`v: 2`):
 - Values that aren't numbers are read as the default; volumes out of
   range are brought within 0–1 (the master's within 0–2). `PageEdit` has one `copyWith`, and its
   `==`, `hashCode` and `toString` go by one list of its fields.
+
+### The kept download
+
+<a id="the-kept-download"></a>When **Download** makes **the video**
+(the menu's first item, or the button itself) and it's saved (the
+browser's download started, or the system's "save as" not cancelled),
+the file made is **kept with the video's page** as its **render**
+([`Library.keepRender`](../tabcam_app/lib/library/library.dart)), a
+file of the capture's own beside the video's:
+`<render id>.<extension>` (a new ID each time; `.mp4`, or `.webm` where
+that's made), on the device (in memory on the web) and, signed in,
+[synced](cloud-sync.md#whats-synced-and-where) to the capture's folder
+like a page's file. A change still waiting to be kept (the edit is kept
+a moment after it's made) is kept first, so the render says what it was
+made from. Nothing is kept for the video without sound, the sound only,
+a video downloaded as it is (its own file plays already) or a download
+cancelled.
+
+**It plays in the video's place**: the [file
+screen](event-screen.md#file-screen)'s player and the file list's play
+button ([`openPagePlayer`](../tabcam_app/lib/screens/video_page.dart))
+play the kept file, as downloaded, looping on the file screen, with
+nothing mixed or drawn over it (its sound, tab, title, watermark and
+fades are in the file already: the watermark as the downloader's
+Premium had it, and the fades at each turn of the loop, which the file
+screen's own playback leaves out). On the user's other devices, for
+people the capture is [shared with](shared-captures.md#shared-with-me)
+and for [link holders](sharing.md#opening-a-link), the same, once its
+file has come. It plays only while it's **still the edit's**
+(`currentRender`): the page's edit is the one it was made from (`==`),
+the title it shows is the one the video would show now (the capture
+renamed, a title from the capture's name would differ), and its file
+is on the device; otherwise the video plays as before, as its edit
+says (a render whose file hasn't come yet, or that won't open, too).
+
+**It goes** when it can't play any more:
+
+- the edit changes (any change kept in the editor, Reset included): the
+  render goes from the page, its file deleted, and sync deletes it from
+  the folder and, at their next pass, from the other devices;
+- a new Download of the video replaces it (the old file goes);
+- the video's page is purged from the trash, or its capture
+  ([trash](trash.md)). Deleted, it stays with its page in the trash,
+  and comes back with it.
+
+A rename of the capture doesn't delete it (a rename back brings it
+back). A [clone](library.md#events)'s video has no render (the copy's
+edit plays until it's downloaded there), nor does a published
+contribution's copy. Older apps keep the page's `render` key as they
+found it, but don't know its file: one that sends the capture deletes
+the file from the folder (devices that have it keep playing it; others
+play the edit).
+
+Stored on the page as `render` (`PageRender`, in
+[`capture_event.dart`](../tabcam_app/lib/library/capture_event.dart);
+video pages only): `{"id", "extension", "edit", "title"}`, `edit` the
+page's [edit](#how-the-edit-is-stored) it was made from (absent: none)
+and `title` the title's lines it shows, joined by a line break (absent:
+none). One whose ID or extension isn't well formed reads as none.
 
 ### A take's song, lined up
 
@@ -1103,7 +1193,8 @@ never stored. It says:
   each by default), each at most half the kept part; the same in all
   three of Download's plans;
 - whether it's a **passthrough**: the whole video, its own sound at
-  100% and as recorded (its channels and balance), no song, nothing drawn over it, no fades, and the input already in the
+  100% and as recorded (its channels and balance, its instruments not
+  changed), no song, nothing drawn over it, no fades, and the input already in the
   format made (an MP4 or M4V anywhere; a WebM where WebM is made). Only
   then does Download save the file as it is; everything else is
   rendered.
@@ -1312,7 +1403,11 @@ channels and balance** reach every renderer as one 2×2 matrix, `mix`
 in the lane's channel arguments (`LaneStereo.matrix`: `[ll, lr, rl,
 rr]`, each side of the output from the sound's left and right; left out
 when it's as recorded), worked out in Dart, so the three apply the
-same thing.
+same thing. **A lane's instruments** reach them as `stems` (each
+instrument's gain and the crossover's frequencies; left out when the
+lane isn't split or its instruments are all at 100%), applied after the
+`mix` and before the lane's volume, each renderer a copy of
+`StemSplit.apply` ([instruments, Download](stems.md#download)).
 
 - **Android**: Media3 Transformer
   ([`VideoEdit.kt`](../tabcam_app/android/app/src/main/kotlin/com/nu01/tabcam/VideoEdit.kt),
