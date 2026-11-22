@@ -196,7 +196,8 @@ review notes ([app stores](app-stores.md)).
 - [Index page](index-page.md): the site's front page at
   https://tabs.cam/: a header with the way into the app, and the three
   key features (scan, record, share and play along), each a picture with
-  its text in a box over it.
+  its text in a box over it; for visitors not signed in, as anyone
+  signed in goes straight on to the app.
 - [Privacy](privacy.md): the privacy policy at
   https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and

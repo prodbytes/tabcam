@@ -4909,3 +4909,16 @@ spec.
    later. The privacy policy and the store notes say so. See
    [sharing](sharing.md#who-can-open-it), [shared
    captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
+
+## 2026-11-22
+
+1. **"if a user is already logged in, in the index page, move to the
+   app"**. The index page (`/`) sends anyone signed in on the browser
+   (a tabs.cam session, or a Google sign-in whose token is still good:
+   the same check that showed "Open your tabs" and "Signed in as …")
+   straight on to `/app/`, from its first script, the page blank
+   meanwhile and replaced in the history so Back skips it. Those
+   signed-in touches are gone with it, as only visitors not signed in
+   see the page now; a capture's link naming the root (`/?c=…`) still
+   goes on to the app with its query. Checked in Chromium, WebKit and
+   Firefox. See [index page](index-page.md#signed-in-already).
