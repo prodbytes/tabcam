@@ -4937,3 +4937,15 @@ spec.
    instead of selecting or editing, and the wheel still scrolls. Neither
    is kept. Tested in `text_zoom_test.dart`. See [tab
    recognition](tab-recognition.md#zoom-and-drag-to-move).
+
+3. **"add a "back to beggining" button to mini player sidebar (equals
+   pressing zero)"**. The play-along sidebar's frame has a **|◀** button
+   first among its controls, before «: "Back to the start (0)" (in
+   Spanish and Portuguese too), which does what the **0** key does
+   (`BackingTrack.restart`, the one method both call): back to the start
+   of the file, or of its section when one is set, count-in included;
+   paused, it stays paused there; playing, it starts over as Play starts
+   it. In every screen with the sidebar (Cam, the file screen, the
+   editor). The row of buttons still fits the narrowest sidebar (160
+   px), scaled down as before. Tested in `backing_section_test.dart`.
+   See [Cam](cam.md#playing-along-with-a-file).

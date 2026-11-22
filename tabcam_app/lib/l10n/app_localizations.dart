@@ -1336,6 +1336,12 @@ abstract class AppLocalizations {
   /// **'Pause (space)'**
   String get camAlongPause;
 
+  /// Play-along sidebar: the file playing along goes back to its start (its section's when it has one), counting in again if it was playing; the 0 key does it too.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the start (0)'**
+  String get camAlongRestart;
+
   /// Cam: the file playing along goes 10 seconds back («).
   ///
   /// In en, this message translates to:
