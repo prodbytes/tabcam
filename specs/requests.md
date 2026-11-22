@@ -5068,3 +5068,27 @@ spec.
    their section to just below the bar (`scroll-margin-top`), where the
    pictureless boxes (Share, Open) used to land with their top under
    it. See [index page](index-page.md#the-page).
+
+9. **"Add both buttons "." (clear take, restart from the beginning) and
+   ("," or "/") (start a new take, from beginning, but keep the old one).
+   When I say beginning that should include the 2s "breath" intro."**
+   Cam's controls gain **Redo** (the . key; on only while a take
+   records) and **New take** (the / key, and now the comma key too),
+   right after Rec. Both keys and both buttons now start the next take
+   **from the beginning**: the song in the sidebar stops at once, back
+   at its start (its section's), silent while the take is saved (New
+   take) or thrown away (Redo), and plays with the next take after its
+   2-second count-in, so every take opens with its breath, then the
+   song from the top. Until now / left the song paused where it was and
+   played it on from there. Not recording, /, , and New take start a
+   take with the song from its start, as . did already. The comma key
+   no longer turns the tab (the keypad's decimal key typing "," is
+   still .). Tooltips name the keys ("Redo (.): …", "New take (/ or ,):
+   …"); the keys overlay lists / and , together. With six controls on
+   a phone, a name too wide gets smaller (down to 80 %) before it's cut
+   short; with the real Roboto the English names fit whole at 360
+   points. In `cam_session.dart` (`nextTake`) and `cam_controls.dart`
+   (`_Label`); tested in `play_along_test.dart` (the buttons; / and .
+   with a song, the song back at its start each time; the comma key).
+   Not yet tried on a phone. See [Cam](cam.md#new-take-key) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
