@@ -19,7 +19,10 @@ app deletes the user's files.
   [event screen](event-screen.md)) moves to the capture's
   `deletedPages`, with its file and its [phrase passes](cam.md#phrase-passes)
   (a video with its [kept download](video-edit.md#the-kept-download),
-  whose file goes with it when it's purged).
+  whose file goes with it when it's purged). A take deleted or purged
+  leaves the songs it played along with their own passes, and gives
+  one with none kept the take's, at the song's times, so auto-pass
+  still turns the tab along it.
 - **A file replaced**: Rotate (the image as it was) and an edited video
   put in a file's place ([video edit](video-edit.md)) keep the file it
   replaced in `deletedPages` too.

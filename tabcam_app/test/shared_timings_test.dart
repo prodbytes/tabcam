@@ -191,6 +191,29 @@ void main() {
     expect((sync.page, sync.ms), (mySong, 40));
   });
 
+  test('a song whose passes the user cleared in their copy gets none of '
+      'the owner\'s back', () async {
+    final owner = await library();
+    var event = await owner.create(const []);
+    event = await owner.addMedia(event, [
+      file('riff.m4a', PageKind.audio, 'm4a'),
+    ]);
+    final song = event.pages.single.id;
+    final reader = await library();
+    var copy = await reader.copyToAdd(await share(owner, event.id, reader));
+    final mySong = copy.clonedPages[song]!;
+    await reader.clearPhrases(copy.id, mySong);
+
+    // The owner records passes along it later.
+    await owner.setPhrases(
+      event.id,
+      song,
+      PhraseTimes.none.add(s(10), next, 1),
+    );
+    copy = await reader.copyToAdd(await share(owner, event.id, reader));
+    expect(reader.phrasesOf(copy.id, mySong).isEmpty, isTrue);
+  });
+
   test(
     'a copy made before it kept which pages it took catches up without '
     'taking again the pages it had, those whose file became its own too',

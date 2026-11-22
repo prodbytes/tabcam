@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -1037,8 +1038,8 @@ class _BackingFrameState extends State<_BackingFrame> {
                               child: IgnorePointer(
                                 child: CustomPaint(
                                   key: const Key('cam-along-phrase-marks'),
-                                  painter: _PhraseMarks(
-                                    phrases,
+                                  painter: PhraseMarks(
+                                    [for (final p in phrases.passes) p.at],
                                     media.value.duration,
                                     Theme.of(context).colorScheme.primary,
                                   ),
@@ -1736,11 +1737,15 @@ class _CountIn extends StatelessWidget {
 }
 
 /// Where the tab turns along the song ([BackingTrack.phrases]): a tick
-/// across the progress bar at each phrase pass.
-class _PhraseMarks extends CustomPainter {
-  _PhraseMarks(this.times, this.length, this.color);
+/// across the bar at each phrase pass, [at] its time on the bar's axis,
+/// [length] across its width. The player's progress bar draws them, and
+/// the video editor's song rows with the same ticks (Cam's main row on
+/// the song's own time; the edit view's Song lane where the song is
+/// placed along the video).
+class PhraseMarks extends CustomPainter {
+  PhraseMarks(this.at, this.length, this.color);
 
-  final PhraseTimes times;
+  final List<Duration> at;
   final Duration length;
   final Color color;
 
@@ -1751,15 +1756,15 @@ class _PhraseMarks extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2;
-    for (final p in times.passes) {
-      final x = size.width * (p.at.inMilliseconds / ms).clamp(0.0, 1.0);
+    for (final t in at) {
+      final x = size.width * (t.inMilliseconds / ms).clamp(0.0, 1.0);
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }
 
   @override
-  bool shouldRepaint(_PhraseMarks old) =>
-      old.times != times || old.length != length || old.color != color;
+  bool shouldRepaint(PhraseMarks old) =>
+      !listEquals(old.at, at) || old.length != length || old.color != color;
 }
 
 /// The section that repeats, over the progress bar while repeat is on and

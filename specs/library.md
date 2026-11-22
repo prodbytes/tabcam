@@ -205,7 +205,8 @@ auto-pass had none to turn the tab by):
 - each song it took gets the original's [phrase
   passes](cam.md#phrase-passes) (the owner's, or the user's own on the
   shared capture) where the copy has none of its own: passes the user
-  recorded in their copy stay theirs;
+  recorded in their copy stay theirs, and a song whose passes they
+  cleared there (Clear keeps an empty list) gets none back;
 - each take it took gets the song the owner's device found in its sound
   (its log's `sync`), where the copy's log has none;
 - what the user did to their copy stays: a file they deleted there isn't

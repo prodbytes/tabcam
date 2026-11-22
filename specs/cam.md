@@ -476,11 +476,28 @@ the view shows it with the widgets in
   - **They go with their file**: a file deleted from the capture keeps
     them in the trash (restored, it has them), and they're deleted when
     it's purged ([Deleted and Purge](trash.md)); one deleted from the
-    user's contribution, they're deleted with it; a
+    user's contribution, they're deleted with it. **A take is not its
+    song**: deleting or purging a take never touches the passes of the
+    songs it played along with, which stay the song's, so the song keeps
+    turning the tab by itself with no take left. And a song with **no
+    passes kept** (none noted for it, or cleared by an app before this
+    one, which kept no mark of a clear) gets its takes' when one of them
+    is deleted, purged, or
+    deleted from the user's contribution (`Library._songPhrasesKept`):
+    each take's own passes (below), on the take's clock, put at the
+    song's times its [log](#what-a-take-keeps) noted the song at
+    (`songPhrasesOf`: only those made while that song played), every take
+    of the capture that played along with it, oldest first, merged as
+    passes recorded live are (within two seconds, at their average);
+    so they outlive the take. A song whose passes were **cleared** on
+    purpose (Clear, below) keeps an empty list (`"<id>": []`) and gets
+    none back. With several takes along one song, the song's passes are
+    already all of theirs merged (each take's were noted into the
+    song's as it recorded). A
     clone's copies of the files have their originals' passes (and the
     user's copy of a shared capture, where Cam records, takes those the
-    owner records later for songs it has none for:
-    [catching up](library.md#catching-up)), and so
+    owner records later for songs it has none for, not one cleared in the
+    copy: [catching up](library.md#catching-up)), and so
     does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
     from a contribution (the owner's own for it, else its reader's).
     Passes for a song deleted elsewhere are let go of at the next save.
@@ -494,13 +511,16 @@ the view shows it with the widgets in
   - **In the player**: a tick across the song's progress bar at each
     pass (in the theme's primary colour), and at the bar's right end, on
     its line, a **clear** button (a clear-all icon in the same colour,
-    "Clear the phrase passes marked on the bar") that drops them all; no
-    count is shown. A pass shows on the bar as soon as it's made, while
+    "Clear the phrase passes marked on the bar") that drops them all
+    (`Library.clearPhrases`: kept as cleared, an empty list, so no take
+    of the song gives them back); no count is shown. A pass shows on the bar as soon as it's made, while
     the take still records, not only once it's saved. Cleared during a
     take, the marks go at once and the take records on: passes made
     after (Auto-pass on) are noted and marked again, and only those are
     kept. The same frame shows them beside the Text view and
-    on the file screen.
+    on the file screen. The video editor marks them the same way on its
+    song rows: Cam's [main row](#the-main-row), and the edit view's
+    [Song lane](video-edit.md#the-song-row).
 - <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
   primary colour while on, struck through while off; on by default,
   kept on the device in the `cam` meta file, with
@@ -610,8 +630,12 @@ doubled; the sidebar's player stays, the same song's picture and
 controls. The row's header has **Play the song** / **Pause the song**
 (Pause while it counts in too), as the player's Play. Its bar, as long
 as the ruler (the file's length), has the file's name, the part played
-filled (the primary colour; red while a take records) and the section,
-where one is set, outlined in the tertiary colour; the ruler's playhead
+filled (the primary colour; red while a take records), the section,
+where one is set, outlined in the tertiary colour, and the song's
+[phrase passes](#phrase-passes) marked as the player's bar marks them (a
+tick across the bar at each, in the primary colour, `PhraseMarks`, on
+the song's own time: the same places; one recorded shows at once, and
+Clear takes them away); the ruler's playhead
 follows the player. A tap on the bar or the ruler takes the player
 there, and a drag along them follows (at most every 150 ms, the last
 where it's let go), kept within the section where one is set
