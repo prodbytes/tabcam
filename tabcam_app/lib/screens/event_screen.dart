@@ -410,20 +410,19 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
   /// only: the editor doesn't open on it): the editor opens on their copy
   /// of it ([Library.copyToAdd], as Cam and Add do), over the copy's page
   /// of that file (the one showing it: copy on write), in this screen's
-  /// place. When the user's copy has no page showing that file (it owns
-  /// its files since it was shared, or the file came after it), or the
-  /// copy can't be made, the file opens here instead, read only, as its
-  /// plain link opens it.
+  /// place; a copy made before the file came gets it now, as it catches
+  /// up with the capture. When the user's copy has no page showing that
+  /// file (it owns its files since it was shared, or the user deleted it
+  /// there), or the copy can't be made, the file opens here instead, read
+  /// only, as its plain link opens it.
   Future<void> _editOnCopy(CaptureEvent shown, EventPage page) async {
     final l10n = context.l10n;
     final origin = FileOrigin(shown.id, page.id);
     EventPage? showing(CaptureEvent copy) =>
         copy.pages.where((p) => p.source == origin).firstOrNull;
-    final had = _library.copyOf(shown.id);
-    if (had != null && showing(had) == null) return _openFile(page);
     final CaptureEvent copy;
     try {
-      copy = had ?? await _library.copyToAdd(shown);
+      copy = await _library.copyToAdd(shown);
     } on Object catch (e) {
       if (!mounted) return;
       _snack('${l10n.eventCouldntAdd}: $e');

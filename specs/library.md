@@ -125,7 +125,7 @@ with, and one shared with the user has `sharedBy` (the owner's email) and
 it has a `linkKey` ([sharing](sharing.md)), synced, and once its owner
 chooses who can open it, a `visibility` (`public`, `unlisted` or
 `private`; [who can open it](sharing.md#who-can-open-it)), synced; a
-clone has neither, and has `clonedFrom` (the ID of the capture it's a copy of), synced. A page has an ID, a kind (**image**,
+clone has neither, and has `clonedFrom` (the ID of the capture it's a copy of), synced, and `clonedPages`, which page of the original each of its pages is (the original's page ID to the clone's; `''` for one taken before this was kept, whose page isn't known), synced. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A video Cam recorded is
 marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or
@@ -160,7 +160,12 @@ new page, links copied as they are; on a capture shared with the user,
 their own phrase passes where they have some), created now, `clonedFrom`
 the original, and never synced or shared yet. So it can be changed, or
 shared with other people, apart from the original. A message says
-"Cloned as "<title> (copy)"".
+"Cloned as "<title> (copy)"". Each page is copied whole, as its JSON
+has it (its name, filter, edit, take log, and any key a newer app keeps
+with a page), but for its ID, its file (the original's, below) and the
+original's kept render (a file of the original's folder); the pages an
+edit or a take log name, and the songs phrase passes belong to, are the
+clone's.
 
 **Copy on write**: a clone doesn't copy the files. Each page shows the
 original's file (`source`; a clone of a clone, the first original's),
@@ -183,10 +188,34 @@ only when it has to:
   become its own: the link's holders read only its folder.
 
 **Adding to a capture shared with the user** (Add, dropped files, a tab
-site's print, Cam's takes) adds to their own copy of it
-(`Library.copyToAdd`): their newest capture `clonedFrom` it, or a new
+site's print, Cam's takes, a file's edit view) adds to their own copy of
+it (`Library.copyToAdd`): their newest capture `clonedFrom` it, or a new
 clone, made then. Only the owner changes a shared capture
 ([shared captures](shared-captures.md)).
+
+<a id="catching-up"></a>**The copy catches up** with the shared capture
+each time it's used so (`Library._caughtUp`; until 2026-11-22 it stayed
+as it was made, so what the owner added later never reached it, nor did
+the phrase passes the owner recorded after it was made, and Cam's
+auto-pass had none to turn the tab by):
+
+- each of the original's files the copy has never taken (not in its
+  `clonedPages`) is added at its end, as a clone adds it: the
+  original's file (copy on write), its take log naming the copy's songs;
+- each song it took gets the original's [phrase
+  passes](cam.md#phrase-passes) (the owner's, or the user's own on the
+  shared capture) where the copy has none of its own: passes the user
+  recorded in their copy stay theirs;
+- each take it took gets the song the owner's device found in its sound
+  (its log's `sync`), where the copy's log has none;
+- what the user did to their copy stays: a file they deleted there isn't
+  taken again, nor is one they changed (rotated, say).
+
+Nothing new: the copy isn't saved (it doesn't sync for nothing). A copy
+made before `clonedPages` was kept knows the pages still showing the
+original's files; any other page of the original made before the copy
+(page IDs hold the time they were made) is taken as there when it was
+made, and the record is kept from then on.
 
 **Delete** puts an event in the trash (`trashed`): hidden, its pages and
 files kept until it's restored or the user purges the trash
