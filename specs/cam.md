@@ -476,7 +476,10 @@ the view shows it with the widgets in
     them in the trash (restored, it has them), and they're deleted when
     it's purged ([Deleted and Purge](trash.md)); one deleted from the
     user's contribution, they're deleted with it; a
-    clone's copies of the files have their originals' passes, and so
+    clone's copies of the files have their originals' passes (and the
+    user's copy of a shared capture, where Cam records, takes those the
+    owner records later for songs it has none for:
+    [catching up](library.md#catching-up)), and so
     does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
     from a contribution (the owner's own for it, else its reader's).
     Passes for a song deleted elsewhere are let go of at the next save.

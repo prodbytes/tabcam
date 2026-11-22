@@ -4909,3 +4909,29 @@ spec.
    later. The privacy policy and the store notes say so. See
    [sharing](sharing.md#who-can-open-it), [shared
    captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
+
+## 2026-11-22
+
+1. **"make sure that when a capture is shared all files are included,
+   including timings so that auto pass works"**. Checked end to end:
+   the capture's `event.json` reaches whoever it's shared with as a
+   whole (by email, joined, or by its link; the share API's read-only
+   credentials cover its whole folder, `<owner>/events/<id>/*`, with
+   no filter by file), and with it every page's take log and the songs'
+   phrase passes, so the shared capture itself has them all. The gap
+   was the user's **own copy** of a shared capture, where Cam records
+   (and Add adds): made once, the first time, it never took what the
+   owner added after, neither files nor timings: a copy made before the
+   owner recorded the passes had none, so auto-pass didn't turn the tab
+   there. Now the copy [catches up](library.md#catching-up) each time
+   Cam, Add or a file's edit view goes to it: the files it never had
+   (each with its take log, naming the copy's songs), the owner's passes
+   for songs it has none for, and a take's song found in its sound; what
+   the user deleted or recorded in it stays theirs. A clone keeps which
+   page of the original each of its pages is (`clonedPages`, synced),
+   and copies each page whole, as its JSON has it (any key a newer app
+   keeps with a page comes too), instead of field by field. The zip
+   download is unchanged: it's the files for people (no take logs, no
+   passes), not something tabs.cam reads back. No server change. Tested
+   in `shared_timings_test.dart`. See [library](library.md#catching-up),
+   [shared captures](shared-captures.md).
