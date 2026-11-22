@@ -603,7 +603,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camRecKey => 'Rec (.)';
 
   @override
-  String get camStopKey => 'Stop · new take (/) · redo (.)';
+  String get camStopKey => 'Stop · new take (/ or ,) · redo (.)';
 
   @override
   String get camRedo => 'Redo';
@@ -680,10 +680,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Auto-pass off: the tab turns only when you turn it, and no phrase passes are recorded';
 
   @override
-  String get camPrevious => 'Previous line';
+  String get camPrevious => 'Previous phrase (↑)';
 
   @override
-  String get camNext => 'Next line';
+  String get camNext => 'Next phrase (↓)';
 
   @override
   String get camNoTab =>
@@ -791,10 +791,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongRestart => 'Back to the start (0)';
 
   @override
-  String get camAlongBack => 'Back 10 seconds';
+  String get camAlongBack => 'Back 10 seconds (←)';
 
   @override
-  String get camAlongForward => 'Forward 10 seconds';
+  String get camAlongForward => 'Forward 10 seconds (→)';
 
   @override
   String get camAlongCountInOn =>
@@ -2074,10 +2074,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditSpaceKey => 'space';
 
   @override
-  String get videoEditToStart => 'To the start';
+  String get videoEditToStart => 'To the start (Home)';
 
   @override
-  String get videoEditToEnd => 'To the end';
+  String get videoEditToEnd => 'To the end (End)';
 
   @override
   String get videoEditPickTrack => 'Pick a track';

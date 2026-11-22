@@ -222,7 +222,7 @@ B|--13-12-|
 ''';
 
 /// Rec's tooltip while recording.
-const _stopKeys = 'Stop · new take (/) · redo (.)';
+const _stopKeys = 'Stop · new take (/ or ,) · redo (.)';
 
 /// The bar's Stop (Rec's, [_stopKeys], or Play's), not the sidebar's: a
 /// take opens the sidebar, whose frame has a Stop too.
@@ -494,7 +494,7 @@ void main() {
     await tester.tap(find.byKey(const Key('neckline')));
     await tester.pump();
     expect(find.text('2 / 3'), findsOneWidget);
-    await tester.tap(find.byTooltip('Previous line'));
+    await tester.tap(find.byTooltip('Previous phrase (↑)'));
     await tester.pump();
     expect(find.text('1 / 3'), findsOneWidget);
   });
@@ -942,9 +942,9 @@ B|--5--8--|
     await frames(tester);
     await tester.tap(find.byTooltip('Rec (.)'));
     await frames(tester);
-    await tester.tap(find.byTooltip('Next line'));
+    await tester.tap(find.byTooltip('Next phrase (↓)'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Next line'));
+    await tester.tap(find.byTooltip('Next phrase (↓)'));
     await tester.pump();
     expect(find.text('3 / 3'), findsOneWidget);
     await tester.tap(_camStop);
@@ -954,9 +954,9 @@ B|--5--8--|
     expect([for (final (_, line) in log.tab!.marks) line], [0, 1, 1]);
 
     // Back to the first line, then Play from the take's end.
-    await tester.tap(find.byTooltip('Previous line'));
+    await tester.tap(find.byTooltip('Previous phrase (↑)'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Previous line'));
+    await tester.tap(find.byTooltip('Previous phrase (↑)'));
     await tester.pump();
     expect(find.text('1 / 3'), findsOneWidget);
     video.position = const Duration(minutes: 1);
@@ -3593,6 +3593,73 @@ B|--5--8--|
     await until(tester, () => recReady(tester));
     expect(pages(), hasLength(4));
     expect(widget('cam-redo').onPressed, isNull);
+  });
+
+  testWidgets('every button with a key names it in its tooltip: the '
+      'phrase\'s ↑ and ↓, the takes\', the player\'s', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    String? tip(String key) => tester
+        .widget<IconButton>(
+          find
+              .descendant(
+                of: find.byKey(Key(key)),
+                matching: find.byType(IconButton),
+                matchRoot: true,
+              )
+              .first,
+        )
+        .tooltip;
+    IconButton phraseArrow(String tooltip) => tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip(tooltip),
+        matching: find.byType(IconButton),
+      ),
+    );
+
+    // The phrase's arrows are ↑ and ↓, as the keys that pass it.
+    expect(
+      (phraseArrow('Previous phrase (↑)').icon as Icon).icon,
+      Icons.keyboard_arrow_up,
+    );
+    expect(
+      (phraseArrow('Next phrase (↓)').icon as Icon).icon,
+      Icons.keyboard_arrow_down,
+    );
+    // The takes'.
+    expect(tip('cam-rec'), 'Rec (.)');
+    expect(
+      tip('cam-new-take'),
+      'New take (/ or ,): record a take with the song from its start, its '
+      '2 s count-in first',
+    );
+    // The player's, in the sidebar.
+    expect(tip('cam-along-restart'), 'Back to the start (0)');
+    expect(tip('cam-along-back'), 'Back 10 seconds (←)');
+    expect(tip('cam-along-toggle'), 'Play (space)');
+    expect(tip('cam-along-forward'), 'Forward 10 seconds (→)');
+    // The keys' overlay.
+    expect(find.byTooltip('Keyboard shortcuts (H)'), findsOneWidget);
   });
 
   testWidgets('Phrase passes: recording along with a song notes each turn '

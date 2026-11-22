@@ -135,7 +135,12 @@ extension _CamRows on _StudioViewState {
           height: _SongBar.height,
           child: IconButton(
             key: const Key('video-edit-main-play'),
-            tooltip: playing ? l10n.videoEditMainPause : l10n.videoEditMainPlay,
+            // The space bar is the song's while the sidebar shows (else
+            // it turns the tab): then the tooltip names it.
+            tooltip: [
+              playing ? l10n.videoEditMainPause : l10n.videoEditMainPlay,
+              if (along.open) '(${l10n.videoEditSpaceKey})',
+            ].join(' '),
             padding: EdgeInsets.zero,
             icon: Icon(playing ? Icons.pause : Icons.play_arrow),
             onPressed: track.canToggle

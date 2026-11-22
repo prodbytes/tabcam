@@ -839,7 +839,7 @@
   "@camRecKey": {
     "description": "Cam: the Rec button's tooltip; the 1 key does it too"
   },
-  "camStopKey": "Stop · new take (/) · redo (.)",
+  "camStopKey": "Stop · new take (/ or ,) · redo (.)",
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },
@@ -942,11 +942,11 @@
   "@camAutoPassOff": {
     "description": "Cam: auto-pass button tooltip while it's off"
   },
-  "camPrevious": "Previous line",
+  "camPrevious": "Previous phrase (↑)",
   "@camPrevious": {
     "description": "Cam: previous neckline tooltip"
   },
-  "camNext": "Next line",
+  "camNext": "Next phrase (↓)",
   "@camNext": {
     "description": "Cam: next neckline tooltip"
   },
@@ -1106,11 +1106,11 @@
   "@camAlongRestart": {
     "description": "Play-along sidebar: the file playing along goes back to its start (its section's when it has one), counting in again if it was playing; the 0 key does it too."
   },
-  "camAlongBack": "Back 10 seconds",
+  "camAlongBack": "Back 10 seconds (←)",
   "@camAlongBack": {
     "description": "Cam: the file playing along goes 10 seconds back («)."
   },
-  "camAlongForward": "Forward 10 seconds",
+  "camAlongForward": "Forward 10 seconds (→)",
   "@camAlongForward": {
     "description": "Cam: the file playing along goes 10 seconds forward (»)."
   },
@@ -2833,11 +2833,11 @@
   "@videoEditSpaceKey": {
     "description": "Video edit: the space bar's name, in Play / Pause's tooltip (it plays or pauses the preview)"
   },
-  "videoEditToStart": "To the start",
+  "videoEditToStart": "To the start (Home)",
   "@videoEditToStart": {
     "description": "Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start"
   },
-  "videoEditToEnd": "To the end",
+  "videoEditToEnd": "To the end (End)",
   "@videoEditToEnd": {
     "description": "Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end"
   },

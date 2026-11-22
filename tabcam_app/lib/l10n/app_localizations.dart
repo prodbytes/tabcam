@@ -1057,7 +1057,7 @@ abstract class AppLocalizations {
   /// Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again
   ///
   /// In en, this message translates to:
-  /// **'Stop · new take (/) · redo (.)'**
+  /// **'Stop · new take (/ or ,) · redo (.)'**
   String get camStopKey;
 
   /// Cam: the Redo button's label (the . key): the take recording thrown away, recorded again from the start
@@ -1189,13 +1189,13 @@ abstract class AppLocalizations {
   /// Cam: previous neckline tooltip
   ///
   /// In en, this message translates to:
-  /// **'Previous line'**
+  /// **'Previous phrase (↑)'**
   String get camPrevious;
 
   /// Cam: next neckline tooltip
   ///
   /// In en, this message translates to:
-  /// **'Next line'**
+  /// **'Next phrase (↓)'**
   String get camNext;
 
   /// Cam: the capture has no text tab
@@ -1375,13 +1375,13 @@ abstract class AppLocalizations {
   /// Cam: the file playing along goes 10 seconds back («).
   ///
   /// In en, this message translates to:
-  /// **'Back 10 seconds'**
+  /// **'Back 10 seconds (←)'**
   String get camAlongBack;
 
   /// Cam: the file playing along goes 10 seconds forward (»).
   ///
   /// In en, this message translates to:
-  /// **'Forward 10 seconds'**
+  /// **'Forward 10 seconds (→)'**
   String get camAlongForward;
 
   /// Tooltip of the play-along player's count-in button while it's on: a press on play waits 2 seconds before playing (time to get from the keyboard to the instrument).
@@ -3535,13 +3535,13 @@ abstract class AppLocalizations {
   /// Video edit: the button (and the Home key) that takes the preview to the kept part's start, or from there to the video's start
   ///
   /// In en, this message translates to:
-  /// **'To the start'**
+  /// **'To the start (Home)'**
   String get videoEditToStart;
 
   /// Video edit: the button (and the End key) that takes the preview to the kept part's end, or from there to the video's end
   ///
   /// In en, this message translates to:
-  /// **'To the end'**
+  /// **'To the end (End)'**
   String get videoEditToEnd;
 
   /// Video edit: the sheet's title, and the button to pick the new track

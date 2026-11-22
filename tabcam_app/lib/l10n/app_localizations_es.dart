@@ -625,7 +625,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camRecKey => 'Grabar (.)';
 
   @override
-  String get camStopKey => 'Detener · nueva toma (/) · repetir (.)';
+  String get camStopKey => 'Detener · nueva toma (/ o ,) · repetir (.)';
 
   @override
   String get camRedo => 'Repetir';
@@ -703,10 +703,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Paso automático desactivado: la tablatura avanza solo cuando la pasas, y no se graban pasos de frase';
 
   @override
-  String get camPrevious => 'Línea anterior';
+  String get camPrevious => 'Frase anterior (↑)';
 
   @override
-  String get camNext => 'Línea siguiente';
+  String get camNext => 'Frase siguiente (↓)';
 
   @override
   String get camNoTab =>
@@ -815,10 +815,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get camAlongRestart => 'Volver al inicio (0)';
 
   @override
-  String get camAlongBack => 'Atrás 10 segundos';
+  String get camAlongBack => 'Atrás 10 segundos (←)';
 
   @override
-  String get camAlongForward => 'Adelante 10 segundos';
+  String get camAlongForward => 'Adelante 10 segundos (→)';
 
   @override
   String get camAlongCountInOn =>
@@ -2119,10 +2119,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditSpaceKey => 'espacio';
 
   @override
-  String get videoEditToStart => 'Al inicio';
+  String get videoEditToStart => 'Al inicio (Inicio)';
 
   @override
-  String get videoEditToEnd => 'Al final';
+  String get videoEditToEnd => 'Al final (Fin)';
 
   @override
   String get videoEditPickTrack => 'Elegir una pista';
