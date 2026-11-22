@@ -27,6 +27,7 @@ import '../capture/play_along_sidebar.dart'
         PlayAlongBeside,
         PlayAlongButton,
         PlayAlongSidebar,
+        PhraseMarks,
         isTake,
         pdfViewFor;
 import '../capture/song_sync.dart';
@@ -4986,7 +4987,32 @@ class _StudioViewState extends State<StudioView> {
           ),
           if (_trackLength > Duration.zero && _songWaveId == _trackId)
             _waveOver('video-edit-song-wave', _songWave, _songSpans),
+          if (_trackLength > Duration.zero) ?_songPhraseMarks(length),
         ],
+      ),
+    );
+  }
+
+  /// The song's phrase passes on the Song lane ([length] across it), as
+  /// the player's bar marks them ([PhraseMarks]): the song's own
+  /// ([Library.phrasesOf], its times in the song) put where the song
+  /// plays along the video ([songPhrasesOnLane]: moved with it, those in
+  /// a part trimmed off left out). None for a song without passes.
+  Widget? _songPhraseMarks(Duration length) {
+    final id = _trackId;
+    if (id == null) return null;
+    final at = songPhrasesOnLane(_songSpans, _library.phrasesOf(_eventId, id));
+    if (at.isEmpty) return null;
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: CustomPaint(
+          key: const Key('video-edit-song-phrase-marks'),
+          painter: PhraseMarks(
+            at,
+            length,
+            Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
@@ -6051,6 +6077,25 @@ class _LaneVolume extends StatelessWidget {
 /// time (m:ss) as often as there's room for one. Tapped or dragged, the
 /// preview goes there ([onSeek]: at once for a tap or as a drag ends, not
 /// [exact] while it drags).
+/// Song phrase passes ([times], at the song's own times) where the song
+/// plays along the video, as the Song lane draws its sound ([spans]: from
+/// [WaveSpan.at] to [WaveSpan.end] in the video, the song from
+/// [WaveSpan.from]): each pass in a span at `at + (pass - from)`, those
+/// outside every span (trimmed off, or past the song's part used) left
+/// out; in order.
+List<Duration> songPhrasesOnLane(List<WaveSpan> spans, PhraseTimes times) {
+  final out = <Duration>[];
+  for (final p in times.passes) {
+    for (final span in spans) {
+      final into = p.at - span.from;
+      if (into < Duration.zero || span.at + into > span.end) continue;
+      out.add(span.at + into);
+      break;
+    }
+  }
+  return out..sort();
+}
+
 class _Ruler extends StatefulWidget {
   const _Ruler({
     required this.length,

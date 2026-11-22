@@ -282,15 +282,19 @@ class Library extends ChangeNotifier {
     final mine = now.myContribution ?? Contribution(updated: _now());
     final pages = change(mine.pages);
     final kept = {for (final p in pages) p.id};
+    final gone = [
+      for (final p in mine.pages)
+        if (!kept.contains(p.id)) p,
+    ];
     final updated = _update(
       now.copyWith(
         contributions: [
           mine.copyWith(
             pages: pages,
-            phrases: _phrasesWithout(mine.phrases, [
-              for (final p in mine.pages)
-                if (!kept.contains(p.id)) p,
-            ]),
+            phrases: _phrasesWithout(
+              _songPhrasesKept(now, mine.phrases, gone),
+              gone,
+            ),
             updated: _now(),
           ),
         ],
@@ -314,6 +318,51 @@ class Library extends ChangeNotifier {
     };
   }
 
+  /// [phrases] (the capture's, or the user's own contribution's) with, for
+  /// each song a take of [gone] played along with that has no passes kept
+  /// (none recorded for it, as by apps before songs kept them; not one
+  /// cleared on purpose, which keeps an empty list), the passes the
+  /// capture's takes made while it played ([songPhrasesOf]: each take's
+  /// own, on its clock, put at the song's times its log noted), oldest
+  /// take first, merged as passes recorded live are. So a take deleted or
+  /// purged leaves the song its timings, and auto-pass turns the tab along
+  /// it as before.
+  static Map<String, PhraseTimes> _songPhrasesKept(
+    CaptureEvent event,
+    Map<String, PhraseTimes> phrases,
+    Iterable<EventPage> gone,
+  ) {
+    final mine = event.myContribution;
+    final goneIds = {for (final p in gone) p.id};
+    final stored = {
+      for (final p in [...event.storedPages, ...?mine?.pages]) p.id: p,
+    };
+    final songs = {
+      for (final take in gone)
+        for (final s in take.takeLog?.song ?? const <SongSegment>[])
+          if (!goneIds.contains(s.page) &&
+              stored.containsKey(s.page) &&
+              !phrases.containsKey(s.page) &&
+              mine?.phrases[s.page] == null &&
+              event.phrases[s.page] == null)
+            s.page,
+    };
+    if (songs.isEmpty) return phrases;
+    final out = {...phrases};
+    for (final song in songs) {
+      var times = PhraseTimes.none;
+      for (final take in stored.values) {
+        final log = take.takeLog;
+        if (log == null || take.id == song) continue;
+        final own = mine?.phrases[take.id] ?? event.phrases[take.id];
+        if (own == null || own.isEmpty) continue;
+        times = songPhrasesOf(own, log.song, song, into: times);
+      }
+      if (times.isNotEmpty) out[song] = times;
+    }
+    return out;
+  }
+
   /// The [PhraseTimes] of song [pageId] of event [eventId], its file's own
   /// (each file keeps its own, by its page ID): the user's, on a capture
   /// they contribute to (else the owner's), or the capture's.
@@ -329,18 +378,30 @@ class Library extends ChangeNotifier {
   /// none): with the capture, or, on one shared with the user (only its
   /// owner changes it), with their own contribution to it, which keeps
   /// them. Songs since deleted are let go of meanwhile.
-  Future<void> setPhrases(
+  Future<void> setPhrases(String eventId, String pageId, PhraseTimes? times) =>
+      _putPhrases(eventId, pageId, times);
+
+  /// Clears song [pageId]'s passes on purpose (Clear on the player's bar):
+  /// none, kept as an empty list, so a take of it deleted later doesn't
+  /// give it the take's again ([_songPhrasesKept]).
+  Future<void> clearPhrases(String eventId, String pageId) =>
+      _putPhrases(eventId, pageId, PhraseTimes.none, cleared: true);
+
+  Future<void> _putPhrases(
     String eventId,
     String pageId,
-    PhraseTimes? times,
-  ) async {
+    PhraseTimes? times, {
+    bool cleared = false,
+  }) async {
     Map<String, PhraseTimes> changed(
       Map<String, PhraseTimes> now,
       Set<String> songs,
     ) => {
       for (final MapEntry(:key, :value) in now.entries)
         if (key != pageId && songs.contains(key)) key: value,
-      if (times != null && times.isNotEmpty && songs.contains(pageId))
+      if (times != null &&
+          (times.isNotEmpty || cleared) &&
+          songs.contains(pageId))
         pageId: times,
     };
     final now = _byIdAll(eventId);
@@ -758,7 +819,9 @@ class Library extends ChangeNotifier {
   /// Deletes [page] from [event]: it goes to the event's trash
   /// ([CaptureEvent.deletedPages]) with its file and phrase passes, which
   /// stay (on the device and in the cloud) until it's restored
-  /// ([restorePage]) or the trash is purged ([purge]).
+  /// ([restorePage]) or the trash is purged ([purge]). A take's songs
+  /// with no passes kept get those it and the other takes made along them
+  /// ([_songPhrasesKept]), so they outlive it.
   Future<CaptureEvent> deletePage(CaptureEvent event, EventPage page) => _save(
     event.copyWith(
       pages: [
@@ -766,6 +829,7 @@ class Library extends ChangeNotifier {
           if (p.id != page.id) p,
       ],
       deletedPages: [...event.deletedPages, page],
+      phrases: _songPhrasesKept(event, event.phrases, [page]),
     ),
   );
 
@@ -913,7 +977,10 @@ class Library extends ChangeNotifier {
         e.id,
         (now) => now.copyWith(
           deletedPages: const [],
-          phrases: _phrasesWithout(now.phrases, gone),
+          phrases: _phrasesWithout(
+            _songPhrasesKept(now, now.phrases, gone),
+            gone,
+          ),
         ),
       );
       if (updated != null) await _dropFiles(updated, gone);

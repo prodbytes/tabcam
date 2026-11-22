@@ -3520,11 +3520,13 @@ B|--5--8--|
     await tester.runAsync(() async => settings = await library.readMeta('cam'));
     expect(jsonDecode(settings!), {'autoPass': false});
 
-    // Forgotten: no marks, nothing kept.
+    // Forgotten: no marks, kept as cleared on purpose (an empty list, so
+    // a take of it deleted later doesn't bring its passes back).
     await tester.tap(find.byKey(const Key('cam-along-phrases-clear')));
     await frames(tester);
     event = library.byId(id)!;
-    expect(event.phrases.containsKey(song), isFalse);
+    expect(event.phrases[song]!.isEmpty, isTrue);
+    expect((event.toJson()['phrases']! as Map)[song], isEmpty);
     expect(find.byKey(const Key('cam-along-phrases-clear')), findsNothing);
     expect(find.byKey(const Key('cam-along-phrase-marks')), findsNothing);
   });

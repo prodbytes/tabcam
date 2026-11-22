@@ -10,6 +10,7 @@ import 'package:tabcam_app/capture/cam_session.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
+import 'package:tabcam_app/capture/play_along_sidebar.dart' show PhraseMarks;
 import 'package:tabcam_app/capture/take_log.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
@@ -569,6 +570,63 @@ void main() {
         find.byKey(const Key('video-edit-main-played')),
       );
       expect(played.width / bar.width, closeTo(0.75, 0.01));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the song\'s phrase passes show on the main row as on the '
+        'player\'s bar: the same ticks, on the song\'s own time, at once', (
+      tester,
+    ) async {
+      final (library, id, song, _) = await camCapture(tester);
+      await tester.runAsync(
+        () => library.setPhrases(
+          id,
+          song!,
+          PhraseTimes.none.add(
+            const Duration(seconds: 45),
+            PassDirection.next,
+            1,
+          ),
+        ),
+      );
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      final marks = find.byKey(const Key('video-edit-main-phrase-marks'));
+      PhraseMarks painter(Finder f) =>
+          tester.widget<CustomPaint>(f).painter! as PhraseMarks;
+      expect(painter(marks).at, [const Duration(seconds: 45)]);
+      expect(painter(marks).length, const Duration(minutes: 3));
+      expect(
+        tester.getRect(marks).width,
+        closeTo(
+          tester.getRect(find.byKey(const Key('video-edit-main-bar'))).width,
+          0.5,
+        ),
+      );
+      final player = find.byKey(const Key('cam-along-phrase-marks'));
+      if (player.evaluate().isNotEmpty) {
+        expect(painter(player).at, painter(marks).at);
+      }
+
+      // Another kept: on the row at once.
+      await tester.runAsync(
+        () => library.setPhrases(
+          id,
+          song!,
+          library
+              .phrasesOf(id, song)
+              .add(const Duration(seconds: 90), PassDirection.next, 2),
+        ),
+      );
+      await camFrames(tester);
+      expect(painter(marks).at, [
+        const Duration(seconds: 45),
+        const Duration(seconds: 90),
+      ]);
+      // Cleared: gone.
+      await tester.runAsync(() => library.clearPhrases(id, song!));
+      await camFrames(tester);
+      expect(marks, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
