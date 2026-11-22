@@ -170,6 +170,8 @@
     /* A key feature: its picture, edge to edge, and its text in a box
        over one of the picture's corners. */
     .spotlight { position: relative; max-width: 1376px; margin: 0 auto clamp(56px, 9vw, 120px); }
+    /* The top bar's links land below the bar, not under it. */
+    .spotlight[id] { scroll-margin-top: 80px; }
     .spotlight img { width: 100%; }
     .card {
       position: relative; z-index: 1;
@@ -244,6 +246,7 @@
       <a href="#scan">Scan</a>
       <a href="#record">Record</a>
       <a href="#share">Share</a>
+      <a href="#open">Open</a>
       <a class="button primary small" href="/app/">Open the app</a>
     </nav>
   </header>
@@ -307,6 +310,20 @@
           <li>One link, read only: your tab stays as you made it</li>
           <li>Play a recording or a video above the tab as you play</li>
           <li>What they record goes to their own copy</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="spotlight plain" id="open">
+      <div class="card reveal">
+        <p class="kicker">04</p>
+        <h2>Open source and learnable</h2>
+        <p>All of tabs.cam's code is open, under the MIT License: read it,
+        run it, learn from it. The Production Bytes newsletter tells how
+        it's built and shipped.</p>
+        <ul>
+          <li><a href="https://github.com/prodbytes/tabcam">The code, on GitHub</a></li>
+          <li><a href="https://prodbytes.substack.com/">How it's made, on Production Bytes</a></li>
         </ul>
       </div>
     </section>
