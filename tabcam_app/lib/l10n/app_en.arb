@@ -843,6 +843,26 @@
   "@camStopKey": {
     "description": "Cam: the Stop button's tooltip while recording; the 1 key does it too, the / key saves the take and starts a new one, and the . key throws the take away and starts it again"
   },
+  "camRedo": "Redo",
+  "@camRedo": {
+    "description": "Cam: the Redo button's label (the . key): the take recording thrown away, recorded again from the start"
+  },
+  "camRedoTip": "Redo (.): throw this take away and record it again from the start, its 2 s count-in first",
+  "@camRedoTip": {
+    "description": "Cam: Redo's tooltip"
+  },
+  "camNewTake": "New take",
+  "@camNewTake": {
+    "description": "Cam: the New take button's label (the / and , keys): the take kept, the next recorded from the start"
+  },
+  "camNewTakeTip": "New take (/ or ,): keep this take and record the next from the start, its 2 s count-in first",
+  "@camNewTakeTip": {
+    "description": "Cam: New take's tooltip while a take records"
+  },
+  "camNewTakeIdleTip": "New take (/ or ,): record a take with the song from its start, its 2 s count-in first",
+  "@camNewTakeIdleTip": {
+    "description": "Cam: New take's tooltip while no take records"
+  },
   "camMicChoose": "Microphone",
   "@camMicChoose": {
     "description": "Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from"
@@ -3691,7 +3711,7 @@
   "@keysRetake": {
     "description": "Keyboard shortcuts, Cam: what the . key does"
   },
-  "keysCut": "Start a take with the song where it is; recording, save the take and start the next",
+  "keysCut": "Start a take with the song from its start; recording, save the take and start the next, the song from its start again",
   "@keysCut": {
     "description": "Keyboard shortcuts, Cam: what the / key does"
   },

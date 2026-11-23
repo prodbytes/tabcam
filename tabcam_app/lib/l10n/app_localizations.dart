@@ -1060,6 +1060,36 @@ abstract class AppLocalizations {
   /// **'Stop · new take (/) · redo (.)'**
   String get camStopKey;
 
+  /// Cam: the Redo button's label (the . key): the take recording thrown away, recorded again from the start
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get camRedo;
+
+  /// Cam: Redo's tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Redo (.): throw this take away and record it again from the start, its 2 s count-in first'**
+  String get camRedoTip;
+
+  /// Cam: the New take button's label (the / and , keys): the take kept, the next recorded from the start
+  ///
+  /// In en, this message translates to:
+  /// **'New take'**
+  String get camNewTake;
+
+  /// Cam: New take's tooltip while a take records
+  ///
+  /// In en, this message translates to:
+  /// **'New take (/ or ,): keep this take and record the next from the start, its 2 s count-in first'**
+  String get camNewTakeTip;
+
+  /// Cam: New take's tooltip while no take records
+  ///
+  /// In en, this message translates to:
+  /// **'New take (/ or ,): record a take with the song from its start, its 2 s count-in first'**
+  String get camNewTakeIdleTip;
+
   /// Cam: the tooltip of the arrow beside Rec, which opens a menu to choose the microphone takes record from
   ///
   /// In en, this message translates to:
@@ -4561,7 +4591,7 @@ abstract class AppLocalizations {
   /// Keyboard shortcuts, Cam: what the / key does
   ///
   /// In en, this message translates to:
-  /// **'Start a take with the song where it is; recording, save the take and start the next'**
+  /// **'Start a take with the song from its start; recording, save the take and start the next, the song from its start again'**
   String get keysCut;
 
   /// Keyboard shortcuts, Cam: the section on the play-along player's keys

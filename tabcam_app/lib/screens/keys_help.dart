@@ -177,7 +177,7 @@ class _KeysHelp extends StatelessWidget {
           l10n.keysTakes,
           [
             (['.'], l10n.keysRetake),
-            (['/'], l10n.keysCut),
+            (['/', ','], l10n.keysCut),
           ],
         ),
         playAlong,

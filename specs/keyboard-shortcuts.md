@@ -50,9 +50,12 @@ section, each key in a box as on the keyboard, then what it does:
     pedal too); **↑**, **Backspace**, **Page Up**: previous phrase (←
     too, with nothing playing along).
   - *Takes*: **.** starts a take with the song from its start;
-    recording, throws the take away and records it again. **/** starts
-    a take with the song where it is; recording, saves the take and
-    starts the next ([Cam](cam.md#new-take-key)).
+    recording, throws the take away and records it again. **/** and
+    **,** start a take with the song from its start; recording, save
+    the take and start the next, the song from its start again. Every
+    take so started opens with the 2-second count-in, then the song
+    ([Cam](cam.md#new-take-key); the Redo and New take buttons do the
+    same).
   - *Playing along (while the sidebar shows; ↑ and ↓ then turn the
     tab)*: **Space**, **1** play or pause the song (pausing it while a
     take records stops the take, saved); **0** back to the

@@ -1617,7 +1617,7 @@ B|--5--8--|
   });
 
   testWidgets('the keypad\'s decimal key typing "," (a European layout on '
-      'the web) is . too; the comma key turns the tab', (tester) async {
+      'the web) is . too; the comma key is /, a new take', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     await tester.pumpWidget(
       app(
@@ -1633,30 +1633,35 @@ B|--5--8--|
     await frames(tester);
     List<EventPage> pages() => library.byId(id)!.pages;
 
+    // The comma key, not recording: a take, as /; the tab stays.
     await tester.sendKeyEvent(LogicalKeyboardKey.comma);
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(find.text('1 / 3'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
     await tester.pump();
     expect(find.text('2 / 3'), findsOneWidget);
-    expect(camera.recording, isFalse);
 
-    Future<void> keypadComma() => tester.sendKeyEvent(
+    // The keypad's decimal key, typing ",", is .: the take thrown away
+    // and recorded again.
+    await tester.sendKeyEvent(
       LogicalKeyboardKey.comma,
       physicalKey: PhysicalKeyboardKey.numpadDecimal,
       character: ',',
     );
-    await keypadComma();
-    await frames(tester);
-    expect(camera.recording, isTrue);
-    expect(find.text('2 / 3'), findsOneWidget);
-
-    await keypadComma();
     await until(tester, () => camera.recordings == 1 && camera.recording);
     expect(pages(), hasLength(1));
     expect(find.text('2 / 3'), findsOneWidget);
 
+    // The comma key, recording: the take kept, the next recorded.
+    await tester.sendKeyEvent(LogicalKeyboardKey.comma);
+    await until(tester, () => pages().length == 2 && camera.recording);
+    expect(camera.recordings, 2);
+    expect(pages().last.title, 'Take 10:01');
+
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
-    expect(pages(), hasLength(2));
-    expect(pages().last.title, 'Take 10:01');
+    expect(pages(), hasLength(3));
   });
 
   testWidgets('/ keeps the take when the next can\'t start', (tester) async {
@@ -3408,10 +3413,9 @@ B|--5--8--|
     expect(video.playing, isEmpty);
   });
 
-  testWidgets('/ with a song in the sidebar cuts: the song pauses where it '
-      'is while the take is saved, and plays on from there with the next, '
-      'after its count-in; . stops it at once, back at its start, and plays '
-      'it from there with the new take, after its count-in, recording or '
+  testWidgets('/ and . with a song in the sidebar stop it at once, back at '
+      'its start, while the take is saved (/) or thrown away (.), and play '
+      'it from there with the next take, after its count-in, recording or '
       'not', (tester) async {
     final (library, id) = await capture(tester, tab: _tab);
     await tester.runAsync(() async {
@@ -3447,16 +3451,17 @@ B|--5--8--|
     await countedIn(tester);
     expect(video.playing, hasLength(1));
 
-    // /: the song pauses where it is while the take is saved…
+    // /: the song stops at once, back at its start, while the take is
+    // saved…
     video.position = const Duration(seconds: 40);
     final hold = camera.stopHold = Completer<void>();
     await tester.sendKeyEvent(LogicalKeyboardKey.slash);
     await frames(tester);
     expect(video.playing, isEmpty);
-    expect(video.seeks, [Duration.zero]);
+    expect(video.seeks, [Duration.zero, Duration.zero]);
     expect(camera.recording, isFalse);
 
-    // …and plays on from there with the next take, after its count-in.
+    // …and plays from there with the next take, after its count-in.
     hold.complete();
     await until(
       tester,
@@ -3467,8 +3472,7 @@ B|--5--8--|
     expect(video.playing, isEmpty);
     await countedIn(tester);
     expect(video.playing, hasLength(1));
-    expect(video.seeks, [Duration.zero]);
-    expect(video.position, const Duration(seconds: 40));
+    expect(video.seeks, [Duration.zero, Duration.zero]);
 
     // .: the song stops at once, back at its start, the take is thrown
     // away, and it plays from there with the new take.
@@ -3477,7 +3481,7 @@ B|--5--8--|
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await until(tester, () => camera.recordings == 2 && camera.recording);
     await frames(tester);
-    expect(video.seeks, [Duration.zero, Duration.zero]);
+    expect(video.seeks, [Duration.zero, Duration.zero, Duration.zero]);
     expect(video.playing, isEmpty);
     await countedIn(tester);
     expect(video.playing, hasLength(1));
@@ -3493,13 +3497,115 @@ B|--5--8--|
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await frames(tester);
     expect(camera.recording, isTrue);
-    expect(video.seeks, [Duration.zero, Duration.zero, Duration.zero]);
+    expect(video.seeks, List.filled(4, Duration.zero));
     expect(video.playing, isEmpty);
     await countedIn(tester);
     expect(video.playing, hasLength(1));
     await tester.tap(_camStop);
     await until(tester, () => recReady(tester));
     expect(library.byId(id)!.pages, hasLength(5));
+  });
+
+  testWidgets('Redo and New take, beside Rec: Redo only while a take '
+      'records, throwing it away; New take keeping it; both with the song '
+      'back at its start, after the count-in', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    // The photo and the song.
+    List<EventPage> pages() => library.byId(id)!.pages;
+    expect(pages(), hasLength(2));
+    Finder button(String key) => find.descendant(
+      of: find.byKey(Key(key)),
+      matching: find.byType(IconButton),
+    );
+    IconButton widget(String key) => tester.widget<IconButton>(button(key));
+
+    // In the strip after Rec, before Play, labelled.
+    final rec = tester.getRect(find.byKey(const Key('cam-rec')));
+    final redo = tester.getRect(find.byKey(const Key('cam-redo')));
+    final next = tester.getRect(find.byKey(const Key('cam-new-take')));
+    final play = tester.getRect(find.byKey(const Key('cam-play')));
+    expect(redo.left, greaterThanOrEqualTo(rec.right));
+    expect(next.left, greaterThanOrEqualTo(redo.right));
+    expect(play.left, greaterThanOrEqualTo(next.right));
+    expect(find.text('Redo'), findsOneWidget);
+    expect(find.text('New take'), findsOneWidget);
+
+    // Not recording: no take to redo; New take records one with the song
+    // from its start.
+    expect(widget('cam-redo').onPressed, isNull);
+    expect(
+      widget('cam-new-take').tooltip,
+      'New take (/ or ,): record a take with the song from its start, its '
+      '2 s count-in first',
+    );
+    video.position = const Duration(seconds: 20);
+    await tester.tap(button('cam-new-take'));
+    await frames(tester);
+    expect(camera.recording, isTrue);
+    expect(video.seeks, [Duration.zero]);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
+    expect(video.playing, hasLength(1));
+
+    // Recording: Redo throws the take away and records it again, the song
+    // back at its start, counting in again.
+    expect(
+      widget('cam-redo').tooltip,
+      'Redo (.): throw this take away and record it again from the start, '
+      'its 2 s count-in first',
+    );
+    video.position = const Duration(seconds: 30);
+    await tester.tap(button('cam-redo'));
+    await until(tester, () => camera.recordings == 1 && camera.recording);
+    await frames(tester);
+    expect(find.text('Take thrown away: recording it again'), findsOneWidget);
+    expect(pages(), hasLength(2));
+    expect(video.seeks, [Duration.zero, Duration.zero]);
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
+    expect(video.playing, hasLength(1));
+
+    // New take keeps it and records the next, from the start again.
+    expect(
+      widget('cam-new-take').tooltip,
+      'New take (/ or ,): keep this take and record the next from the '
+      'start, its 2 s count-in first',
+    );
+    video.position = const Duration(seconds: 40);
+    await tester.tap(button('cam-new-take'));
+    await until(tester, () => pages().length == 3 && camera.recording);
+    await frames(tester);
+    expect(pages().last.title, 'Take 10:01');
+    expect(video.seeks, List.filled(3, Duration.zero));
+    expect(video.playing, isEmpty);
+    await countedIn(tester);
+    expect(video.playing, hasLength(1));
+
+    await tester.tap(_camStop);
+    await until(tester, () => recReady(tester));
+    expect(pages(), hasLength(4));
+    expect(widget('cam-redo').onPressed, isNull);
   });
 
   testWidgets('Phrase passes: recording along with a song notes each turn '

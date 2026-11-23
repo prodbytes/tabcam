@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -288,6 +289,41 @@ class CamStrip extends StatelessWidget {
                 ),
                 null => null,
               },
+            ),
+            // The . and / keys' buttons: the next take with the song back
+            // at its start, after its count-in ([CamSession.nextTake]).
+            // Redo throws the take recording away, so it's only on while
+            // one records; New take keeps it (not recording, it starts a
+            // take with the song from its start).
+            _Control(
+              key: const Key('cam-redo'),
+              icon: Icons.replay,
+              color: foreground,
+              foreground: foreground,
+              label: l10n.camRedo,
+              tooltip: l10n.camRedoTip,
+              onPressed: cam.recording && cam.canRec
+                  ? () {
+                      unawaited(cam.nextTake(keep: false));
+                      onUse();
+                    }
+                  : null,
+            ),
+            _Control(
+              key: const Key('cam-new-take'),
+              icon: Icons.video_call_outlined,
+              color: foreground,
+              foreground: foreground,
+              label: l10n.camNewTake,
+              tooltip: cam.recording
+                  ? l10n.camNewTakeTip
+                  : l10n.camNewTakeIdleTip,
+              onPressed: cam.canRec
+                  ? () {
+                      unawaited(cam.nextTake());
+                      onUse();
+                    }
+                  : null,
             ),
             _Control(
               key: const Key('cam-play'),
@@ -616,10 +652,8 @@ class _Control extends StatelessWidget {
             )
           else
             button,
-          Text(
+          _Label(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: on ? foreground : foreground.withValues(alpha: 0.38),
             ),
@@ -628,4 +662,44 @@ class _Control extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A control's name, on one line: at its size where it fits, else
+/// smaller, down to [least] of it (six controls share a small phone's
+/// width), and only then cut short.
+class _Label extends StatelessWidget {
+  const _Label(this.text, {required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  /// The smallest it gets before it's cut short.
+  static const least = 0.8;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final base = DefaultTextStyle.of(context).style.merge(style);
+      var scale = 1.0;
+      if (box.hasBoundedWidth) {
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: base),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 1,
+        )..layout();
+        final width = painter.width;
+        painter.dispose();
+        if (width > box.maxWidth) {
+          scale = math.max(least, (box.maxWidth - 0.5) / width);
+        }
+      }
+      return Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: base.copyWith(fontSize: (base.fontSize ?? 14) * scale),
+      );
+    },
+  );
 }

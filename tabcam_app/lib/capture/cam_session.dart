@@ -270,8 +270,8 @@ class CamSession extends ChangeNotifier {
   /// Whether a take is being saved.
   bool get saving => _saving;
 
-  /// Saving a take (the / key) or throwing it away (the . key) to start
-  /// the next at once ([nextTake]).
+  /// Saving a take (New take, / or ,) or throwing it away (Redo, .) to
+  /// start the next at once ([nextTake]).
   bool _nextTaking = false;
   bool get nextTaking => _nextTaking;
 
@@ -975,11 +975,13 @@ class CamSession extends ChangeNotifier {
     }
     final key = event.logicalKey;
     if (_modifiers.contains(key)) return KeyEventResult.ignored;
-    // .: the song back at its start, the take thrown away and Rec again
-    // (only the last is kept); /: Stop and Rec again here, both kept. Not
-    // recording, Rec (. from the song's start). A key down (held, they
-    // don't repeat), and nothing while a take is saved (or thrown away)
-    // for the next, or can't be recorded.
+    // . (Redo): the take thrown away and Rec again (only the last is
+    // kept); / and , (New take): Stop and Rec again, both kept. Either
+    // way the song goes back to its start, so the next take opens with
+    // its count-in, then the song from the top. Not recording, Rec with
+    // the song from its start. A key down (held, they don't repeat), and
+    // nothing while a take is saved (or thrown away) for the next, or
+    // can't be recorded.
     if (_alone(event, _retakeKeys, _retakePhysical)) {
       if (event is KeyDownEvent && canRec) {
         unawaited(nextTake(keep: false));
@@ -1010,10 +1012,12 @@ class CamSession extends ChangeNotifier {
   static final _retakePhysical = {PhysicalKeyboardKey.numpadDecimal};
 
   /// The keys that save the take and start a new one: /, on the main
-  /// keyboard or the keypad.
+  /// keyboard or the keypad, and , (beside ., as / is on the other side;
+  /// the keypad's decimal key, which types "," on many layouts, is .'s).
   static final _nextTakeKeys = {
     LogicalKeyboardKey.slash,
     LogicalKeyboardKey.numpadDivide,
+    LogicalKeyboardKey.comma,
   };
 
   /// Whether [event] is one of [keys] (or of the [physical] keys) pressed
@@ -1335,22 +1339,23 @@ class CamSession extends ChangeNotifier {
     );
   }
 
-  /// The / key: while recording, a new take, cut here: the take so far is
-  /// saved as Stop saves it, then Rec starts the next, the song in the
-  /// sidebar playing on through both. The . key ([keep] false): the song
-  /// stops at once, back at its start (its section's), the take is thrown
-  /// away (only the next is kept), then Rec starts the next, and the song
-  /// with it from its start (counting in, if that's on). Not recording, /
-  /// is Rec, and . is Rec with the song back at its start.
+  /// New take (/ and ,): while recording, the take so far is saved as
+  /// Stop saves it, then Rec starts the next. Redo (. , [keep] false): the
+  /// take is thrown away instead (only the next is kept). Either way the
+  /// song in the sidebar stops at once, back at its start (its
+  /// section's), silent while the take is saved or thrown away, and Rec
+  /// starts it with the next take from there, after the take's count-in:
+  /// every take opens with its breath, then the song from the top. Not
+  /// recording, both are Rec with the song back at its start.
   Future<void> nextTake({bool keep = true}) async {
     if (!_recording) {
-      if (!keep) await _songBack();
+      await _songBack();
       return rec();
     }
     _nextTaking = true;
     _changed();
     try {
-      await (keep ? _songHeld() : _songBack());
+      await _songBack();
       await stopRecording(keep: keep);
       // The take is kept (or gone) whether or not the next one starts.
       if (_disposed || _controller == null) return;
@@ -1360,19 +1365,6 @@ class CamSession extends ChangeNotifier {
         _nextTaking = false;
         _changed();
       }
-    }
-  }
-
-  /// The song in the sidebar (when it shows) paused where it is, at a cut
-  /// (the / key): the next take plays it on from there, after its own
-  /// count-in, rather than it playing on while the take is saved (and
-  /// the next one missing what played meanwhile).
-  Future<void> _songHeld() async {
-    if (!along.open || _track.page == null) return;
-    try {
-      await _track.pause();
-    } on Object catch (e) {
-      debugPrint('TabCam: cam: the song didn\'t pause: $e');
     }
   }
 

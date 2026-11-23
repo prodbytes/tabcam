@@ -34,7 +34,8 @@ the view shows it with the widgets in
   play-along, dictionary and metronome sidebars at the right, the
   body's whole height; and docked at the bottom, the viewer's width, on
   the theme's surface colour, **Cam's controls** (`CamStrip`: Rec with
-  its microphone's menu and level meter, Play, Tab and Auto-pass) over
+  its microphone's menu and level meter, [Redo and New
+  take](#new-take-buttons), Play, Tab and Auto-pass) over
   **the ruler and the rows**: the main row ([below](#the-main-row)) and
   under it the take's ([below](#the-takes-row)). The controls
   always show, and the phrase wherever it fits, the camera taking the
@@ -79,7 +80,7 @@ the view shows it with the widgets in
   shrunk to fit the viewer's width (a long staff reads best with the
   phone turned sideways), with its number under it ("2 / 14"). A
   capture with no text tab yet says to read it first.
-- **Moving along the tab**: any key (but **/** and **.**, which are
+- **Moving along the tab**: any key (but **/**, **,** and **.**, which are
   [a new take](#new-take-key), **H**, which shows the
   [keyboard shortcuts](keyboard-shortcuts.md), and the space bar, **1**, 0, ← and →
   while a file [plays along](#playing-along-with-a-file)) goes to the
@@ -136,10 +137,10 @@ the view shows it with the widgets in
 - **Rec** records video and sound (`camera`, `ResolutionPreset.high`)
   from the phrase showing, until **Stop**, the sound first
   ([Recording comes first](#recording-comes-first)).
-  <a id="rec-key"></a>Rec has no key of its own: **.** starts a take
-  with the sidebar's song back at its start, and **/** one with the
-  song where it is, as Rec does ([a new take](#new-take-key)); Stop is
-  the button (or / and ., which start the next take). **1** is the
+  <a id="rec-key"></a>Rec has no key of its own: **.**, **/** and **,**
+  start a take with the sidebar's song back at its start
+  ([a new take](#new-take-key)); Stop is the button (or /, , and .,
+  which start the next take). **1** is the
   song's play / pause, as the space bar
   ([the keys in every screen](#keys-in-every-screen)); until 2026-11-17
   it was Rec / Stop. Either, pausing the song while a take records,
@@ -166,27 +167,26 @@ the view shows it with the widgets in
   [What a take keeps](#what-a-take-keeps)).
   Going back while recording stops it and keeps the take. Back on the capture, its takes show: the file list
   (not the Text view), scrolled to its end.
-  <a id="new-take-key"></a>Two keys start **a new take** while
-  recording, the take recorded so far either kept or thrown away:
-  - **/** (on the main keyboard or the keypad) **cuts**: the take is
-    stopped and saved as Stop saves it (added, named, its phrase passes
-    kept, the message shown), and once it's saved, the next take starts
-    as Rec starts one. Both takes are in the capture, one ending and the
-    other starting where / was pressed. The song in the sidebar (when it
-    shows) **pauses where it is** at the cut, rather than playing on
-    while the take is saved (which can take seconds: on iOS the take is
-    made H.264), so the next take misses none of it: once the next take
-    records, it plays on from there after the take's
-    [count-in](#count-in), and the next take's log notes it from there
-    ([the editor](video-edit.md#a-takes-song-lined-up) lines it up
-    there). Paused before, it stays paused until the next take starts
-    it, as Rec does.
+  <a id="new-take-key"></a>Two keys (and [two buttons](#new-take-buttons))
+  start **a new take** while recording, the take recorded so far either
+  kept or thrown away, and both **from the beginning**: the song in the
+  sidebar (when it shows) stops at once and goes back to its start (its
+  section's, with one chosen), silent while the take is saved or thrown
+  away, and once the next take records it plays from there after the
+  take's [count-in](#count-in), so the next take opens with its 2-second
+  breath, then the song from the top (`CamSession.nextTake`). Until
+  2026-11-22, / left the song paused where it was and played it on from
+  there with the next take.
+  - **/** (on the main keyboard or the keypad) and **,** (the comma key,
+    beside . as / is on its other side) **keep** the take: it's stopped
+    and saved as Stop saves it (added, named, its phrase passes kept,
+    the message shown), and once it's saved, the next take starts as Rec
+    starts one, the song from its start. Both takes are in the capture.
   - **.** (on the main keyboard or the keypad's decimal key, also where
     that key types "," as on Brazilian, German and most European layouts,
-    matched by where it is on the keyboard; the comma key itself turns
-    the tab) **starts over**: the song in the sidebar (when it shows)
-    stops at once and goes back to its start (its section's, with one
-    chosen), so it's silent while the take is thrown away; the take is
+    matched by where it is on the keyboard; the comma key itself is /'s)
+    **redoes** it: the song stops at once, back at its start, as with
+    /, so it's silent while the take is thrown away; the take is
     stopped and not saved (nothing added to the capture, nothing synced,
     its file deleted from the device; on Android the app's sound for it
     is dropped, not put into the video), a message says "Take thrown
@@ -197,9 +197,10 @@ the view shows it with the widgets in
     throws away the one recording.
 
   The tab stays at the phrase showing, as with Rec (auto-pass turns it
-  along the song, as ever). Not recording, **/** starts a take as Rec
-  does (the song playing on, or started from where it is), and **.**
-  starts one with the song back at its start. They act on the key down
+  along the song, as ever: with the song's phrase passes, back where they
+  put the song's start). Not recording, **/**, **,** and **.** start a
+  take with the song back at its start (Rec starts one with the song
+  where it is). They act on the key down
   only (held, they don't repeat), do nothing while Rec can't be pressed,
   and with Ctrl, ⌘ or Alt they turn the tab as any key. While the take
   is saved (or thrown away) for the next, Rec, Play, the camera switch,
@@ -208,6 +209,27 @@ the view shows it with the widgets in
   while a take starts (until the camera records), so pressing again at
   once doesn't start a second recording alongside it. If the next take
   can't start after /, the one saved is kept and a message says why.
+
+  <a id="new-take-buttons"></a>**Redo and New take**, two buttons in
+  Cam's controls right after Rec, before Play, as tall as the others
+  with their names under them, do what the keys do (`cam-redo`,
+  `cam-new-take`):
+  - **Redo** (a replay arrow), the . key: on only while a take records
+    (there's nothing to redo otherwise); its tooltip "Redo (.): throw
+    this take away and record it again from the start, its 2 s count-in
+    first".
+  - **New take** (a camera with a +), / and ,: while a take records,
+    "New take (/ or ,): keep this take and record the next from the
+    start, its 2 s count-in first"; not recording, it starts a take as
+    / does, "New take (/ or ,): record a take with the song from its
+    start, its 2 s count-in first".
+
+  Both are off when Rec is (a take being saved or started, playing
+  back, no camera), and a tap gives the keys back to Cam. In Spanish
+  **Repetir** and **Nueva toma**, in Portuguese **Refazer** and **Novo
+  take**. With six controls on a phone, a name too wide for its share
+  gets smaller first (down to 80 %), and only then is cut short; the
+  English ones fit whole on a 360-point phone.
 - <a id="rec-menu"></a>**Rec's menu: the microphone.** An arrow beside
   Rec (its tooltip "Microphone") opens a menu, as a video call's
   microphone button does: under **Record from**, **Default microphone**
