@@ -60,7 +60,11 @@ section, each key in a box as on the keyboard, then what it does:
     **→** 10 seconds back or on
     ([the keys in every screen](cam.md#keys-in-every-screen)).
 - **A capture's or a file's screen**: *Playing along (while the sidebar
-  shows)*, the same three rows.
+  shows)*, the same three rows; then *In the Text view*: **⌘ + A**
+  selects all the text, **⌘ + L** the phrase at the cursor, again the
+  next one too (**Ctrl** in place of ⌘ off macOS and iOS: "Ctrl + A",
+  "Ctrl + L"), the Text view's keys in its text
+  ([selecting](tab-recognition.md#selecting)).
 - **The video editor**: *Preview*: **Space** plays or pauses it;
   **Home** / **End** go to the start / end of the kept part (again: of
   the video); **←**, **→** a tenth of a second back or on; **Shift +

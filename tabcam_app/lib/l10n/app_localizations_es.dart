@@ -1245,16 +1245,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get textViewMarkCorrect => 'Marcar la lectura como verificada';
 
   @override
-  String get textViewFretDown => 'Bajar traste (el número bajo el cursor)';
+  String get textViewFretDown =>
+      'Bajar traste (las notas seleccionadas, o el número bajo el cursor)';
 
   @override
-  String get textViewFretUp => 'Subir traste (el número bajo el cursor)';
+  String get textViewFretUp =>
+      'Subir traste (las notas seleccionadas, o el número bajo el cursor)';
 
   @override
-  String get textViewNoteUp => 'Nota una cuerda arriba (da la vuelta)';
+  String get textViewNoteUp =>
+      'Nota una cuerda arriba (las notas seleccionadas, o la del cursor; da la vuelta)';
 
   @override
-  String get textViewNoteDown => 'Nota una cuerda abajo (da la vuelta)';
+  String get textViewNoteDown =>
+      'Nota una cuerda abajo (las notas seleccionadas, o la del cursor; da la vuelta)';
 
   @override
   String get textViewPutCursorOnNote =>
@@ -1266,19 +1270,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get textViewBar =>
-      'Barra de compás: una | en todas las cuerdas, en el cursor';
+      'Barra de compás: una | en todas las cuerdas en el cursor, o en las líneas seleccionadas';
 
   @override
   String get textViewSpacer =>
-      'Espaciador: un - en cada línea de la frase, en el cursor';
+      'Espaciador: un - en cada línea de la frase en el cursor, o en las líneas seleccionadas';
 
   @override
   String get textViewEndsLast =>
-      'Terminar juntas en el último final: las líneas de cada frase se alargan hasta la más larga';
+      'Terminar juntas en el último final: las líneas de cada frase (o las seleccionadas) se alargan hasta la más larga';
 
   @override
   String get textViewEndsFirst =>
-      'Terminar juntas en el primer final: las líneas de cada frase se cortan en la más corta, sin cortar notas';
+      'Terminar juntas en el primer final: las líneas de cada frase (o las seleccionadas) se cortan en la más corta, sin cortar notas';
 
   @override
   String get textViewPutCursorOnString =>
@@ -1301,6 +1305,47 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get textViewOvertypeOff =>
       'Insertar: lo que escribes empuja la línea a la derecha';
+
+  @override
+  String get textViewVerticalOn =>
+      'Selección vertical: al arrastrar se seleccionan las mismas columnas en cada línea';
+
+  @override
+  String get textViewVerticalOff =>
+      'Selección por líneas: al arrastrar se selecciona el texto línea a línea';
+
+  @override
+  String textViewSelectAll(String shortcut) {
+    return 'Seleccionar todo ($shortcut)';
+  }
+
+  @override
+  String textViewSelectPhrase(String shortcut) {
+    return 'Seleccionar la frase; otra vez, también la siguiente ($shortcut)';
+  }
+
+  @override
+  String get textViewSelectionCopied => 'Selección copiada';
+
+  @override
+  String get textViewNoNotesSelected => 'No hay notas en la selección';
+
+  @override
+  String get textViewFretLimit =>
+      'Una nota seleccionada no puede ir más allá: los trastes van de 0 a 99';
+
+  @override
+  String get textViewNoRoomSelected =>
+      'Ninguna cuerda tiene sitio ahí para todas las notas seleccionadas';
+
+  @override
+  String get textViewSelectStrings => 'La selección no tiene líneas de cuerda';
+
+  @override
+  String get textViewNoPhrase => 'No hay ninguna frase que seleccionar';
+
+  @override
+  String get textViewNoMorePhrases => 'No hay más frases debajo';
 
   @override
   String get textViewNotation => 'Notación de tablatura';
@@ -2763,6 +2808,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyShift => 'Mayús';
+
+  @override
+  String get keysTextView => 'En la vista de texto';
+
+  @override
+  String get keysSelectAll => 'Seleccionar todo el texto';
+
+  @override
+  String get keysSelectPhrase =>
+      'Seleccionar la frase del cursor; otra vez, también la siguiente';
+
+  @override
+  String get keyCtrl => 'Ctrl';
 
   @override
   String get videoEditDelay => 'Retraso';

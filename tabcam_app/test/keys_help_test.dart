@@ -39,6 +39,15 @@ void main() {
     expect(find.text('Keyboard shortcuts'), findsOneWidget);
     expect(find.text('Play or pause the song'), findsOneWidget);
     expect(find.text('Back to the start, with the count-in'), findsOneWidget);
+    // The Text view's: Ctrl off Apple's systems.
+    expect(find.text('In the Text view'), findsOneWidget);
+    expect(find.text('Ctrl + A'), findsOneWidget);
+    expect(find.text('Select all the text'), findsOneWidget);
+    expect(find.text('Ctrl + L'), findsOneWidget);
+    expect(
+      find.text('Select the phrase at the cursor; again, the next one too'),
+      findsOneWidget,
+    );
     // Not Cam's nor the editor's.
     expect(find.text('Takes'), findsNothing);
     expect(find.text('Play or pause the preview'), findsNothing);
