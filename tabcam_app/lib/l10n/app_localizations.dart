@@ -1336,6 +1336,12 @@ abstract class AppLocalizations {
   /// **'Pause (space)'**
   String get camAlongPause;
 
+  /// Play-along sidebar: the file playing along goes back to its start (its section's when it has one), counting in again if it was playing; the 0 key does it too.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the start (0)'**
+  String get camAlongRestart;
+
   /// Cam: the file playing along goes 10 seconds back («).
   ///
   /// In en, this message translates to:
@@ -1954,6 +1960,24 @@ abstract class AppLocalizations {
   /// **'Back to one column, to edit'**
   String get textViewColumnsOn;
 
+  /// Text view: tooltip of the Drag to move button (a hand, at the bottom right with the zoom buttons) while off; on, a drag moves the text instead of editing or selecting it
+  ///
+  /// In en, this message translates to:
+  /// **'Move the tab by dragging it'**
+  String get textViewDragTip;
+
+  /// Text view: tooltip of the Drag to move button while on; tapped, a drag edits or selects the text again
+  ///
+  /// In en, this message translates to:
+  /// **'Stop moving the tab'**
+  String get textViewDragOn;
+
+  /// Text view: tooltip of the zoom's percentage between Zoom in and Zoom out (shown once zoomed); tapped, the text goes back to 100%
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the usual size'**
+  String get textViewZoomReset;
+
   /// Button that corrects the tab from the song's tab online
   ///
   /// In en, this message translates to:
@@ -2476,13 +2500,13 @@ abstract class AppLocalizations {
   /// **'This PDF can\'t be shown here'**
   String get textViewCantShowPdf;
 
-  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page bigger.
+  /// A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) bigger.
   ///
   /// In en, this message translates to:
   /// **'Zoom in'**
   String get pdfZoomIn;
 
-  /// A PDF's view (file screen, Cam's PDF pane): the button that makes the page smaller.
+  /// A PDF's view (file screen, Cam's PDF pane) and the Text view: the button that makes the page (or the text) smaller.
   ///
   /// In en, this message translates to:
   /// **'Zoom out'**
@@ -3970,12 +3994,6 @@ abstract class AppLocalizations {
   /// **'No title'**
   String get videoEditTitleOff;
 
-  /// Video edit: closes the title's text fields (on a phone)
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get videoEditTitleDone;
-
   /// Video edit: the chip of the small "tabs.cam" at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
@@ -4017,12 +4035,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Both sounds together, up to 200%'**
   String get videoEditMasterAbout;
-
-  /// Video edit: the Fades chip's button that opens their sliders
-  ///
-  /// In en, this message translates to:
-  /// **'Change the fades'**
-  String get videoEditFadesEdit;
 
   /// Video edit: the slider of how long the start fades in from black
   ///
@@ -4450,6 +4462,48 @@ abstract class AppLocalizations {
   /// **'Download has the channels and balance; the preview plays the sound as recorded.'**
   String get videoEditStereoPreviewNote;
 
+  /// Video edit: a lane's switch (in its volume popup) that splits its sound into its instruments, each with a level of its own
+  ///
+  /// In en, this message translates to:
+  /// **'Split into instruments'**
+  String get videoEditStemsSplit;
+
+  /// Video edit: the tooltip of Split into instruments, saying how the sound is split
+  ///
+  /// In en, this message translates to:
+  /// **'A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.'**
+  String get videoEditStemsTip;
+
+  /// Video edit: the instrument a split lane's voice is (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Vocals'**
+  String get videoEditStemVocals;
+
+  /// Video edit: the instrument a split lane's drums are (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Drums'**
+  String get videoEditStemDrums;
+
+  /// Video edit: the instrument a split lane's bass is (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Bass'**
+  String get videoEditStemBass;
+
+  /// Video edit: the rest of a split lane's sound: guitars, keys and the like (a stem)
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get videoEditStemOther;
+
+  /// Video edit: note under a split lane's instruments once one isn't as it is
+  ///
+  /// In en, this message translates to:
+  /// **'Download has the instruments\' levels; the preview plays the sound as recorded.'**
+  String get videoEditStemsPreviewNote;
+
   /// Video edit: a lane's balance towards the left, percent 5 to 100
   ///
   /// In en, this message translates to:
@@ -4846,17 +4900,41 @@ abstract class AppLocalizations {
   /// **'Kept for {output}: its takes open with it'**
   String videoEditSongDelayKept(String output);
 
-  /// Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title
+  /// Video edit: the app bar's button (tune icon) that shows the editor's sidebar on its Download tab (what Download puts in the file: on the video, fades, master, the song)
   ///
   /// In en, this message translates to:
   /// **'Download settings'**
   String get downloadSettings;
 
-  /// Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button
+  /// Video edit: the app bar's tune button while the sidebar shows its Download tab (a press hides the sidebar)
   ///
   /// In en, this message translates to:
   /// **'Hide the download settings'**
   String get downloadSettingsHide;
+
+  /// Video edit and Cam: the sidebar's first tab (♫), the files to play along with
+  ///
+  /// In en, this message translates to:
+  /// **'Play along'**
+  String get sidebarPlayAlong;
+
+  /// Video edit and Cam: the sidebar's tab (tune icon) with the Download settings: what Download puts in the file and how it sounds
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get sidebarDownload;
+
+  /// Video edit and Cam: the ✕ at the right of the sidebar's tabs
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the sidebar'**
+  String get sidebarHide;
+
+  /// Cam, with the camera in the main row: the sidebar's Download tab says this over an Edit the take button
+  ///
+  /// In en, this message translates to:
+  /// **'A take\'s download is set while it\'s edited: what\'s on the video, how it sounds and its song.'**
+  String get downloadTabCam;
 
   /// Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit
   ///
@@ -4929,6 +5007,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rec over this'**
   String get videoEditRecOver;
+
+  /// Share's sheet, for the capture's owner: its heading, over the choice of who may open the capture by its link (as on YouTube)
+  ///
+  /// In en, this message translates to:
+  /// **'Who can open it'**
+  String get shareWhoCanOpen;
+
+  /// Share's sheet: anyone may find and open the capture (YouTube's Public)
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get sharePublic;
+
+  /// Share's sheet: what Public means
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can find it, in tabs.cam\'s dictionary and on search engines, and open it. Make public only what you have the right to share.'**
+  String get sharePublicDetail;
+
+  /// Share's sheet: anyone holding the link may open the capture (YouTube's Unlisted)
+  ///
+  /// In en, this message translates to:
+  /// **'Unlisted'**
+  String get shareUnlisted;
+
+  /// Share's sheet: what Unlisted means
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can open it.'**
+  String get shareUnlistedDetail;
+
+  /// Share's sheet: only the owner may open the capture (YouTube's Private)
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get sharePrivate;
+
+  /// Share's sheet: what Private means
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can open it, even with the link.'**
+  String get sharePrivateDetail;
+
+  /// Share's sheet: closes it (a choice applies at once)
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get shareDone;
+
+  /// A capture's link, opened by someone else while its owner made it private
+  ///
+  /// In en, this message translates to:
+  /// **'This capture is private: only its owner can open it.'**
+  String get linkPrivate;
+
+  /// Dictionary: the heading of the public tabs.cam captures found for what was typed, over YouTube's results
+  ///
+  /// In en, this message translates to:
+  /// **'Public on tabs.cam'**
+  String get dictionaryPublic;
+
+  /// Dictionary: tooltip of a public capture found, which opens it
+  ///
+  /// In en, this message translates to:
+  /// **'Open in tabs.cam'**
+  String get dictionaryPublicOpen;
 }
 
 class _AppLocalizationsDelegate

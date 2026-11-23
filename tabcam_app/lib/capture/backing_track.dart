@@ -374,13 +374,15 @@ class BackingTrack extends ChangeNotifier {
   }
 
   /// Forgets its phrase passes: the tab isn't turned by itself along it
-  /// until some are recorded again.
+  /// until some are recorded again. Cleared on purpose
+  /// ([Library.clearPhrases]): a take of it deleted later doesn't bring
+  /// the take's back.
   Future<void> clearPhrases() async {
     final (id, eventId) = (_page?.id, _eventId);
     if (id == null || eventId == null) return;
     _unsaved.remove(id);
     notifyListeners();
-    await library.setPhrases(eventId, id, null);
+    await library.clearPhrases(eventId, id);
     if (!_disposed) notifyListeners();
   }
 

@@ -211,7 +211,66 @@ class RunnerTests: XCTestCase {
         [1, 0, 1, 0], left: p.baseAddress!, right: p.baseAddress! + 1, stride: 2, frames: 2)
     }
     XCTAssertEqual(samples, [0.5, 0.5, -0.25, -0.25])
-    XCTAssertNotNil(VideoEditor.stereoTap([1, 0, 1, 0]))
+    XCTAssertNotNil(VideoEditor.laneTap([1, 0, 1, 0], stems: nil))
+  }
+
+  func testReadsAndAppliesTheLanesInstruments() {
+    let plan = VideoEditor.Plan(args: [
+      "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+      "own": [
+        "volume": 1,
+        "stems": [
+          "vocals": 0, "drums": 1, "bass": 0.5, "other": 1, "bassHz": 200, "drumsHz": 4000,
+        ],
+      ],
+      "song": [
+        "path": "/tmp/song.m4a", "volume": 1, "stems": ["bass": 0],
+        "clips": [["atMs": 0, "fromMs": 0, "toMs": 800]],
+      ],
+    ])
+    XCTAssertEqual(plan?.ownStems?.vocals, 0)
+    XCTAssertEqual(plan?.ownStems?.bass, 0.5)
+    XCTAssertEqual(plan?.ownStems?.drumsHz, 4000)
+    XCTAssertEqual(plan?.song?.stems?.bass, 0)
+    XCTAssertEqual(plan?.song?.stems?.vocals, 1)
+    XCTAssertEqual(plan?.song?.stems?.bassHz, 200)
+    XCTAssertNil(
+      VideoEditor.Plan(args: [
+        "input": "/tmp/in.mp4", "output": "/tmp/out.mp4", "startMs": 0, "endMs": 1000,
+        "own": ["volume": 1],
+      ])?.ownStems)
+    // The bass muted: a 60 Hz tone, in the middle of a 44.1 kHz stereo
+    // sound, all but gone (a second through, its last tenth measured);
+    // one at 1 kHz goes on.
+    func loudness(_ hz: Double, _ gains: [String: Any]) -> Double {
+      let rate = 44100.0
+      let frames = Int(rate)
+      var samples = [Float](repeating: 0, count: frames * 2)
+      for i in 0..<frames {
+        let v = Float(0.5 * sin(2 * Double.pi * hz * Double(i) / rate))
+        samples[2 * i] = v
+        samples[2 * i + 1] = v
+      }
+      let stems = VideoEditor.StemGains(gains)!
+      var bands = [VideoEditor.StemBands(stems, rate: rate), VideoEditor.StemBands(stems, rate: rate)]
+      samples.withUnsafeMutableBufferPointer { p in
+        VideoEditor.applyStems(
+          stems, bands: &bands, channels: [p.baseAddress!, p.baseAddress! + 1], stride: 2,
+          frames: frames)
+      }
+      let tail = samples[(frames * 2 * 9 / 10)...]
+      return (tail.map { Double($0 * $0) }.reduce(0, +) / Double(tail.count)).squareRoot()
+    }
+    let full = 0.5 / 2.0.squareRoot()
+    XCTAssertLessThan(loudness(60, ["bass": 0]), full * 0.05)
+    XCTAssertEqual(loudness(1000, ["bass": 0]), full, accuracy: full * 0.02)
+    // The vocals muted: the middle band's middle goes.
+    XCTAssertLessThan(loudness(1000, ["vocals": 0]), full * 0.05)
+    // Everything as it is: as loud as it was, at every pitch.
+    for hz in [60.0, 1000, 10000] {
+      XCTAssertEqual(loudness(hz, [:]), full, accuracy: full * 0.02)
+    }
+    XCTAssertNotNil(VideoEditor.laneTap(nil, stems: VideoEditor.StemGains(["bass": 0])))
   }
 
   func testPlacesLayersAsTheAppDoes() {

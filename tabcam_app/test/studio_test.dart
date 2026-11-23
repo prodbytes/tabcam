@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart' show CameraController, CameraImage;
 import 'package:camera_platform_interface/camera_platform_interface.dart';
@@ -10,9 +12,12 @@ import 'package:tabcam_app/capture/cam_session.dart';
 import 'package:tabcam_app/capture/head_gestures.dart';
 import 'package:tabcam_app/capture/media.dart';
 import 'package:tabcam_app/capture/play_along_screen.dart';
+import 'package:tabcam_app/capture/play_along_sidebar.dart' show PhraseMarks;
 import 'package:tabcam_app/capture/take_log.dart';
+import 'package:tabcam_app/capture/sound_reader.dart';
 import 'package:tabcam_app/capture/take_sound.dart';
 import 'package:tabcam_app/capture/video_edit.dart';
+import 'package:tabcam_app/capture/waveform.dart';
 import 'package:tabcam_app/cloud/cloud_ocr.dart';
 import 'package:tabcam_app/cloud/cloud_sync.dart';
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
@@ -532,6 +537,13 @@ void main() {
       await camFrames(tester);
     }
 
+    /// Turns the sidebar to its Play along tab (a take's Edit turns it to
+    /// Download).
+    Future<void> playAlongTab(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('sidebar-tab-playAlong')));
+      await camFrames(tester);
+    }
+
     testWidgets('the song chosen is the main row: its name, played and '
         'paused from its header; a tap on its bar takes the same player '
         'there, and the part played follows', (tester) async {
@@ -569,6 +581,63 @@ void main() {
         find.byKey(const Key('video-edit-main-played')),
       );
       expect(played.width / bar.width, closeTo(0.75, 0.01));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the song\'s phrase passes show on the main row as on the '
+        'player\'s bar: the same ticks, on the song\'s own time, at once', (
+      tester,
+    ) async {
+      final (library, id, song, _) = await camCapture(tester);
+      await tester.runAsync(
+        () => library.setPhrases(
+          id,
+          song!,
+          PhraseTimes.none.add(
+            const Duration(seconds: 45),
+            PassDirection.next,
+            1,
+          ),
+        ),
+      );
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      final marks = find.byKey(const Key('video-edit-main-phrase-marks'));
+      PhraseMarks painter(Finder f) =>
+          tester.widget<CustomPaint>(f).painter! as PhraseMarks;
+      expect(painter(marks).at, [const Duration(seconds: 45)]);
+      expect(painter(marks).length, const Duration(minutes: 3));
+      expect(
+        tester.getRect(marks).width,
+        closeTo(
+          tester.getRect(find.byKey(const Key('video-edit-main-bar'))).width,
+          0.5,
+        ),
+      );
+      final player = find.byKey(const Key('cam-along-phrase-marks'));
+      if (player.evaluate().isNotEmpty) {
+        expect(painter(player).at, painter(marks).at);
+      }
+
+      // Another kept: on the row at once.
+      await tester.runAsync(
+        () => library.setPhrases(
+          id,
+          song!,
+          library
+              .phrasesOf(id, song)
+              .add(const Duration(seconds: 90), PassDirection.next, 2),
+        ),
+      );
+      await camFrames(tester);
+      expect(painter(marks).at, [
+        const Duration(seconds: 45),
+        const Duration(seconds: 90),
+      ]);
+      // Cleared: gone.
+      await tester.runAsync(() => library.clearPhrases(id, song!));
+      await camFrames(tester);
+      expect(marks, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -637,7 +706,12 @@ void main() {
       expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
       expect(find.byKey(const Key('cam-rec')), findsNothing);
       expect(find.byTooltip('Back'), findsOneWidget);
-      // The take edited shows neither Edit nor Delete in the sidebar.
+      // The sidebar on its Download tab; on Play along, the take edited
+      // shows neither Edit nor Delete.
+      expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+      await playAlongTab(tester);
+      expect(find.byKey(const Key('video-edit-side')), findsNothing);
+      expect(find.byKey(ValueKey('cam-along-$takeId')), findsOneWidget);
       expect(find.byKey(ValueKey('cam-along-edit-$takeId')), findsNothing);
       expect(find.byKey(ValueKey('cam-along-delete-$takeId')), findsNothing);
 
@@ -694,6 +768,7 @@ void main() {
       final songPlayer = video.lastPlayer;
       expect(video.disposed, isNot(contains(songPlayer)));
 
+      await playAlongTab(tester);
       await tester.tap(find.byKey(ValueKey('cam-along-delete-$songId')));
       await camFrames(tester);
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
@@ -727,8 +802,8 @@ void main() {
       await tester.pumpWidget(cam(library, id));
       await camFrames(tester);
       await editTake(tester, takeId!);
-      // The sidebar still shows, its keys quiet.
-      expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
+      // The sidebar still shows (its Download tab), its keys quiet.
+      expect(find.byKey(const Key('studio-sidebar')), findsOneWidget);
       final preview = video.lastPlayer;
       expect(preview, isNot(0));
 
@@ -803,9 +878,10 @@ void main() {
       await camFrames(tester);
     });
 
-    testWidgets('editing a take beside the play-along sidebar, the '
-        'settings are beside the viewer where the room left is wide; the '
-        'dictionary narrowing it, they go under the viewer, and back', (
+    testWidgets('editing a take, the sidebar turns to its Download tab, the '
+        'settings in it, beside the editor; ♫ and its tabs turn it to Play '
+        'along, the Download settings button back, pressed again hides it; '
+        'the dictionary beside it all; back at the camera, Play along', (
       tester,
     ) async {
       tester.view
@@ -815,38 +891,129 @@ void main() {
       final (library, id, _, takeId) = await camCapture(tester, take: true);
       await tester.pumpWidget(cam(library, id));
       await camFrames(tester);
-      await editTake(tester, takeId!);
+      final sidebar = find.byKey(const Key('studio-sidebar'));
       final along = find.byKey(const Key('cam-along-sidebar'));
-      final settings = find.byKey(const Key('video-edit-settings-panel'));
+      final side = find.byKey(const Key('video-edit-side'));
+      bool selected(String key) =>
+          tester.widget<IconButton>(find.byKey(Key(key))).isSelected ?? false;
+      // With the camera, its files to play along, under its tabs.
       expect(along, findsOneWidget);
-      expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
-      expect(
-        tester.getRect(settings).right,
-        lessThanOrEqualTo(tester.getRect(along).left),
-      );
+      expect(find.byKey(const Key('sidebar-tabs')), findsOneWidget);
+      expect(find.text('Play along'), findsWidgets);
+      expect(find.text('Download'), findsOneWidget);
 
+      await editTake(tester, takeId!);
+      expect(along, findsNothing);
+      expect(find.descendant(of: sidebar, matching: side), findsOneWidget);
+      expect(
+        tester.getRect(find.byKey(const Key('video-edit-preview'))).right,
+        lessThanOrEqualTo(tester.getRect(sidebar).left),
+      );
+      expect(selected('video-edit-settings'), isTrue);
+      expect(selected('cam-along'), isFalse);
+
+      await tester.tap(find.byKey(const Key('cam-along')));
+      await camFrames(tester);
+      expect(along, findsOneWidget);
+      expect(side, findsNothing);
+      expect(selected('video-edit-settings'), isFalse);
+      expect(selected('cam-along'), isTrue);
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await camFrames(tester);
+      expect(side, findsOneWidget);
+      expect(along, findsNothing);
+      await playAlongTab(tester);
+      expect(along, findsOneWidget);
+      await tester.tap(find.byKey(const Key('sidebar-tab-download')));
+      await camFrames(tester);
+      expect(side, findsOneWidget);
+
+      // The dictionary beside it all: the settings stay in the sidebar.
       await tester.tap(find.byKey(const Key('dictionary')));
       await camFrames(tester);
       final dictionary = find.byKey(const Key('dictionary-sidebar'));
       expect(dictionary, findsOneWidget);
       expect(tester.getRect(dictionary).right, 1280);
-      // The view's room, between the editor's left edge and the
-      // play-along sidebar, is narrower than a wide one now.
-      expect(find.byKey(const Key('video-edit-side')), findsNothing);
-      expect(find.byKey(const Key('video-edit-inspector')), findsOneWidget);
-      expect(along, findsOneWidget);
+      expect(side, findsOneWidget);
       expect(
-        tester.getRect(settings).right,
-        lessThanOrEqualTo(tester.getRect(along).left),
+        tester.getRect(sidebar).right,
+        lessThanOrEqualTo(tester.getRect(dictionary).left),
       );
       expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
       expect(tester.takeException(), isNull);
-
       await tester.tap(find.byKey(const Key('dictionary-close')));
       await camFrames(tester);
-      expect(dictionary, findsNothing);
-      expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+
+      // Pressed again, the Download settings button hides the sidebar.
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await camFrames(tester);
+      expect(sidebar, findsNothing);
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await camFrames(tester);
+      expect(side, findsOneWidget);
+
+      // Back at the camera: Play along.
+      await tester.pageBack();
+      await camFrames(tester);
+      expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+      expect(along, findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('with the camera, the sidebar\'s Download tab says a '
+        'take\'s download is set as it\'s edited, with Edit the take: '
+        'greyed with no take; with one, the take in the camera\'s place, '
+        'the sidebar staying on Download, even on a phone', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final edit = find.byKey(const Key('video-edit-download-edit'));
+      bool enabled() =>
+          tester.widget<ButtonStyleButton>(edit).onPressed != null;
+      // No take yet.
+      final (library, id, _, _) = await camCapture(tester);
+      await tester.pumpWidget(cam(library, id));
+      await camFrames(tester);
+      await tester.tap(find.byKey(const Key('sidebar-tab-download')));
+      await camFrames(tester);
+      expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
+      expect(
+        find.textContaining('A take\'s download is set while it\'s edited'),
+        findsOneWidget,
+      );
+      expect(edit, findsOneWidget);
+      expect(enabled(), isFalse);
+      expect(find.byKey(const Key('cam-rec')), findsOneWidget);
+
+      for (final size in const [Size(1280, 800), Size(390, 844)]) {
+        tester.view.physicalSize = size;
+        final (library, id, _, _) = await camCapture(tester, take: true);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await tester.tap(find.byKey(const Key('sidebar-tab-download')));
+        await camFrames(tester);
+        expect(enabled(), isTrue, reason: '$size');
+        await tester.tap(edit);
+        await camFrames(tester);
+        await camFrames(tester);
+        expect(
+          find.byKey(const Key('video-edit-take-bar')),
+          findsOneWidget,
+          reason: '$size',
+        );
+        expect(find.byKey(const Key('cam-rec')), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('studio-sidebar')),
+            matching: find.byKey(const Key('video-edit-side')),
+          ),
+          findsOneWidget,
+          reason: '$size',
+        );
+        expect(tester.takeException(), isNull);
+      }
     });
 
     testWidgets('a phone: beside the play-along sidebar the main row gives '
@@ -1364,6 +1531,93 @@ void main() {
       });
     });
 
+    group('waveforms', () {
+      final mainWave = find.byKey(const Key('video-edit-main-wave'));
+      final takeWave = find.byKey(const Key('video-edit-rec-wave'));
+
+      /// Lets the files be fetched and their sound read.
+      Future<void> read(WidgetTester tester) async {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await camFrames(tester);
+      }
+
+      testWidgets('the song\'s sound on the main row; once saved, the '
+          'take\'s own on its block; kept, so Cam opened again draws them '
+          'without reading them again', (tester) async {
+        wide(tester);
+        testClock(tester);
+        final files = <String>[];
+        WaveCache.clear();
+        SoundReader.opener = () => _SineReader(files);
+        addTearDown(() {
+          SoundReader.opener = null;
+          WaveCache.clear();
+        });
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await read(tester);
+        expect(mainWave, findsOneWidget);
+        // Over the whole bar: the song's 3 minutes.
+        expect(
+          tester.getRect(mainWave).width,
+          closeTo(
+            tester.getRect(find.byKey(const Key('video-edit-main-bar'))).width,
+            1,
+          ),
+        );
+        expect(files, hasLength(1));
+
+        // While a take records there's no file to read yet.
+        video.position = s(30);
+        await tester.tap(play);
+        await playOn(tester, 0.5);
+        await pressRec(tester);
+        await playOn(tester, 5);
+        expect(recording, findsOneWidget);
+        expect(takeWave, findsNothing);
+        await stop(tester);
+        await read(tester);
+        expect(taken, findsOneWidget);
+        expect(takeWave, findsOneWidget);
+        // (Lining the song up in the take's sound reads them too.)
+        await read(tester);
+        final readSoFar = files.length;
+
+        // Cam closed and opened again: both drawn from what's kept, at
+        // once, nothing read again.
+        await tester.pumpWidget(const SizedBox());
+        await camFrames(tester);
+        await tester.pumpWidget(cam(library, id));
+        await tester.pump();
+        expect(mainWave, findsOneWidget);
+        expect(takeWave, findsOneWidget);
+        await read(tester);
+        expect(files, hasLength(readSoFar));
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('no reader (a desktop build): no waveforms, nothing '
+          'fetched for them, the rows as before', (tester) async {
+        wide(tester);
+        WaveCache.clear();
+        SoundReader.opener = () => null;
+        addTearDown(() {
+          SoundReader.opener = null;
+          WaveCache.clear();
+        });
+        final (library, id, _, _) = await camCapture(tester);
+        await tester.pumpWidget(cam(library, id));
+        await camFrames(tester);
+        await read(tester);
+        expect(find.byKey(const Key('video-edit-main-bar')), findsOneWidget);
+        expect(mainWave, findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
     group('Rec over this', () {
       final camButton = find.byKey(const Key('video-edit-cam'));
       final takeBar = find.byKey(const Key('video-edit-take-bar'));
@@ -1553,8 +1807,9 @@ void main() {
         );
         expect(titleShown(tester), 'Take 10:00');
         // The video, Back's to put back after the camera, shows no Delete
-        // in the sidebar (nor the take edited); the song not on Back's
-        // list does.
+        // in the sidebar's files (nor the take edited); the song not on
+        // Back's list does.
+        await playAlongTab(tester);
         expect(find.byKey(const Key('cam-along-sidebar')), findsOneWidget);
         expect(find.byKey(ValueKey('cam-along-delete-$videoId')), findsNothing);
         expect(
@@ -1898,4 +2153,28 @@ void main() {
       });
     });
   });
+}
+
+/// A sound reader that hears a sine in every file (a second of it), and
+/// notes which files it read.
+class _SineReader implements SoundReader {
+  _SineReader(this.files);
+
+  final List<String> files;
+
+  @override
+  Future<Float32List?> samples(
+    XFile file, {
+    required Duration from,
+    required Duration length,
+    required int rate,
+  }) async {
+    files.add(file.name);
+    return Float32List.fromList([
+      for (var i = 0; i < rate; i++) sin(2 * pi * 220 * i / rate) / 2,
+    ]);
+  }
+
+  @override
+  void close() {}
 }

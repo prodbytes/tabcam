@@ -770,6 +770,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get camAlongPause => 'Pause (space)';
 
   @override
+  String get camAlongRestart => 'Back to the start (0)';
+
+  @override
   String get camAlongBack => 'Back 10 seconds';
 
   @override
@@ -1170,6 +1173,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textViewColumnsOn => 'Back to one column, to edit';
+
+  @override
+  String get textViewDragTip => 'Move the tab by dragging it';
+
+  @override
+  String get textViewDragOn => 'Stop moving the tab';
+
+  @override
+  String get textViewZoomReset => 'Back to the usual size';
 
   @override
   String get textViewFix => 'Fix';
@@ -2344,9 +2356,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditTitleOff => 'No title';
 
   @override
-  String get videoEditTitleDone => 'Done';
-
-  @override
   String get videoEditLayerWatermark => 'Watermark';
 
   @override
@@ -2369,9 +2378,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditMasterAbout => 'Both sounds together, up to 200%';
-
-  @override
-  String get videoEditFadesEdit => 'Change the fades';
 
   @override
   String get videoEditFadeIn => 'Fade in';
@@ -2626,6 +2632,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get videoEditStereoPreviewNote =>
       'Download has the channels and balance; the preview plays the sound as recorded.';
+
+  @override
+  String get videoEditStemsSplit => 'Split into instruments';
+
+  @override
+  String get videoEditStemsTip =>
+      'A rough split for now: the bass under 200 Hz, the drums over 4 kHz, the voice in the middle of the mix, the rest at its sides.';
+
+  @override
+  String get videoEditStemVocals => 'Vocals';
+
+  @override
+  String get videoEditStemDrums => 'Drums';
+
+  @override
+  String get videoEditStemBass => 'Bass';
+
+  @override
+  String get videoEditStemOther => 'Other';
+
+  @override
+  String get videoEditStemsPreviewNote =>
+      'Download has the instruments\' levels; the preview plays the sound as recorded.';
 
   @override
   String videoEditBalanceLeft(int percent) {
@@ -2894,6 +2923,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadSettingsHide => 'Hide the download settings';
 
   @override
+  String get sidebarPlayAlong => 'Play along';
+
+  @override
+  String get sidebarDownload => 'Download';
+
+  @override
+  String get sidebarHide => 'Hide the sidebar';
+
+  @override
+  String get downloadTabCam =>
+      'A take\'s download is set while it\'s edited: what\'s on the video, how it sounds and its song.';
+
+  @override
   String get videoEditMore => 'More';
 
   @override
@@ -2930,4 +2972,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditRecOver => 'Rec over this';
+
+  @override
+  String get shareWhoCanOpen => 'Who can open it';
+
+  @override
+  String get sharePublic => 'Public';
+
+  @override
+  String get sharePublicDetail =>
+      'Anyone can find it, in tabs.cam\'s dictionary and on search engines, and open it. Make public only what you have the right to share.';
+
+  @override
+  String get shareUnlisted => 'Unlisted';
+
+  @override
+  String get shareUnlistedDetail => 'Anyone with the link can open it.';
+
+  @override
+  String get sharePrivate => 'Private';
+
+  @override
+  String get sharePrivateDetail => 'Only you can open it, even with the link.';
+
+  @override
+  String get shareDone => 'Done';
+
+  @override
+  String get linkPrivate =>
+      'This capture is private: only its owner can open it.';
+
+  @override
+  String get dictionaryPublic => 'Public on tabs.cam';
+
+  @override
+  String get dictionaryPublicOpen => 'Open in tabs.cam';
 }

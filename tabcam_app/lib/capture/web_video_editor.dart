@@ -12,6 +12,7 @@ import 'package:web/web.dart' as web;
 import 'edit_formats.dart';
 import 'edit_layers.dart';
 import 'm4a.dart';
+import 'stem_split.dart';
 import 'video_edit.dart';
 import 'webm_times.dart';
 
@@ -219,7 +220,9 @@ class WebVideoEditor implements VideoEditing {
           } else {
             into = sink;
           }
-          input.connect(_stereo(graph, own.stereo, into));
+          input.connect(
+            _stereo(graph, own.stereo, _stems(graph, own.stems, into)),
+          );
         }
         for (final t in sink.stream.getAudioTracks().toDart) {
           stream.addTrack(t);
@@ -398,8 +401,9 @@ class WebVideoEditor implements VideoEditing {
   /// [songSound], the song's), mixed offline at [rate], as long as the
   /// kept part: the own lane from the kept part's start, each of the
   /// song's clips where it starts, each through a gain node at its lane's
-  /// volume, after its channels and balance ([_stereo]; the mix is in
-  /// stereo then), each sound at its times in its file (a sound that starts
+  /// volume, after its channels and balance ([_stereo]) and its
+  /// instruments ([_stems]; the mix is in stereo with either), each sound
+  /// at its times in its file (a sound that starts
   /// after its file does, [_Sound.lead], is that much earlier in its
   /// buffer, so both lanes are where their players play them, to the
   /// sample); with fades, all through one more gain that rises from 0 over
@@ -415,8 +419,7 @@ class WebVideoEditor implements VideoEditing {
     final song = plan.song;
     if (ownSound == null && songSound == null) return null;
     final channels =
-        (own != null && !own.stereo.isStandard) ||
-            (song != null && !song.stereo.isStandard)
+        (own != null && !own.asRecorded) || (song != null && !song.asRecorded)
         ? 2
         : [
             ?ownSound?.buffer.numberOfChannels,
@@ -430,12 +433,15 @@ class WebVideoEditor implements VideoEditing {
     );
     final web.AudioNode out = _faded(context, plan.fades, clip);
     // Each lane's way into the mix: its gain, after its channels and
-    // balance; made once per lane, all its clips through it.
-    web.AudioNode laneInto(double volume, LaneStereo stereo) {
-      if (volume == 1) return _stereo(context, stereo, out);
+    // balance, then its instruments; made once per lane, all its clips
+    // through it.
+    web.AudioNode laneInto(double volume, LaneStereo stereo, LaneStems stems) {
+      if (volume == 1) {
+        return _stereo(context, stereo, _stems(context, stems, out));
+      }
       final gain = context.createGain()..gain.value = volume;
       gain.connect(out);
-      return _stereo(context, stereo, gain);
+      return _stereo(context, stereo, _stems(context, stems, gain));
     }
 
     void play(
@@ -464,11 +470,11 @@ class WebVideoEditor implements VideoEditing {
     }
 
     if (own != null && ownSound != null) {
-      final into = laneInto(own.volume, own.stereo);
+      final into = laneInto(own.volume, own.stereo, own.stems);
       play(ownSound, into, Duration.zero, plan.start, plan.length);
     }
     if (song != null && songSound != null && song.clips.isNotEmpty) {
-      final into = laneInto(song.volume, song.stereo);
+      final into = laneInto(song.volume, song.stereo, song.stems);
       for (final c in song.clips) {
         play(songSound, into, c.at, c.from, c.to - c.from);
       }
@@ -486,14 +492,31 @@ class WebVideoEditor implements VideoEditing {
     web.AudioNode into,
   ) {
     if (stereo.isStandard) return into;
-    final [ll, lr, rl, rr] = stereo.matrix;
-    final upmix = context.createGain()
-      ..channelCount = 2
-      ..channelCountMode = 'explicit'
-      ..channelInterpretation = 'speakers';
+    final upmix = _upmix(context);
+    _matrix(context, upmix, stereo.matrix, into);
+    return upmix;
+  }
+
+  /// A node that makes what goes into it two channels (a one-channel
+  /// sound on both sides).
+  static web.GainNode _upmix(web.BaseAudioContext context) =>
+      context.createGain()
+        ..channelCount = 2
+        ..channelCountMode = 'explicit'
+        ..channelInterpretation = 'speakers';
+
+  /// [source]'s two channels into [into], each side of it what [matrix]
+  /// (`[ll, lr, rl, rr]`, as [LaneStereo.matrix]) says of each.
+  static void _matrix(
+    web.BaseAudioContext context,
+    web.AudioNode source,
+    List<double> matrix,
+    web.AudioNode into,
+  ) {
+    final [ll, lr, rl, rr] = matrix;
     final split = context.createChannelSplitter(2);
     final merge = context.createChannelMerger(2);
-    upmix.connect(split);
+    source.connect(split);
     // From each of the sound's channels (0: left, 1: right) to each side.
     for (final (from, to, level) in [
       (0, 0, ll),
@@ -507,7 +530,64 @@ class WebVideoEditor implements VideoEditing {
       gain.connect(merge, 0, to);
     }
     merge.connect(into);
-    return upmix;
+  }
+
+  /// Where a lane goes into [into], split into its instruments at their
+  /// levels ([LaneStems], [StemSplit]): [into] itself when that doesn't
+  /// change its sound; else a node that makes it two channels (a
+  /// one-channel sound on both sides, so its middle band is all vocals)
+  /// and sends it through the crossover's IIR filters, the bass and the
+  /// drums each at its gain, and the middle band through a matrix: its
+  /// middle at the vocals' gain, its sides at the rest's. An instrument
+  /// at 0 isn't made.
+  static web.AudioNode _stems(
+    web.BaseAudioContext context,
+    LaneStems stems,
+    web.AudioNode into,
+  ) {
+    final gains = stems.gains;
+    if (gains == null) return into;
+    double gain(Stem s) => gains[s.name] ?? 1;
+    final bands = StemSplit.bands(context.sampleRate);
+    final input = _upmix(context);
+    web.AudioNode through(web.AudioNode from, List<List<double>> filters) {
+      var node = from;
+      for (final [b0, b1, b2, a1, a2] in filters) {
+        final filter = context.createIIRFilter(
+          [b0.toJS, b1.toJS, b2.toJS].toJS,
+          [1.toJS, a1.toJS, a2.toJS].toJS,
+        );
+        node.connect(filter);
+        node = filter;
+      }
+      return node;
+    }
+
+    void at(double level, web.AudioNode from) {
+      final gain = context.createGain()..gain.value = level;
+      from.connect(gain);
+      gain.connect(into);
+    }
+
+    final bass = gain(Stem.bass);
+    final drums = gain(Stem.drums);
+    final vocals = gain(Stem.vocals);
+    final other = gain(Stem.other);
+    if (bass > 0) at(bass, through(input, bands.bass));
+    if (drums == 0 && vocals == 0 && other == 0) return input;
+    final above = through(input, bands.above);
+    if (drums > 0) at(drums, through(above, bands.drums));
+    if (vocals > 0 || other > 0) {
+      final same = (vocals + other) / 2;
+      final cross = (vocals - other) / 2;
+      _matrix(context, through(above, bands.middle), [
+        same,
+        cross,
+        cross,
+        same,
+      ], into);
+    }
+    return input;
   }
 
   /// Where [context]'s lanes go, [clip] seconds long: its destination,

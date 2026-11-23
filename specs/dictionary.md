@@ -5,14 +5,19 @@ of Cam and of Home, first in the app bar: the
 [event screen](event-screen.md) in all its views (Files, Text, and the
 locked previews), the [file screen](event-screen.md#file-screen) for any
 file, Cam ([cam.md](cam.md)) with or without Premium, a capture opened
-by its link, and Home's captures ([navigation](navigation.md); not the
+by its link signed in (signed out, it has neither the button nor the
+sidebar: the tools are signed-in users',
+[sharing](sharing.md#opening-a-link)), and Home's captures ([navigation](navigation.md); not the
 Capture and Profile tabs, where the sidebar doesn't show but stays
 open). In the [video editor](video-edit.md#the-edit-screen) it comes
 after Reset, Download and Download settings (on a phone, in its More
-menu). It's free for everyone, and takes nothing from tabs.cam's servers:
-the chords and scales are worked out on the device
+menu). It's free for everyone, and takes almost nothing from tabs.cam's
+servers: the chords and scales are worked out on the device
 ([`lib/dictionary/`](../tabcam_app/lib/dictionary/)); only a song's
-searches leave it, from the device straight to YouTube and Cifra Club.
+searches leave it, from the device straight to YouTube and Cifra Club,
+and to tabs.cam's share API for the [public captures](#public-captures)
+(no sign-in, nothing about the user: nobody else knows which captures
+are public).
 
 It shows and hides the **Dictionary sidebar**: on the right of the
 screen, as the play-along player's sidebar opens
@@ -184,6 +189,24 @@ search field, focused, and under it, scrolling, what was typed is:
   grants more (the YouTube API Services audit and quota form). No
   tabs.cam server is involved. A build without the key shows the button
   only, and Enter opens YouTube's search as the button does.
+  <a id="public-captures"></a>**Over YouTube's, tabs.cam's public
+  captures** ("Public on tabs.cam"), once it finds some (nothing shows
+  while it searches, when it finds none, or when it fails: there are
+  few public captures yet): five at most, newest first, each with a
+  globe, its title (two lines at most) and artist; a tap opens it in the
+  app as its link does ("Open in tabs.cam";
+  [opening a link](sharing.md#opening-a-link)): signed in, it joins it,
+  so it's then in Home's **Shared with me**, read only, with Add and
+  Cam going to the user's own copy; signed out, it opens by its link.
+  They're the captures their owners made [public](sharing.md#who-can-open-it)
+  whose title or artist has every word typed (each the start of one of
+  theirs; case and accents ignored), searched with YouTube's (the same
+  two seconds, and Enter at once), not for less than two letters or
+  digits; the device keeps the last 50 searches' results as it does
+  YouTube's. **How**: the device asks the share API (`GET /public?q=`,
+  no token; [shared captures](shared-captures.md)), which reads its
+  public index ([`public_search.dart`](../tabcam_app/lib/dictionary/public_search.dart)).
+  A build without the share API doesn't search it.
   **Under YouTube's, Cifra Club's results** ("Tabs on Cifra Club"):
   three songs it has a tab or chords of, each with the artist's picture
   (where it has one), the song's title (two lines at most) and artist,

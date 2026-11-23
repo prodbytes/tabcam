@@ -13,6 +13,7 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
@@ -465,6 +466,131 @@ void main() {
     expect(await press(LogicalKeyboardKey.digit1), isTrue);
     await tester.pump();
     expect(track.playing, isFalse);
+    track.dispose();
+  });
+
+  testWidgets('the sidebar\'s back-to-the-start button does what 0 does: '
+      'paused, to the start; playing, to the section\'s start, playing on; '
+      'it fits the narrowest sidebar', (tester) async {
+    final (track, event, _) = await loaded(tester);
+    final field = TextEditingController();
+    Future<bool> press(LogicalKeyboardKey key) async =>
+        (await tester.runAsync(() => tester.sendKeyEvent(key)))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              Expanded(child: TextField(controller: field)),
+              PlayAlongKeys(
+                track: track,
+                // The narrowest it's dragged to: its buttons still fit.
+                child: PlayAlongSidebar(
+                  width: SidebarWidths.min,
+                  library: track.library,
+                  eventId: event.id,
+                  track: track,
+                  linkFrame: (_) => const SizedBox(),
+                  onChoose: (_) {},
+                  onToggle: () {},
+                  onStop: () {},
+                  onSkip: (_) {},
+                  onRepeat: () {},
+                  onSection: (_, _) {},
+                  onSectionHere: ({required bool end}) {},
+                  onSectionClear: () {},
+                  onSpeed: (_) {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final restart = find.byKey(const Key('cam-along-restart'));
+    expect(restart, findsOneWidget);
+    expect(find.byTooltip('Back to the start (0)'), findsOneWidget);
+    Future<void> tap() async {
+      await tester.runAsync(() async {
+        await tester.tap(restart);
+        // Its restart runs on: let it seek.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      });
+      await tester.pump();
+    }
+
+    // Paused: 0 and the button each go back to the start, staying paused.
+    video.seeks.clear();
+    expect(await press(LogicalKeyboardKey.digit0), isTrue);
+    final byKey = [...video.seeks];
+    video.seeks.clear();
+    await tap();
+    expect(video.seeks, byKey);
+    expect(video.seeks, const [Duration.zero]);
+    expect(track.playing, isFalse);
+
+    // Playing a section: back to its start, playing on, as with 0.
+    await tester.runAsync(
+      () => track.setSection(
+        const Duration(seconds: 10),
+        const Duration(seconds: 20),
+      ),
+    );
+    await tester.runAsync(() => track.toggle());
+    await tester.pump();
+    video.seeks.clear();
+    expect(await press(LogicalKeyboardKey.digit0), isTrue);
+    expect(video.seeks, const [Duration(seconds: 10)]);
+    expect(track.playing, isTrue);
+    video.seeks.clear();
+    await tap();
+    expect(video.seeks, const [Duration(seconds: 10)]);
+    expect(track.playing, isTrue);
+    await tester.runAsync(() => track.pause());
+    track.dispose();
+  });
+
+  testWidgets('given onRestart, the button calls it (the screen\'s own, '
+      'as PlayAlongBeside passes)', (tester) async {
+    final (track, event, _) = await loaded(tester);
+    var restarts = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              const Expanded(child: SizedBox()),
+              PlayAlongSidebar(
+                library: track.library,
+                eventId: event.id,
+                track: track,
+                linkFrame: (_) => const SizedBox(),
+                onChoose: (_) {},
+                onToggle: () {},
+                onStop: () {},
+                onSkip: (_) {},
+                onRepeat: () {},
+                onRestart: () => restarts++,
+                onSection: (_, _) {},
+                onSectionHere: ({required bool end}) {},
+                onSectionClear: () {},
+                onSpeed: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    video.seeks.clear();
+    await tester.tap(find.byKey(const Key('cam-along-restart')));
+    expect(restarts, 1);
+    expect(video.seeks, isEmpty);
     track.dispose();
   });
 

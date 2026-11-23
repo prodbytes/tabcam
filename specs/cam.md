@@ -142,7 +142,8 @@ the view shows it with the widgets in
   the button (or / and ., which start the next take). **1** is the
   song's play / pause, as the space bar
   ([the keys in every screen](#keys-in-every-screen)); until 2026-11-17
-  it was Rec / Stop. The button's tooltip names the keys: "Rec (.)",
+  it was Rec / Stop. Either, pausing the song while a take records,
+  stops the take too ([below](#space-stops-take)). The button's tooltip names the keys: "Rec (.)",
   and "Stop · new take (/) · redo (.)" while recording, in English,
   Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named by **the time
@@ -475,8 +476,28 @@ the view shows it with the widgets in
   - **They go with their file**: a file deleted from the capture keeps
     them in the trash (restored, it has them), and they're deleted when
     it's purged ([Deleted and Purge](trash.md)); one deleted from the
-    user's contribution, they're deleted with it; a
-    clone's copies of the files have their originals' passes, and so
+    user's contribution, they're deleted with it. **A take is not its
+    song**: deleting or purging a take never touches the passes of the
+    songs it played along with, which stay the song's, so the song keeps
+    turning the tab by itself with no take left. And a song with **no
+    passes kept** (none noted for it, or cleared by an app before this
+    one, which kept no mark of a clear) gets its takes' when one of them
+    is deleted, purged, or
+    deleted from the user's contribution (`Library._songPhrasesKept`):
+    each take's own passes (below), on the take's clock, put at the
+    song's times its [log](#what-a-take-keeps) noted the song at
+    (`songPhrasesOf`: only those made while that song played), every take
+    of the capture that played along with it, oldest first, merged as
+    passes recorded live are (within two seconds, at their average);
+    so they outlive the take. A song whose passes were **cleared** on
+    purpose (Clear, below) keeps an empty list (`"<id>": []`) and gets
+    none back. With several takes along one song, the song's passes are
+    already all of theirs merged (each take's were noted into the
+    song's as it recorded). A
+    clone's copies of the files have their originals' passes (and the
+    user's copy of a shared capture, where Cam records, takes those the
+    owner records later for songs it has none for, not one cleared in the
+    copy: [catching up](library.md#catching-up)), and so
     does a file the owner [publishes](contributions.md#what-the-owner-sees-and-publishes)
     from a contribution (the owner's own for it, else its reader's).
     Passes for a song deleted elsewhere are let go of at the next save.
@@ -490,13 +511,16 @@ the view shows it with the widgets in
   - **In the player**: a tick across the song's progress bar at each
     pass (in the theme's primary colour), and at the bar's right end, on
     its line, a **clear** button (a clear-all icon in the same colour,
-    "Clear the phrase passes marked on the bar") that drops them all; no
-    count is shown. A pass shows on the bar as soon as it's made, while
+    "Clear the phrase passes marked on the bar") that drops them all
+    (`Library.clearPhrases`: kept as cleared, an empty list, so no take
+    of the song gives them back); no count is shown. A pass shows on the bar as soon as it's made, while
     the take still records, not only once it's saved. Cleared during a
     take, the marks go at once and the take records on: passes made
     after (Auto-pass on) are noted and marked again, and only those are
     kept. The same frame shows them beside the Text view and
-    on the file screen.
+    on the file screen. The video editor marks them the same way on its
+    song rows: Cam's [main row](#the-main-row), and the edit view's
+    [Song lane](video-edit.md#the-song-row).
 - <a id="auto-pass"></a>**Auto-pass** (beside Tab: its icon in the
   primary colour while on, struck through while off; on by default,
   kept on the device in the `cam` meta file, with
@@ -573,9 +597,23 @@ capture's, theirs being the more recent), but not one published (the
 capture's copy is listed) (`PlayAlong.filesOf`). Each file's row ends
 in [Delete](#deleting-from-the-sidebar). The list
 scrolls, the frame stays.
-**Play along** (♫ in the app bar, in the primary colour while open)
-hides and shows the sidebar, frame and all; hiding it pauses what plays
-(kept offstage, so a link's page isn't reloaded). A capture with none of
+<a id="the-sidebars-tabs"></a>**In Cam's view the sidebar has two tabs**
+at its top: **Play along** (♫: the frame and the list above) and
+**Download** (a tune icon: the video editor's [Download
+settings](video-edit.md#download-settings), for the take edited in the
+camera's place; with the camera there, **Edit the take**, which opens
+the [take's row](#the-takes-row)'s take, staying on that tab), then ✕,
+which hides the sidebar. A take's Edit turns it to Download, the camera
+back to Play along; the files stay loaded while Download shows. The
+tabs show their names from 240 px wide (icons alone, named in tooltips,
+when narrower), and none in a sidebar under 400 px high (a phone on its
+side), where the app bar's buttons switch. On the Download tab it's at
+least 224 px wide. (Beside the Text view and on the file screen the
+sidebar is the files alone, no tabs.)
+**Play along** (♫ in the app bar, in the primary colour while its files
+show) hides and shows the sidebar, frame and all (in Cam's view, on the
+Download tab, it turns to Play along instead); hiding it pauses what
+plays (kept offstage, so a link's page isn't reloaded). A capture with none of
 them has no sidebar and no ♫, unless it has a text tab: then ♫ is
 there, and the sidebar, opened with it, lists the text to
 [follow](#following-the-text) (the text alone doesn't open it by
@@ -605,9 +643,14 @@ section, speed, Repeat, phrase passes and keys are the player's, never
 doubled; the sidebar's player stays, the same song's picture and
 controls. The row's header has **Play the song** / **Pause the song**
 (Pause while it counts in too), as the player's Play. Its bar, as long
-as the ruler (the file's length), has the file's name, the part played
-filled (the primary colour; red while a take records) and the section,
-where one is set, outlined in the tertiary colour; the ruler's playhead
+as the ruler (the file's length), has the file's name, the file's
+**waveform** (as the editor's lanes draw theirs, [waveforms](#waveforms-in-cams-rows)),
+the part played filled (the primary colour; red while a take records),
+the section, where one is set, outlined in the tertiary colour, and the
+song's [phrase passes](#phrase-passes) marked as the player's bar marks
+them (a tick across the bar at each, in the primary colour,
+`PhraseMarks`, on the song's own time: the same places; one recorded
+shows at once, and Clear takes them away); the ruler's playhead
 follows the player. A tap on the bar or the ruler takes the player
 there, and a drag along them follows (at most every 150 ms, the last
 where it's let go), kept within the section where one is set
@@ -618,6 +661,23 @@ capture has a file that plays, the row is a dashed **Play along with a
 song…**, which opens the sidebar with its first file loaded, paused
 (`PlayAlong.show`); with nothing in the capture that plays (only a PDF
 to follow, say) there's no row. In English, Spanish and Portuguese.
+
+<a id="waveforms-in-cams-rows"></a>**Waveforms in Cam's rows**, as the
+editor's lanes have ([video edit](video-edit.md#waveforms); in Cam's
+parts of `StudioView`, `_CamWave`): the main row's bar draws the song's
+sound across it, brighter in the section where one is set and dim
+outside it; the take's row, once the take is saved, draws the take's own
+sound in its blocks: in each part of the song it played along, the
+take's sound from when that part began, fitted to the song's speed (a
+take of the song at 0.5× has two of its seconds in each of the song's);
+on the take's clock, the take itself. None while a take records (there's
+no file yet), nor for a link in a frame, a file still loading or one
+that can't be read. Each file's sound is read once on the device, with
+the same readers as the editor's ([`SoundReader`](../tabcam_app/lib/capture/sound_reader.dart);
+none on a desktop build, where no file is even fetched for it), and the
+last six read are kept ([`WaveCache`](../tabcam_app/lib/capture/waveform.dart)),
+so a row built again, Cam opened again or a song played along again
+draws at once. Nothing is sent anywhere.
 
 <a id="the-takes-row"></a>**The take's row**, under the main row (the
 main row first, as the opened one is in the editor), is the take, in
@@ -650,7 +710,8 @@ main row first, as the opened one is in the editor), is the take, in
   [Edit](#editing-a-take-from-the-sidebar) opens it; Back puts the
   camera back and the row with it). Its bar, in the theme's secondary
   colour, has its blocks where it played along the main row's song, from
-  its log (`TakeLog.song`). Recorded with nothing with a time in the
+  its log (`TakeLog.song`), and over them the take's own sound
+  ([waveforms](#waveforms-in-cams-rows)). Recorded with nothing with a time in the
   main row, it stays on the take's clock, as long as it recorded. One
   that didn't play along the song in the main row (another song chosen
   since, the take itself chosen there, none) is its name on a dashed
@@ -714,7 +775,8 @@ after Stop the song plays on), so only the editor's preview sounds
 in the camera's place, with no screen pushed over Cam
 ([Cam's view](#cams-view)): the take in the viewer with its tab, title
 and watermark, the editor's transport, its rows (Take, then the song
-lined up) and the cut's steps in the dock, the Download settings, and
+lined up) and the cut's steps in the dock, the sidebar turned to its
+Download tab (the Download settings), and
 the editor's app bar (Reset, Download, Download settings, Dictionary,
 Metronome, Play along, Share, the keyboard button, About; on a phone
 [Rec over this](video-edit.md#rec-over-this), Dictionary, Metronome,
@@ -723,8 +785,8 @@ start. The take's edit is as it was left, its
 song lined up, the same edit as on its file screen. The keys are the
 editor's ([keyboard shortcuts](keyboard-shortcuts.md)): the space bar
 plays its preview; Cam's (/, ., the tab's) and the player's (1, 0)
-do nothing. The sidebar stays at the right, the take edited without
-Edit or Delete (nor has any page Back is still to bring back, such as
+do nothing. The sidebar stays at the right, its Play along tab's files
+listing the take edited without Edit or Delete (nor has any page Back is still to bring back, such as
 the one [Rec over this](video-edit.md#rec-over-this) left); another
 take's Edit takes its place in the main row
 (the first's edit kept). The song in the take's Song row, deleted in
@@ -740,9 +802,8 @@ camera back, the song in the main row as it was, its gestures watching
 again, Cam's keys back; a file tapped in the sidebar does the same,
 then plays in the main row.
 On a phone, where the sidebar would leave the editor narrower than 360
-points, or on its side, too narrow for the Download settings beside
-the viewer, the Edit hides the sidebar, and it shows again with the
-camera. During a download (the editor's), Back does nothing and the
+points, the Edit hides the sidebar (the Download tab's Edit the take
+keeps it, on that tab), and it shows again with the camera. During a download (the editor's), Back does nothing and the
 sidebar takes no taps. **Beside the Text view** and on a recording's
 **file screen** it opens the editor over the screen, exactly as
 **Edit** on the take's own [file screen](event-screen.md#file-screen)
@@ -810,7 +871,9 @@ view).
   its **red** while a take records; marked where its [phrase passes](#phrase-passes) are, with
   the button that clears them at the line's right end), the
   [count-in](#count-in) at the start of the progress bar's line; a recording only that line; under them its icon and
-  name in small type, then **«** (10 seconds back, not before the
+  name in small type, then **|◀** (back to the start, as the **0** key,
+  below: the file's or its section's, count-in included; "Back to the
+  start (0)"), **«** (10 seconds back, not before the
   start), **Play** / **Pause** (Pause while it counts in too), **Stop** (pauses it, back at its start),
   **»** (10 seconds forward) and **Repeat** (on by default, in the
   primary colour while on: at its end it starts over; a recording or
@@ -889,10 +952,15 @@ view).
   `play-along`, which the apps' store refuses, so it was never kept there), for Cam, the Text view and the
   file screen alike.
 - **The space bar and 1** (on the top row or the keypad) pause and play
-  it while the sidebar shows (a key down; held, they don't repeat),
-  recording or not (the take records on), and don't turn the tab; with
-  the sidebar hidden, they turn the tab again. A tap in the sidebar or
-  the frame gives the keys back to Cam.
+  it while the sidebar shows (a key down; held, they don't repeat), and
+  don't turn the tab; with the sidebar hidden, they turn the tab again.
+  <a id="space-stops-take"></a>Pausing it (playing, or counting in)
+  while a take records **stops the take too**, saved as Stop (Rec)
+  saves it (`CamSession.keyPaused`, told by `PlayAlongKeys.onKeyPause`);
+  until 2026-11-22 the take recorded on. Playing it never starts a take,
+  and the frame's own **Pause** button still only pauses the song (the
+  take records on). A tap in the sidebar or the frame gives the keys
+  back to Cam.
 - **0** (on the top row or the keypad) always goes back to the
   beginning: the start of the file, or of its section when one is set,
   count-in included (`BackingTrack.restart`). Paused, it stays paused
@@ -902,7 +970,8 @@ view).
   from the start. While it counts in, the count starts over. (A link in
   the frame, which has no count-in, goes back by Stop, then plays again
   if it played.) Like space, it doesn't turn the tab while the sidebar
-  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom).
+  shows. Ctrl / ⌘ + 0 is left to the browser (its zoom). The frame's
+  **|◀** button does the same, the one `BackingTrack.restart` both call.
 - **← and →** go 10 seconds back and on in it, as « and » do (held,
   again and again), and don't turn the tab while the sidebar shows; the
   tab's phrases go by **↑** (the one before) and **↓** (the next). With

@@ -367,8 +367,13 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
       final (u, d) = await _shared(token, state);
       up += u;
       down += d;
-      for (final MapEntry(key: id, value: key) in [..._unpublished.entries]) {
-        await _publish(token, id, key);
+      for (final id in [..._unpublished]) {
+        final event = library.byId(id);
+        if (event == null || event.linkKey == null || event.isShared) {
+          _unpublished.remove(id);
+          continue;
+        }
+        await _publishLatest(token, event);
       }
     }
     await state.save(library);
@@ -457,6 +462,14 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
         state.events[key(event.id)] = _Synced(sent, event.updated);
         if (event.owner == null) await library.setOwner(event, owner);
         up++;
+        // A public capture changed (renamed, say): tabs.cam's search
+        // finds it as it is now; in the trash, not at all.
+        if (folder.own &&
+            shares != null &&
+            event.linkKey != null &&
+            event.visibility == CaptureVisibility.public) {
+          await _publishLatest(token, event);
+        }
       }
     }
 
@@ -966,29 +979,68 @@ class CloudSync extends ChangeNotifier with WidgetsBindingObserver {
     state.events.remove('${event.owner}/${event.id}');
   }
 
-  /// Links (capture ID -> key) the share API hasn't recorded yet: tried
-  /// again each pass.
-  final Map<String, String> _unpublished = {};
+  /// Captures (their IDs) whose link the share API hasn't recorded as it
+  /// is yet: tried again each pass, as they are then.
+  final Set<String> _unpublished = {};
 
-  /// Lets anyone with [event]'s link (its [CaptureEvent.linkKey]) see it,
-  /// read only: the share API records the key. Failing (offline), it's
-  /// tried again at each pass.
+  /// Records [event]'s link (its [CaptureEvent.linkKey]) with the share
+  /// API, and who may open it by it ([CaptureEvent.shownVisibility]):
+  /// anyone holding it (unlisted, read only), anyone, also found by
+  /// tabs.cam's search (public), or only the owner (private). Failing
+  /// (offline), it's tried again at each pass.
   Future<void> publishLink(CaptureEvent event) async {
-    final key = event.linkKey;
     final token = _token;
-    if (key == null || shares == null || token == null || event.isShared) {
+    if (event.linkKey == null ||
+        shares == null ||
+        token == null ||
+        event.isShared) {
       return;
     }
-    await _publish(token, event.id, key);
+    await _publishLatest(token, event);
   }
 
-  Future<void> _publish(String token, String id, String key) async {
+  /// Each capture's publishing under way, by its ID: the next waits for it.
+  final Map<String, Future<void>> _publishing = {};
+
+  /// Publishes [event]'s link as the capture is when its turn comes (one
+  /// at a time per capture), so the share API ends up with what it is
+  /// last, whichever request answers first: a choice in Share right after
+  /// the copy's own, say.
+  Future<void> _publishLatest(String token, CaptureEvent event) {
+    final id = event.id;
+    final next = (_publishing[id] ?? Future<void>.value()).then((_) {
+      final now = library.byId(id);
+      final latest = now?.linkKey != null ? now! : event;
+      if (latest.isShared) return Future<void>.value();
+      return _publish(token, latest);
+    });
+    _publishing[id] = next;
+    return next.whenComplete(() {
+      if (identical(_publishing[id], next)) _publishing.remove(id);
+    });
+  }
+
+  Future<void> _publish(String token, CaptureEvent event) async {
+    var visibility = event.shownVisibility;
+    // In the trash, a public capture is found by nobody (and its link
+    // opens nothing); restored, it's found again.
+    if (visibility == CaptureVisibility.public &&
+        (event.isTrashed || event.isDeleted)) {
+      visibility = CaptureVisibility.unlisted;
+    }
     try {
-      await shares!.publishLink(token, id, key);
-      _unpublished.remove(id);
+      await shares!.publishLink(
+        token,
+        event.id,
+        event.linkKey!,
+        visibility: visibility,
+        title: event.title,
+        artist: event.artist,
+      );
+      _unpublished.remove(event.id);
     } on Object catch (e) {
-      _unpublished[id] = key;
-      debugPrint('TabCam: publishing the link of $id failed: $e');
+      _unpublished.add(event.id);
+      debugPrint('TabCam: publishing the link of ${event.id} failed: $e');
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ import '../screens/file_screen.dart';
 import '../screens/page_image.dart';
 import '../screens/pdf_page.dart';
 import '../screens/youtube_link.dart';
+import '../screens/sidebar_tabs.dart';
 import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
 import '../screens/mono_font.dart';
@@ -185,11 +187,13 @@ class PlayAlong extends ChangeNotifier {
   }
 
   /// Shows the sidebar, with a file loaded to play (not playing) when
-  /// none is ([_loadFirst]): Cam's **Play along with a song…**.
-  void show() {
+  /// none is ([_loadFirst]): Cam's **Play along with a song…**. Without
+  /// [load], nothing loads (the video editor's sidebar shown on its
+  /// Download tab, with a page edited).
+  void show({bool load = true}) {
     _opened = true;
     _open = true;
-    _loadFirst();
+    if (load) _loadFirst();
     notifyListeners();
   }
 
@@ -257,29 +261,57 @@ class PlayAlong extends ChangeNotifier {
 }
 
 /// **Play along** for an app bar: ♫, in the primary colour while the
-/// sidebar shows; nothing when there's nothing to play along with.
+/// sidebar shows; nothing when there's nothing to play along with. With
+/// [tab] (the video editor's sidebar, [SidebarTabs]), it shows the
+/// sidebar on its Play along tab, and hides it only where that tab
+/// shows: on the Download tab, it turns to Play along.
 class PlayAlongButton extends StatelessWidget {
-  const PlayAlongButton({super.key, required this.along, this.onPressed});
+  const PlayAlongButton({
+    super.key,
+    required this.along,
+    this.onPressed,
+    this.tab,
+  });
 
   final PlayAlong along;
 
   /// After the sidebar shows or hides.
   final VoidCallback? onPressed;
 
+  /// The sidebar's tab, where it has tabs.
+  final ValueNotifier<StudioTab>? tab;
+
+  /// Whether [along]'s files show: its sidebar, on its Play along tab
+  /// where it has tabs ([tab]).
+  static bool shows(PlayAlong along, ValueNotifier<StudioTab>? tab) =>
+      along.open && (tab == null || tab.value == StudioTab.playAlong);
+
+  /// ♫ pressed: the sidebar on its Play along tab, or hidden where that
+  /// shows ([shows]).
+  static void press(PlayAlong along, ValueNotifier<StudioTab>? tab) {
+    if (along.open && !shows(along, tab)) {
+      tab!.value = StudioTab.playAlong;
+      return;
+    }
+    along.toggle();
+    if (along.open) tab?.value = StudioTab.playAlong;
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: along,
+    listenable: Listenable.merge([along, tab]),
     builder: (context, _) {
       if (!along.available) return const SizedBox.shrink();
       final l10n = context.l10n;
+      final shown = shows(along, tab);
       return IconButton(
         key: const Key('cam-along'),
-        tooltip: along.open ? l10n.camAlongHide : l10n.camAlong,
-        isSelected: along.open,
-        color: along.open ? Theme.of(context).colorScheme.primary : null,
+        tooltip: shown ? l10n.camAlongHide : l10n.camAlong,
+        isSelected: shown,
+        color: shown ? Theme.of(context).colorScheme.primary : null,
         icon: const Icon(Icons.queue_music),
         onPressed: () {
-          along.toggle();
+          press(along, tab);
           onPressed?.call();
         },
       );
@@ -345,7 +377,12 @@ class FollowedText extends StatelessWidget {
 /// [PlayAlong.followed]), when one is, in a pane of its own
 /// ([_FollowPane]), with a separator to drag ([SplitHandle]) between it
 /// and [child]: wider, the page reads better; [child] (the camera) gets
-/// smaller, down to [minChild].
+/// smaller, down to [minChild]. With [download] (the video editor's view,
+/// `StudioView`), the sidebar has tabs at its top ([SidebarTabs]): **Play
+/// along** (its files, kept while the other shows) and **Download** (the
+/// editor's Download settings), [tab] saying which shows, and ✕, which
+/// hides it; on its Download tab it's never narrower than
+/// [downloadTabLeast].
 class PlayAlongBeside extends StatelessWidget {
   const PlayAlongBeside({
     super.key,
@@ -363,10 +400,21 @@ class PlayAlongBeside extends StatelessWidget {
     this.onEdit,
     this.choose,
     this.keys = true,
+    this.onKeyPause,
+    this.download,
+    this.tab,
   });
 
   final PlayAlong along;
   final Widget child;
+
+  /// The sidebar's Download tab ([StudioTab.download]): the video
+  /// editor's Download settings, built while it shows. Null (the other
+  /// screens): the sidebar is the files alone, with no tabs.
+  final WidgetBuilder? download;
+
+  /// Which of the sidebar's tabs shows, with [download].
+  final ValueNotifier<StudioTab>? tab;
 
   /// Plays a file tapped in the sidebar along; null, [PlayAlong.choose].
   /// Cam's view puts the camera back first, where a take is edited in
@@ -376,6 +424,10 @@ class PlayAlongBeside extends StatelessWidget {
   /// Whether the player's keys work ([PlayAlongKeys]); false in a
   /// preview, where no key does anything.
   final bool keys;
+
+  /// The space bar or 1 paused the player ([PlayAlongKeys.onKeyPause]):
+  /// Cam stops the take recording.
+  final VoidCallback? onKeyPause;
 
   /// Whether the sidebar's files show Delete (those the user may delete,
   /// [mayDeleteFile]); false (a preview), none does.
@@ -464,18 +516,27 @@ class PlayAlongBeside extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([along, SidebarWidths.instance]),
+    listenable: Listenable.merge([along, SidebarWidths.instance, tab]),
     builder: (context, _) => LayoutBuilder(
       builder: (context, box) {
         final screen = MediaQuery.sizeOf(context).width;
         final widths = SidebarWidths.instance;
-        final shown = along.available && along.open;
+        final download = this.download;
+        final tab = this.tab;
+        // With a Download tab, the sidebar is there for it too, files to
+        // play along or not.
+        final available = along.available || download != null;
+        final shown = available && along.open;
+        final downloading =
+            download != null && tab?.value == StudioTab.download;
+        final least = downloading ? downloadTabLeast : SidebarWidths.min;
         // The sidebar leaves [child] [minChild] and its edge.
         final sidebarMax = box.maxWidth - minChild - 2 * SplitHandle.thickness;
         final sidebarWidth = widths.widthOf(
           SidebarWidths.playAlong,
           fallback: PlayAlongSidebar.widthFor(screen),
           max: sidebarMax,
+          least: least,
         );
         final sidebar = shown ? sidebarWidth + SplitHandle.thickness : 0.0;
         // What's left for the pane, the separator and [child].
@@ -546,88 +607,98 @@ class PlayAlongBeside extends StatelessWidget {
                 onDrag: (dx) => widths.set(
                   SidebarWidths.playAlong,
                   (sidebarWidth - dx).clamp(
-                    SidebarWidths.min,
-                    sidebarMax < SidebarWidths.min
-                        ? SidebarWidths.min
-                        : sidebarMax,
+                    least,
+                    sidebarMax < least ? least : sidebarMax,
                   ),
                 ),
                 onDragEnd: widths.save,
                 onReset: () => widths.reset(SidebarWidths.playAlong),
               ),
-            if (along.available)
+            if (available)
               Offstage(
                 offstage: !along.open,
-                child: PlayAlongKeys(
-                  track: along.track,
-                  active: along.open && keys,
-                  child: PlayAlongSidebar(
-                    width: sidebarWidth,
-                    library: along.library,
-                    eventId: along.eventId,
+                child: _tabbed(
+                  context,
+                  width: sidebarWidth,
+                  downloading: downloading,
+                  files: PlayAlongKeys(
                     track: along.track,
-                    linkFrame: linkFrame,
-                    toFollow: along.toFollow,
-                    followed: along.followed,
-                    hasText: along.text != null,
-                    followsText: along.followsText,
-                    footer: footer,
-                    keepIds: keepIds,
-                    canDelete: canDelete,
-                    onDelete: deletes ? (page) => _delete(context, page) : null,
-                    onEdit: onEdit == null ? null : _edit,
-                    onFollow: (page) {
-                      onUse?.call();
-                      along.follow(page);
-                    },
-                    onFollowText: () {
-                      onUse?.call();
-                      along.followText();
-                    },
-                    onChoose: (page) {
-                      onUse?.call();
-                      unawaited((choose ?? along.choose)(page));
-                    },
-                    onStop: () {
-                      onUse?.call();
-                      unawaited(along.track.stop());
-                    },
-                    onToggle: () {
-                      onUse?.call();
-                      unawaited(along.track.toggle());
-                    },
-                    onSkip: (by) {
-                      onUse?.call();
-                      unawaited(along.track.skip(by));
-                    },
-                    onRepeat: () {
-                      onUse?.call();
-                      unawaited(along.track.setRepeat(!along.track.repeat));
-                    },
-                    onSection: (start, end) {
-                      onUse?.call();
-                      unawaited(along.track.setSection(start, end));
-                    },
-                    onSectionHere: ({required bool end}) {
-                      onUse?.call();
-                      unawaited(along.track.sectionHere(end: end));
-                    },
-                    onSectionClear: () {
-                      onUse?.call();
-                      unawaited(along.track.clearSection());
-                    },
-                    onPhrasesClear: () {
-                      onUse?.call();
-                      unawaited(along.track.clearPhrases());
-                    },
-                    onCountIn: () {
-                      onUse?.call();
-                      unawaited(along.track.setCountIn(!along.track.countIn));
-                    },
-                    onSpeed: (speed) {
-                      onUse?.call();
-                      unawaited(along.track.setSpeed(speed));
-                    },
+                    active: along.open && keys,
+                    onKeyPause: onKeyPause,
+                    child: PlayAlongSidebar(
+                      width: sidebarWidth,
+                      library: along.library,
+                      eventId: along.eventId,
+                      track: along.track,
+                      linkFrame: linkFrame,
+                      toFollow: along.toFollow,
+                      followed: along.followed,
+                      hasText: along.text != null,
+                      followsText: along.followsText,
+                      footer: footer,
+                      keepIds: keepIds,
+                      canDelete: canDelete,
+                      onDelete: deletes
+                          ? (page) => _delete(context, page)
+                          : null,
+                      onEdit: onEdit == null ? null : _edit,
+                      onFollow: (page) {
+                        onUse?.call();
+                        along.follow(page);
+                      },
+                      onFollowText: () {
+                        onUse?.call();
+                        along.followText();
+                      },
+                      onChoose: (page) {
+                        onUse?.call();
+                        unawaited((choose ?? along.choose)(page));
+                      },
+                      onStop: () {
+                        onUse?.call();
+                        unawaited(along.track.stop());
+                      },
+                      onToggle: () {
+                        onUse?.call();
+                        unawaited(along.track.toggle());
+                      },
+                      onRestart: () {
+                        onUse?.call();
+                        unawaited(along.track.restart());
+                      },
+                      onSkip: (by) {
+                        onUse?.call();
+                        unawaited(along.track.skip(by));
+                      },
+                      onRepeat: () {
+                        onUse?.call();
+                        unawaited(along.track.setRepeat(!along.track.repeat));
+                      },
+                      onSection: (start, end) {
+                        onUse?.call();
+                        unawaited(along.track.setSection(start, end));
+                      },
+                      onSectionHere: ({required bool end}) {
+                        onUse?.call();
+                        unawaited(along.track.sectionHere(end: end));
+                      },
+                      onSectionClear: () {
+                        onUse?.call();
+                        unawaited(along.track.clearSection());
+                      },
+                      onPhrasesClear: () {
+                        onUse?.call();
+                        unawaited(along.track.clearPhrases());
+                      },
+                      onCountIn: () {
+                        onUse?.call();
+                        unawaited(along.track.setCountIn(!along.track.countIn));
+                      },
+                      onSpeed: (speed) {
+                        onUse?.call();
+                        unawaited(along.track.setSpeed(speed));
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -636,6 +707,57 @@ class PlayAlongBeside extends StatelessWidget {
       },
     ),
   );
+
+  /// The sidebar, [width] wide: [files] (the play-along list) alone; with
+  /// [download], under the tabs ([SidebarTabs], none in a short sidebar,
+  /// [SidebarTabs.shownFrom]), the Download tab's
+  /// settings while it shows ([downloading]), the files kept meanwhile
+  /// (offstage), so a link's page isn't reloaded.
+  Widget _tabbed(
+    BuildContext context, {
+    required double width,
+    required bool downloading,
+    required Widget files,
+  }) {
+    final download = this.download;
+    final tab = this.tab;
+    if (download == null || tab == null) return files;
+    return SizedBox(
+      key: const Key('studio-sidebar'),
+      width: width,
+      child: Material(
+        color: sidebarColor,
+        child: LayoutBuilder(
+          builder: (context, box) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (box.maxHeight >= SidebarTabs.shownFrom)
+                SidebarTabs(
+                  tab: tab,
+                  onClose: () {
+                    along.toggle();
+                    onUse?.call();
+                  },
+                ),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Offstage(offstage: downloading, child: files),
+                    if (downloading)
+                      KeyedSubtree(
+                        key: const Key('studio-sidebar-download'),
+                        child: Builder(builder: download),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// The play-along player's keys, in every screen with the sidebar, while
@@ -643,7 +765,8 @@ class PlayAlongBeside extends StatelessWidget {
 /// keyboard is but in a field being typed in: **0** goes back to the
 /// start of the file or its section, count-in and all
 /// ([BackingTrack.restart]); the **space bar** and **1** pause and play
-/// it. They get the keys first
+/// it, and a pause is told ([onKeyPause]: Cam stops the take recording).
+/// They get the keys first
 /// ([FocusManager.addEarlyKeyEventHandler]), so the screen under them
 /// doesn't (Cam's turn the tab). A tap in the sidebar takes the keyboard
 /// out of a field, so the keys are the player's again.
@@ -653,6 +776,7 @@ class PlayAlongKeys extends StatefulWidget {
     required this.track,
     required this.child,
     this.active = true,
+    this.onKeyPause,
   });
 
   final BackingTrack track;
@@ -660,6 +784,10 @@ class PlayAlongKeys extends StatefulWidget {
 
   /// Whether the sidebar shows: hidden, the keys are the screen's.
   final bool active;
+
+  /// The space bar or 1 paused the player (it played, or counted in):
+  /// Cam stops the take recording, as Stop does. Not when they play it.
+  final VoidCallback? onKeyPause;
 
   /// The keys that go back to the start: 0, on the top row or the keypad.
   static final restart = {
@@ -746,7 +874,9 @@ class _PlayAlongKeysState extends State<PlayAlongKeys> {
     if (toggles) {
       // Nothing to play or pause yet (it's loading): still the player's.
       if (event is KeyDownEvent && track.canToggle) {
+        final pauses = track.playing || track.countingIn;
         unawaited(track.toggle());
+        if (pauses) widget.onKeyPause?.call();
       }
       return KeyEventResult.handled;
     }
@@ -869,6 +999,7 @@ class _BackingFrame extends StatefulWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
   });
@@ -884,6 +1015,7 @@ class _BackingFrame extends StatefulWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+  final VoidCallback? onRestart;
   final VoidCallback? onPhrasesClear;
   final VoidCallback? onCountIn;
 
@@ -910,6 +1042,7 @@ class _BackingFrameState extends State<_BackingFrame> {
       :onSectionHere,
       :onSectionClear,
       :onSpeed,
+      :onRestart,
       :onPhrasesClear,
       :onCountIn,
     ) = widget;
@@ -1016,8 +1149,8 @@ class _BackingFrameState extends State<_BackingFrame> {
                               child: IgnorePointer(
                                 child: CustomPaint(
                                   key: const Key('cam-along-phrase-marks'),
-                                  painter: _PhraseMarks(
-                                    phrases,
+                                  painter: PhraseMarks(
+                                    [for (final p in phrases.passes) p.at],
                                     media.value.duration,
                                     Theme.of(context).colorScheme.primary,
                                   ),
@@ -1089,6 +1222,17 @@ class _BackingFrameState extends State<_BackingFrame> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (track.canToggle) ...[
+                              // Back to the start, as the 0 key.
+                              IconButton(
+                                key: const Key('cam-along-restart'),
+                                tooltip: l10n.camAlongRestart,
+                                visualDensity: compact,
+                                color: Colors.white,
+                                icon: const Icon(Icons.skip_previous),
+                                onPressed:
+                                    onRestart ??
+                                    () => unawaited(track.restart()),
+                              ),
                               IconButton(
                                 key: const Key('cam-along-back'),
                                 tooltip: l10n.camAlongBack,
@@ -1191,6 +1335,7 @@ class PlayAlongSidebar extends StatelessWidget {
     required this.onSectionHere,
     required this.onSectionClear,
     required this.onSpeed,
+    this.onRestart,
     this.onPhrasesClear,
     this.onCountIn,
     this.width,
@@ -1244,6 +1389,10 @@ class PlayAlongSidebar extends StatelessWidget {
   final void Function({required bool end}) onSectionHere;
   final VoidCallback onSectionClear;
   final void Function(double speed) onSpeed;
+
+  /// Back to the start of what plays (its section's), as the **0** key
+  /// ([BackingTrack.restart]); null: the track goes back itself.
+  final VoidCallback? onRestart;
 
   /// Forgets the phrase passes of what plays; null: the track forgets
   /// them itself.
@@ -1305,6 +1454,7 @@ class PlayAlongSidebar extends StatelessWidget {
                           onSectionHere: onSectionHere,
                           onSectionClear: onSectionClear,
                           onSpeed: onSpeed,
+                          onRestart: onRestart,
                           onPhrasesClear: onPhrasesClear,
                           onCountIn: onCountIn,
                         ),
@@ -1698,11 +1848,15 @@ class _CountIn extends StatelessWidget {
 }
 
 /// Where the tab turns along the song ([BackingTrack.phrases]): a tick
-/// across the progress bar at each phrase pass.
-class _PhraseMarks extends CustomPainter {
-  _PhraseMarks(this.times, this.length, this.color);
+/// across the bar at each phrase pass, [at] its time on the bar's axis,
+/// [length] across its width. The player's progress bar draws them, and
+/// the video editor's song rows with the same ticks (Cam's main row on
+/// the song's own time; the edit view's Song lane where the song is
+/// placed along the video).
+class PhraseMarks extends CustomPainter {
+  PhraseMarks(this.at, this.length, this.color);
 
-  final PhraseTimes times;
+  final List<Duration> at;
   final Duration length;
   final Color color;
 
@@ -1713,15 +1867,15 @@ class _PhraseMarks extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2;
-    for (final p in times.passes) {
-      final x = size.width * (p.at.inMilliseconds / ms).clamp(0.0, 1.0);
+    for (final t in at) {
+      final x = size.width * (t.inMilliseconds / ms).clamp(0.0, 1.0);
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }
 
   @override
-  bool shouldRepaint(_PhraseMarks old) =>
-      old.times != times || old.length != length || old.color != color;
+  bool shouldRepaint(PhraseMarks old) =>
+      !listEquals(old.at, at) || old.length != length || old.color != color;
 }
 
 /// The section that repeats, over the progress bar while repeat is on and

@@ -7,8 +7,8 @@
 #   2. deploys the site (CloudFormation tabcam_infra/site.yaml:
 #      tabcam-web: certificate, bucket, CloudFront, DNS; uptime is
 #      watched by the nu01-monitor stack, outside this repo)
-#   3. uploads the index page (/, its pictures at /img/), the privacy policy (/privacy) and the
-#      web build (/app/), and invalidates the CloudFront cache
+#   3. uploads the index page (/, its pictures at /img/), the privacy policy (/privacy),
+#      robots.txt and the web build (/app/), and invalidates the CloudFront cache
 #   4. smoke-tests the live site: /app/version.json must report this
 #      version, / must be the index page, and /privacy the policy; the
 #      old name must redirect there
@@ -183,6 +183,10 @@ aws s3 sync tabcam_app/build/web/ "s3://$bucket/app/" --delete --cache-control n
 # Android App Links: which signing keys' apps may open the site's links.
 aws s3 cp tabcam_index/site/.well-known/assetlinks.json "s3://$bucket/.well-known/assetlinks.json" \
   --cache-control no-cache --content-type application/json --only-show-errors
+# Search engines: everything allowed, and production's sitemap (public
+# captures' short links, from the share API).
+aws s3 cp tabcam_index/site/robots.txt "s3://$bucket/robots.txt" \
+  --cache-control no-cache --content-type "text/plain; charset=utf-8" --only-show-errors
 invalidation="$(aws cloudfront create-invalidation --distribution-id "$distribution" \
   --paths '/*' --query Invalidation.Id --output text)"
 echo "    waiting for invalidation $invalidation"

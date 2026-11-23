@@ -17,6 +17,7 @@ import 'tab_editing.dart';
 import '../l10n/language.dart';
 import 'mono_font.dart';
 import 'messages.dart';
+import 'text_zoom.dart';
 
 /// The event screen's Text view: the tab read from the event's pages, to
 /// check against them and fix, monospaced and unwrapped (long lines scroll
@@ -161,6 +162,27 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   /// read; turned off to edit.
   bool _columns = false;
 
+  /// How large the text shows: its usual size times this ([textZooms]).
+  /// Not kept: the view opens at the usual size.
+  double _zoom = 1;
+
+  /// Drag to move is on: a drag moves the text instead of editing or
+  /// selecting it ([TextMover]).
+  bool _dragging = false;
+
+  final _mover = GlobalKey<TextMoverState>();
+
+  /// The editor's scrolls, down and sideways, and the two columns': down,
+  /// and each column's sideways.
+  final _down = ScrollController();
+  final _across = ScrollController();
+  final _columnsDown = ScrollController();
+  final _leftAcross = ScrollController();
+  final _rightAcross = ScrollController();
+
+  /// The tab's text style at the [_zoom].
+  TextStyle get _zoomed => _mono.copyWith(fontSize: _mono.fontSize! * _zoom);
+
   /// Fix is asking the service.
   bool _checking = false;
 
@@ -248,6 +270,9 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     _review?.dispose();
     _text.dispose();
     _focus.dispose();
+    for (final c in [_down, _across, _columnsDown, _leftAcross, _rightAcross]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -953,9 +978,53 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
                   onChanged: () => setState(() {}),
                   onDone: _finishReview,
                 )
-              : _columns
-              ? _twoColumns(context)
-              : _editor(context, editable && !_busy),
+              : _zoomable(
+                  _columns
+                      ? _twoColumns(context)
+                      : _editor(context, editable && !_busy),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// The text (the editor, or the two columns) zoomable and movable
+  /// ([TextMover]), with Drag to move, Zoom in and Zoom out over its
+  /// bottom right ([TextViewControls]), as a PDF's.
+  Widget _zoomable(Widget text) {
+    final across = !_columns
+        ? [_across]
+        : [_leftAcross, if (splitInHalf(_text.text) != null) _rightAcross];
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: TextMover(
+            key: _mover,
+            zoom: _zoom,
+            onZoom: (zoom) => setState(() => _zoom = zoom),
+            dragging: _dragging,
+            down: _columns ? _columnsDown : _down,
+            across: across,
+            child: text,
+          ),
+        ),
+        Positioned(
+          right: 8,
+          bottom: 8,
+          // In the text field's tap region: zooming keeps the cursor in
+          // the text.
+          child: TextFieldTapRegion(
+            child: TextViewControls(
+              zoom: _zoom,
+              onZoom: (zoom) => _mover.currentState?.zoomTo(zoom),
+              dragging: _dragging,
+              onDragging: (on) {
+                // Moving, not typing: the keyboard goes.
+                if (on) FocusScope.of(context).unfocus();
+                setState(() => _dragging = on);
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -1119,8 +1188,9 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
       backgroundColor: scheme.errorContainer,
       fontWeight: FontWeight.bold,
     );
-    // [text] from [from] to [to], its red notes in red.
-    Widget column(int from, int to, Key key) {
+    // [text] from [from] to [to], its red notes in red, scrolling sideways
+    // with [across].
+    Widget column(int from, int to, Key key, ScrollController across) {
       final spans = <TextSpan>[];
       var at = from;
       for (final (start, end) in ranges) {
@@ -1134,10 +1204,12 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
       if (at < to) spans.add(TextSpan(text: text.substring(at, to)));
       return SingleChildScrollView(
         key: key,
+        controller: across,
+        physics: const TextZoomScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.all(16),
         child: Text.rich(
-          TextSpan(style: _mono, children: spans),
+          TextSpan(style: _zoomed, children: spans),
           softWrap: false,
         ),
       );
@@ -1145,10 +1217,17 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
 
     return SelectionArea(
       child: SingleChildScrollView(
+        controller: _columnsDown,
+        physics: const TextZoomScrollPhysics(),
         child: split == null
             ? Align(
                 alignment: Alignment.topLeft,
-                child: column(0, text.length, const Key('text-column-left')),
+                child: column(
+                  0,
+                  text.length,
+                  const Key('text-column-left'),
+                  _leftAcross,
+                ),
               )
             : Stack(
                 children: [
@@ -1160,6 +1239,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
                           0,
                           split.leftEnd,
                           const Key('text-column-left'),
+                          _leftAcross,
                         ),
                       ),
                       Expanded(
@@ -1167,6 +1247,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
                           split.rightStart,
                           text.length,
                           const Key('text-column-right'),
+                          _rightAcross,
                         ),
                       ),
                     ],
@@ -1372,6 +1453,9 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   /// The tab text, unwrapped: long lines scroll sideways.
   Widget _editor(BuildContext context, bool editable) {
     return _Unwrapped(
+      zoom: _zoom,
+      down: _down,
+      across: _across,
       // Its keys first, before the app's: ⌘A, ⌘L, and ⌘C and ⌘X on a
       // vertical selection ([_key]).
       child: Focus(
@@ -1402,7 +1486,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
               OvertypeFormatter(() => _overtype),
             ],
             contextMenuBuilder: _menu,
-            style: _mono,
+            style: _zoomed,
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(16),
@@ -1592,8 +1676,19 @@ class _SongDialogState extends State<_SongDialog> {
 const _mono = TextStyle(fontFamily: monoFont, fontSize: 15, height: 1.25);
 
 class _Unwrapped extends StatelessWidget {
-  const _Unwrapped({required this.child});
+  const _Unwrapped({
+    this.zoom = 1,
+    this.down,
+    this.across,
+    required this.child,
+  });
 
+  /// The text's zoom: its widest lines as many times wider.
+  final double zoom;
+
+  /// Its scrolls, down and sideways (Fix's review has its own).
+  final ScrollController? down;
+  final ScrollController? across;
   final Widget child;
 
   @override
@@ -1604,16 +1699,23 @@ class _Unwrapped extends StatelessWidget {
       final width = box.hasBoundedWidth
           ? box.maxWidth
           : MediaQuery.sizeOf(context).width;
+      // At least the view's width; at most 1600 (times the zoom), or the
+      // view's when wider than that.
+      final most = 1600 * zoom;
       return SingleChildScrollView(
+        controller: across,
+        physics: const TextZoomScrollPhysics(),
         scrollDirection: Axis.horizontal,
         child: ConstrainedBox(
-          // At least the view's width; at most 1600, or the view's when
-          // wider than that.
           constraints: BoxConstraints(
             minWidth: width,
-            maxWidth: width > 1600 ? width : 1600,
+            maxWidth: width > most ? width : most,
           ),
-          child: SingleChildScrollView(child: child),
+          child: SingleChildScrollView(
+            controller: down,
+            physics: const TextZoomScrollPhysics(),
+            child: child,
+          ),
         ),
       );
     },

@@ -149,7 +149,10 @@ class FilePreview extends StatelessWidget {
 
 /// One file of a capture, opened from its list on its own screen: the
 /// file, and its tools: the view (Original or Scan, for an image), Rotate
-/// (an image), Edit (a video), Rename and Delete. An image and a PDF have the play-along sidebar
+/// (an image), Edit (a video), Rename and Delete. Rotate, Edit, Rename and
+/// Delete are the owner's: on a capture shared with the user, or opened by
+/// its link, and on a contribution's file, they aren't there at all
+/// ([_fixed]). An image and a PDF have the play-along sidebar
 /// beside them; a recording opens in it, loaded in its frame, with the
 /// capture's pages and PDFs listed to follow one beside it.
 class FileScreen extends StatefulWidget {
@@ -161,11 +164,16 @@ class FileScreen extends StatefulWidget {
     this.sync,
     this.ocr,
     this.initialEdit = false,
+    this.signedOut = false,
   });
 
   final Library library;
   final String eventId;
   final String pageId;
+
+  /// Opened by its capture's link, signed out: none of the tools
+  /// (Dictionary, Metronome, the keys' help), which are signed-in users'.
+  final bool signedOut;
 
   /// Cloud sync, for Share (the file's link); null without.
   final CloudSync? sync;
@@ -384,15 +392,54 @@ class _FileScreenState extends State<FileScreen> {
         final page = event?.allPages.where((p) => p.id == _pageId).firstOrNull;
         if (event == null || page == null) return const Scaffold();
         final l10n = context.l10n;
-        final editable = !_busy && !_fixed(event, page);
+        // Only the owner sees the tools that change the file.
+        final mine = !_fixed(event, page);
+        final editable = !_busy && mine;
+        final tools = !widget.signedOut;
         final filter = _shown ?? page.filter;
         final original = filter == PageFilter.original;
         final sidebar = _withSidebar(event, page);
+        final bar = <Widget>[
+          if (page.isImage)
+            EventTool(
+              key: const Key('view'),
+              icon: original ? Icons.photo_outlined : Icons.contrast,
+              label: original ? l10n.eventViewOriginal : l10n.eventViewScan,
+              onPressed: _busy ? null : () => _nextView(event, page),
+            ),
+          if (mine) ...[
+            if (page.isImage)
+              EventTool(
+                icon: Icons.rotate_90_degrees_cw_outlined,
+                label: l10n.eventRotate,
+                onPressed: editable ? () => _rotate(event, page) : null,
+              ),
+            // Edit (a video: trim and sound), before Rename.
+            if (page.isVideo)
+              EventTool(
+                key: const Key('edit-video'),
+                icon: Icons.content_cut,
+                label: l10n.videoEditTool,
+                onPressed: editable ? () => _edit(event, page) : null,
+              ),
+            // Rename, beside Delete.
+            EventTool(
+              key: const Key('rename-file'),
+              icon: Icons.edit_outlined,
+              label: l10n.eventRename,
+              onPressed: editable ? () => _rename(event, page) : null,
+            ),
+            EventTool(
+              icon: Icons.delete_outline,
+              label: l10n.eventDelete,
+              onPressed: editable ? () => _delete(event, page) : null,
+            ),
+          ],
+        ];
         return Scaffold(
           appBar: AppBar(
             actions: [
-              const DictionaryButton(),
-              const MetronomeButton(),
+              if (tools) ...[const DictionaryButton(), const MetronomeButton()],
               if (sidebar) PlayAlongButton(along: _alongFor(event, page)),
               // Share: the file's link (the capture's own files; a
               // contribution's can't be linked to).
@@ -410,13 +457,13 @@ class _FileScreenState extends State<FileScreen> {
                           file: page,
                         ),
                 ),
-              const KeysHelpButton(screen: KeysScreen.player),
+              if (tools) const KeysHelpButton(screen: KeysScreen.player),
               // Opened by its link, signed out: sign in, last.
               const QuickSignIn(),
             ],
             // Tapping the name renames the file (when the user can edit).
             title: InkWell(
-              onTap: _fixed(event, page) ? null : () => _rename(event, page),
+              onTap: mine ? () => _rename(event, page) : null,
               child: Text(
                 fileLabel(l10n, event, page),
                 overflow: TextOverflow.ellipsis,
@@ -433,7 +480,9 @@ class _FileScreenState extends State<FileScreen> {
           // and a PDF have the play-along sidebar beside them; a recording
           // plays in it.
           body: MetronomeBeside(
+            enabled: tools,
             child: DictionaryBeside(
+              enabled: tools,
               title: event.title,
               child: _beside(
                 event,
@@ -457,51 +506,18 @@ class _FileScreenState extends State<FileScreen> {
               ),
             ),
           ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (page.isImage) ...[
-                    EventTool(
-                      key: const Key('view'),
-                      icon: original ? Icons.photo_outlined : Icons.contrast,
-                      label: original
-                          ? l10n.eventViewOriginal
-                          : l10n.eventViewScan,
-                      onPressed: _busy ? null : () => _nextView(event, page),
+          // Nothing to offer (a reader's video, PDF or link): no bar.
+          bottomNavigationBar: bar.isEmpty
+              ? null
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: bar,
                     ),
-                    EventTool(
-                      icon: Icons.rotate_90_degrees_cw_outlined,
-                      label: l10n.eventRotate,
-                      onPressed: editable ? () => _rotate(event, page) : null,
-                    ),
-                  ],
-                  // Edit (a video: trim and sound), before Rename.
-                  if (page.isVideo)
-                    EventTool(
-                      key: const Key('edit-video'),
-                      icon: Icons.content_cut,
-                      label: l10n.videoEditTool,
-                      onPressed: editable ? () => _edit(event, page) : null,
-                    ),
-                  // Rename, beside Delete.
-                  EventTool(
-                    key: const Key('rename-file'),
-                    icon: Icons.edit_outlined,
-                    label: l10n.eventRename,
-                    onPressed: editable ? () => _rename(event, page) : null,
                   ),
-                  EventTool(
-                    icon: Icons.delete_outline,
-                    label: l10n.eventDelete,
-                    onPressed: editable ? () => _delete(event, page) : null,
-                  ),
-                ],
-              ),
-            ),
-          ),
+                ),
         );
       },
     );

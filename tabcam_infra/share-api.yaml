@@ -268,6 +268,42 @@ Resources:
           Projection:
             ProjectionType: KEYS_ONLY
 
+  # Who each capture's link opens for (visibility: private, unlisted or
+  # public; no item: unlisted), by <owner>#<capture id>; a public one's
+  # title, artist (and them normalized, search) and key too, for searching
+  # and the sitemap. Only public captures have `listed`.
+  CapturesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - {AttributeName: capture, AttributeType: S}
+        - {AttributeName: owner, AttributeType: S}
+        - {AttributeName: listed, AttributeType: S}
+        - {AttributeName: updatedAt, AttributeType: N}
+      KeySchema:
+        - {AttributeName: capture, KeyType: HASH}
+      GlobalSecondaryIndexes:
+        # An owner's captures, for deleting their account.
+        - IndexName: byOwner
+          KeySchema:
+            - {AttributeName: owner, KeyType: HASH}
+          Projection:
+            ProjectionType: KEYS_ONLY
+        # Public captures alone (sparse: listed = "public"), newest first:
+        # GET /public and GET /sitemap.xml.
+        - IndexName: public
+          KeySchema:
+            - {AttributeName: listed, KeyType: HASH}
+            - {AttributeName: updatedAt, KeyType: RANGE}
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes: [captureId, key, title, artist, search]
+
   # The one key that wraps every profile's private key (keys.py): profile
   # key pairs come from it (GenerateDataKeyPairWithoutPlaintext), each with
   # its profile's ID as encryption context. Losing it loses every encrypted
@@ -449,11 +485,21 @@ Resources:
                   - !GetAtt LinkCodesTable.Arn
                   - !GetAtt LinksTable.Arn
                   - !Sub ${LinksTable.Arn}/index/byOwner
+                  - !GetAtt CapturesTable.Arn
+                  - !Sub ${CapturesTable.Arn}/index/byOwner
+                  - !Sub ${CapturesTable.Arn}/index/public
                   - !GetAtt ProfileKeysTable.Arn
                   # A capture's owner profile, by its folder (keys.py).
                   - !Sub ${ProfilesTable.Arn}/index/byIdentity
                   - !GetAtt SessionsTable.Arn
                   - !Sub ${SessionsTable.Arn}/index/bySubject
+              # A private capture's grants suspended, and back (a flag on
+              # each, only on a grant that's still there).
+              - Effect: Allow
+                Action: dynamodb:UpdateItem
+                Resource:
+                  - !GetAtt SharesTable.Arn
+                  - !GetAtt CapturesTable.Arn
               # Signing TabCam's ID tokens, and publishing the public key.
               - Effect: Allow
                 Action:
@@ -605,6 +651,7 @@ Resources:
           SUBJECTS_TABLE: !Ref SubjectsTable
           LINK_CODES_TABLE: !Ref LinkCodesTable
           LINKS_TABLE: !Ref LinksTable
+          CAPTURES_TABLE: !Ref CapturesTable
           PROFILE_KEYS_TABLE: !Ref ProfileKeysTable
           PROFILE_KEY_ID: !GetAtt ProfileKey.Arn
           DEVELOPER_PROVIDER: !Ref DeveloperProviderName
@@ -900,6 +947,26 @@ Resources:
       AuthorizationType: NONE
       Target: !Sub integrations/${Integration}
 
+  # Searching public captures (the app's Dictionary), signed in or not: no
+  # authorizer. Only public captures are ever found.
+  RouteSearch:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: GET /public
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
+  # Public captures' short links, for search engines (the site sends
+  # /sitemap.xml here): no authorizer.
+  RouteSitemap:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: GET /sitemap.xml
+      AuthorizationType: NONE
+      Target: !Sub integrations/${Integration}
+
   # Sign in with Apple on Android: Apple posts its reply here (the
   # Services ID's return URL), and the function sends it back to the app.
   # No token yet, so no authorizer; nothing is kept.
@@ -914,7 +981,7 @@ Resources:
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     # Its route settings name these routes: they must exist first.
-    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview, RouteShort, RouteShortHead, RouteAppleCallback]
+    DependsOn: [RouteLink, RouteLinkCode, RoutePublic, RoutePreview, RouteShort, RouteShortHead, RouteSearch, RouteSitemap, RouteAppleCallback]
     Properties:
       ApiId: !Ref Api
       StageName: $default
@@ -950,6 +1017,14 @@ Resources:
         GET /s/{key}:
           ThrottlingBurstLimit: 20
           ThrottlingRateLimit: 10
+        # Searching public captures: no token, and each reads up to 2,000.
+        GET /public:
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 5
+        # Search engines, behind CloudFront's cache (an hour).
+        GET /sitemap.xml:
+          ThrottlingBurstLimit: 5
+          ThrottlingRateLimit: 1
         # Android Apple sign-ins: people, not crawlers.
         POST /apple/callback:
           ThrottlingBurstLimit: 10

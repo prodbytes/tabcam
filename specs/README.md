@@ -64,7 +64,8 @@ review notes ([app stores](app-stores.md)).
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,
   Clone and one Share; a tap opens a file alone, with
-  its view (Original or Scan), Rotate and Delete, the play-along
+  its view (Original or Scan), Rotate, Edit, Rename and Delete (those
+  four shown to the owner only, never to readers), the play-along
   sidebar beside an image or a PDF, and a recording playing in it with
   the capture's pages and PDFs to follow beside. Text and Cam are
   Premium's: locked, each opens as a preview under the Premium card.
@@ -74,7 +75,8 @@ review notes ([app stores](app-stores.md)).
   down / left (Android, iOS); Rec (or the 1 key) adds each take, named by the time it started ("Take 14:32") and listed under its day, to the
   capture, a green / yellow / red level meter beside it (web, Android) that, tapped, sets the input volume, the / key saving it and starting a new one, the . key throwing it away and starting it again, Play plays it back with the tab turning as it did; Play
   along plays one of the capture's recordings, videos or links in a
-  frame above the camera, the space bar pausing and playing it, 0
+  frame above the camera, the space bar pausing and playing it (its
+  pause, while a take records, stopping the take too), 0
   going back to its start (its section's, count-in included) and ← / → skipping in it (0, space and, outside Cam, 1 work in every screen with the sidebar showing),
   play waiting a 2-second count-in (shown in amber on the progress
   bar's line, with a button to turn it off), and again each time it
@@ -85,16 +87,18 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer, the video editor, Cam and Home opens a search in a sidebar on
+  viewer, the video editor, Cam and Home (signed in; a capture's link
+  opened signed out has no tools) opens a search in a sidebar on
   the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
-  on YouTube and Cifra Club. Its Rotate button makes it a panel under the screen, the
+  among tabs.cam's public captures, on YouTube and on Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
-  play-along player, the video editor's Download settings) is resizable
-  by dragging its edge, the width kept on the device.
+  play-along player and the video editor's, whose tabs are Play along
+  and Download) is resizable by dragging its edge, the width kept on
+  the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
-  opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
+  (signed in) opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
   with −, + and a slider (30–250), the common time signatures (2/4 to
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
@@ -104,9 +108,10 @@ review notes ([app stores](app-stores.md)).
   listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
-  top, with the Download settings (the master, what's drawn on the
-  video, the fades, the song's details) in a sidebar beside it or under
-  it, shown and hidden by a tune button in the app bar; and docked at
+  top, the editor's sidebar at the right (its Download tab: the master,
+  what's drawn on the video, the fades, the song's details; in Cam's
+  view beside its Play along tab), shown and hidden by a tune button in
+  the app bar (a phone opens it hidden); and docked at
   the bottom the transport (To the start, Play /
   Pause, To the end; the space bar, Home, End and the arrows) right
   over the rows, on one time axis (a click on it moves the playhead,
@@ -127,6 +132,12 @@ review notes ([app stores](app-stores.md)).
   read its sound) and played as it says, no file made; Download makes
   one on the device: the video or the video without sound (MP4), or
   the sound only (M4A; WebM and WAV where a browser can't make those).
+- [Instruments (stem separation)](stems.md): in the video editor, each
+  sound lane can be split into its instruments (Vocals, Drums, Bass,
+  Other), each with a level and a Mute of its own, from the lane's
+  volume popup; a rough split for now (a crossover at 200 Hz and 4 kHz,
+  the middle band split by its place in the mix), on the device, which
+  Download applies (the preview plays the lane whole).
 - [Hidden images](hidden-images.md): the owner hides a capture's photos
   and scans, for everyone; it then shows only the text tab, videos and
   links, and exports leave the images out.
@@ -138,14 +149,16 @@ review notes ([app stores](app-stores.md)).
   without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
-  in the app bar, the editing tools on their own line; overtype first, then vertical selection (a drag selects a block of columns), Select all (⌘A) and Select phrase (⌘L, again the next one too), − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase; with notes selected, the tools and Copy work on them alone) where a reading is marked
+  in the app bar, the editing tools on their own line; overtype first, then vertical selection (a drag selects a block of columns), Select all (⌘A) and Select phrase (⌘L, again the next one too), − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase; with notes selected, the tools and Copy work on them alone; Zoom in, Zoom out and Drag to move over its bottom right) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, **hidden for now** (on only in a
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude
   finds the song's tab online (tab sites first) and proposes corrections,
   which the user accepts or rejects note by note.
-- [Sharing](sharing.md): Share copies the capture's link, nothing
-  else; opening a capture's link.
+- [Sharing](sharing.md): Share copies the capture's link, and for its
+  owner shows who can open it, as on YouTube: Public (also found by the
+  dictionary's search and search engines), Unlisted (anyone with the
+  link) or Private (only the owner); opening a capture's link.
 - [Sign-in and cloud sync](cloud-sync.md): optional Google sign-in (and
   Sign in with Apple on iOS) from the Profile tab; signed-in users' events sync both ways with
   their own folder in S3 (Cognito identity pool credentials, no server),
@@ -194,7 +207,8 @@ review notes ([app stores](app-stores.md)).
 - [Index page](index-page.md): the site's front page at
   https://tabs.cam/: a header with the way into the app, and the three
   key features (scan, record, share and play along), each a picture with
-  its text in a box over it.
+  its text in a box over it; for visitors not signed in, as anyone
+  signed in goes straight on to the app.
 - [Privacy](privacy.md): the privacy policy at
   https://tabs.cam/privacy (linked from the index page and About),
   what it says and what it's based on; the iOS privacy manifest and

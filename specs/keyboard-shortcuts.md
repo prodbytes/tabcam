@@ -14,7 +14,10 @@ key, opens an overlay listing that screen's keys
 - the **video editor** ([video edit](video-edit.md)), before About (on
   a phone, before its More menu).
 
-Home has no keys, so no button.
+Home has no keys, so no button. Nor does a capture opened by its link
+signed out (or a file opened from it): the help, button and H key, is
+signed-in users', as the dictionary and the metronome are
+([sharing](sharing.md#opening-a-link)).
 
 **Cam's view and the editor's are one** ([Cam's view](cam.md#cams-view),
 [in Cam](video-edit.md#in-cam)), and its keys go by what's in its main
@@ -51,8 +54,10 @@ section, each key in a box as on the keyboard, then what it does:
     a take with the song where it is; recording, saves the take and
     starts the next ([Cam](cam.md#new-take-key)).
   - *Playing along (while the sidebar shows; ↑ and ↓ then turn the
-    tab)*: **Space**, **1** play or pause the song; **0** back to the
-    start, with the count-in; **←**, **→** 10 seconds back or on
+    tab)*: **Space**, **1** play or pause the song (pausing it while a
+    take records stops the take, saved); **0** back to the
+    start, with the count-in (the sidebar's **|◀** button too); **←**,
+    **→** 10 seconds back or on
     ([the keys in every screen](cam.md#keys-in-every-screen)).
 - **A capture's or a file's screen**: *Playing along (while the sidebar
   shows)*, the same three rows; then *In the Text view*: **⌘ + A**

@@ -14,6 +14,7 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/download_settings.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -133,11 +134,11 @@ void main() {
         EditTabStyle.fromJson({'align': 'center', 'size': 1.5}),
         const EditTabStyle(size: 1.5, align: TabAlign.center),
       );
-      expect(EditTabStyle.fromJson({'align': 'justify'}), EditTabStyle.standard);
       expect(
-        const EditTabStyle(align: TabAlign.center).isStandard,
-        isFalse,
+        EditTabStyle.fromJson({'align': 'justify'}),
+        EditTabStyle.standard,
       );
+      expect(const EditTabStyle(align: TabAlign.center).isStandard, isFalse);
     });
 
     test('the theme\'s primary and secondary colours, as its dark scheme has '
@@ -340,15 +341,9 @@ void main() {
       expect(rightLast - rightFirst, closeTo(leftLast - leftFirst, 2));
       expect(leftFirst, inInclusiveRange(pad - 2, pad + 30));
       expect(bandWidth - 1 - rightLast, inInclusiveRange(pad - 2, pad + 30));
-      expect(
-        (centreFirst + centreLast) / 2,
-        closeTo((bandWidth - 1) / 2, 30),
-      );
+      expect((centreFirst + centreLast) / 2, closeTo((bandWidth - 1) / 2, 30));
       // The default is to the left.
-      expect(
-        await reach(EditTabStyle.standard.align),
-        (leftFirst, leftLast),
-      );
+      expect(await reach(EditTabStyle.standard.align), (leftFirst, leftLast));
     });
 
     testWidgets('as high as its size says; a staff too long to grow stays '
@@ -553,9 +548,7 @@ void main() {
 
       final normal = await images(plan(EditTabStyle.standard));
       final styled = await images(
-        plan(
-          const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold),
-        ),
+        plan(const EditTabStyle(size: 1.5, opacity: 0, colors: TabColors.gold)),
       );
       expect(normal.first.width, 1920);
       expect(styled.first.width, 1920);
@@ -572,7 +565,11 @@ void main() {
       VideoEditor.instance = editor = FakeEditor();
       Downloads.save = (name, bytes, type) async => true;
     });
-    tearDown(() => VideoEditor.instance = null);
+    tearDown(() {
+      VideoEditor.instance = null;
+      // A test that hid the sidebar leaves it hidden for the session.
+      DownloadSettingsState.instance.reset();
+    });
 
     Future<void> frames(WidgetTester tester) async {
       for (var i = 0; i < 20; i++) {
@@ -675,25 +672,27 @@ void main() {
     bool enabled(WidgetTester tester, String key) =>
         tester.widget<ButtonStyleButton>(find.byKey(Key(key))).enabled;
 
-    testWidgets('on a phone, the Tab chip\'s button opens its style in place '
-        'of the chips: each change shows in the preview at once and is '
-        'kept; a swatch picks its colours; Default style puts it back; '
-        'Done closes it; Download draws it', (tester) async {
+    testWidgets('on a phone, the Download settings button shows the '
+        'sidebar\'s Download tab, the tab\'s style under the chips: each '
+        'change shows in the preview at once and is kept; a swatch picks '
+        'its colours; Default style puts it back; ✕ hides it; Download '
+        'draws it', (tester) async {
       sized(tester, const Size(400, 900));
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
+      // A phone opens the editor with the sidebar hidden.
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
+      expect(find.byKey(const Key('video-edit-tab-style-edit')), findsNothing);
       expect(previewStyle(tester), EditTabStyle.standard);
 
-      await tapVisible(tester, 'video-edit-tab-style-edit');
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await settle(tester);
+      await tester.ensureVisible(find.byKey(const Key('video-edit-tab-style')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsOneWidget);
-      expect(
-        find.text('Tab style · How the tab looks over the video'),
-        findsOneWidget,
-      );
-      expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
+      expect(find.text('How the tab looks over the video'), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
       expect(slider(tester, 'size').value, 1);
       // The fake video is 4:3 (320 × 240): no smaller than reads on it
       // (as 50% on a 16:9 one); its short riffs grow all the way.
@@ -784,10 +783,10 @@ void main() {
       expect(kept(library, id), isNull);
       expect(shown(tester, 'size'), '100%');
 
-      await tapVisible(tester, 'video-edit-tab-style-done');
+      await tester.tap(find.byKey(const Key('sidebar-close')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
-      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -798,12 +797,10 @@ void main() {
       playing ? 'Pause (space)' : 'Play (space)',
     );
 
-    testWidgets('on a phone, a long press on the band in the preview opens '
-        'the style (a tap on it picks it, paused, then plays or pauses, as '
-        'anywhere on the picture); a change to it turns the tab back on; '
-        'the title\'s fields and the fades\' sliders take its place', (
-      tester,
-    ) async {
+    testWidgets('on a phone, a long press on the band in the preview shows '
+        'the sidebar on its Download tab, at the style (a tap on it picks '
+        'it, paused, then plays or pauses, as anywhere on the picture); a '
+        'change to it turns the tab back on', (tester) async {
       sized(tester, const Size(400, 900));
       final (library, id) = await capture(tester);
       await tester.runAsync(
@@ -815,22 +812,20 @@ void main() {
       );
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
-      // Off: no band to press; its button still opens it.
-      await tapVisible(tester, 'video-edit-tab-style-edit');
+      // Off: no band to press; the sidebar's style still changes it.
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await settle(tester);
+      await tester.ensureVisible(find.byKey(const Key('video-edit-tab-size')));
       await settle(tester);
       slider(tester, 'size').onChanged!(0.75);
       await settle(tester);
       expect(kept(library, id)!.tab, isTrue);
       expect(previewStyle(tester), const EditTabStyle(size: 0.75));
 
-      // The fades' button closes it.
-      await tapVisible(tester, 'video-edit-tab-style-done');
+      // Hidden, the picture has the editor's whole width.
+      await tester.tap(find.byKey(const Key('sidebar-close')));
       await settle(tester);
-      await tapVisible(tester, 'video-edit-fades-edit');
-      await settle(tester);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
-      await tester.ensureVisible(find.byKey(const Key('video-edit-preview')));
-      await settle(tester);
+      expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
       final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
       final onBand = box.bottomCenter - const Offset(0, 2);
 
@@ -848,23 +843,26 @@ void main() {
       await playing(tester, true);
       expect(find.byKey(const Key('video-edit-picture-toolbar')), findsNothing);
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
       await tester.tapAt(onBand);
       await settle(tester);
       await playing(tester, false);
 
-      // A long press on it opens the style in the fades' place.
+      // A long press on it shows the sidebar, at the style.
       await tester.longPressAt(onBand);
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
+      expect(
+        tester.getRect(find.byKey(const Key('video-edit-tab-style'))).top,
+        lessThan(900),
+      );
       await playing(tester, false);
       // Elsewhere on the picture, a long press opens nothing.
-      await tapVisible(tester, 'video-edit-tab-style-done');
+      await tester.tap(find.byKey(const Key('sidebar-close')));
       await settle(tester);
       await tester.longPressAt(box.center);
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('on a wide screen a tap on the band picks it, then plays or '
@@ -998,13 +996,17 @@ void main() {
       );
       expect(kept(library, id)!.tab, isFalse);
 
-      // At the start, fading in: its badge opens the fades' sliders.
+      // At the start, fading in: its badge shows the sidebar, at the fades'
+      // sliders.
       expect(find.text('Fade in · 3.0 s'), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
       await tester.tap(find.byKey(const Key('video-edit-picture-fade')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
 
       // Playing, nothing of it shows.
+      await tester.tap(find.byKey(const Key('sidebar-close')));
+      await settle(tester);
       await tester.tap(find.byKey(const Key('video-edit-play')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-picture-title')), findsNothing);
@@ -1078,16 +1080,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('on a wide screen the style is under the chips, without a '
-        'button or Done; Reset puts it back with the rest', (tester) async {
+    testWidgets('on a wide screen the sidebar shows the style under the '
+        'chips; Reset puts it back with the rest', (tester) async {
       sized(tester, const Size(1280, 1000));
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsOneWidget);
       expect(find.text('How the tab looks over the video'), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-tab-style-edit')), findsNothing);
-      expect(find.byKey(const Key('video-edit-tab-style-done')), findsNothing);
       expect(
         find.descendant(
           of: find.byKey(const Key('video-edit-side')),
@@ -1121,9 +1121,7 @@ void main() {
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
-      sized(tester, const Size(400, 900));
-      await settle(tester);
-      expect(find.byKey(const Key('video-edit-tab-style-edit')), findsNothing);
+      expect(find.byKey(const Key('video-edit-tab')), findsOneWidget);
     });
 
     for (final (name, size) in [
@@ -1139,8 +1137,9 @@ void main() {
         final (library, id) = await capture(tester);
         await tester.pumpWidget(editScreen(library, id));
         await settle(tester);
-        if (size.width < 840) {
-          await tapVisible(tester, 'video-edit-tab-style-edit');
+        // A phone shows the sidebar once asked.
+        if (find.byKey(const Key('video-edit-side')).evaluate().isEmpty) {
+          await tester.tap(find.byKey(const Key('video-edit-settings')));
           await settle(tester);
         }
         await tester.ensureVisible(

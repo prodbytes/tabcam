@@ -60,6 +60,15 @@ class IncomingLinks extends ChangeNotifier with WidgetsBindingObserver {
     return code != null && RegExp(r'^\d{6,8}$').hasMatch(code) ? code : null;
   }
 
+  /// Opens [link] (a capture's full link) as if the app had been handed
+  /// it: a public capture tabs.cam's search found, say. Home (or, signed
+  /// out, the link's own screen) opens it.
+  void open(Uri link) {
+    if (CaptureLink.idIn(link) == null) return;
+    _pending = link;
+    notifyListeners();
+  }
+
   /// The link waiting to be opened, if any, left waiting.
   Uri? get pending => _pending;
 

@@ -161,7 +161,10 @@ class PhraseTimes {
     return PhraseTimes(List.unmodifiable(list));
   }
 
-  /// Every song's phrase times in [json] (by page ID), the empty left out.
+  /// Every song's phrase times in [json] (by page ID). An empty list is a
+  /// song whose passes were cleared on purpose (Clear on the player's
+  /// bar): kept, as none, so its takes don't give it theirs again when
+  /// one goes (`Library`); apps before it read it as none too.
   static Map<String, PhraseTimes> mapFromJson(
     Object? json,
     String Function(String) checkId,
@@ -170,9 +173,9 @@ class PhraseTimes {
     final out = <String, PhraseTimes>{};
     for (final MapEntry(:key, :value) in json.entries) {
       if (key is! String) continue;
+      if (value is! List) continue;
       try {
-        final times = PhraseTimes.fromJson(value);
-        if (times.isNotEmpty) out[checkId(key)] = times;
+        out[checkId(key)] = PhraseTimes.fromJson(value);
       } on FormatException {
         continue;
       }
@@ -180,9 +183,10 @@ class PhraseTimes {
     return Map.unmodifiable(out);
   }
 
+  /// [map] as JSON, a song cleared on purpose as an empty list
+  /// ([mapFromJson]).
   static Map<String, Object?> mapToJson(Map<String, PhraseTimes> map) => {
-    for (final MapEntry(:key, :value) in map.entries)
-      if (value.isNotEmpty) key: value.toJson(),
+    for (final MapEntry(:key, :value) in map.entries) key: value.toJson(),
   };
 
   @override

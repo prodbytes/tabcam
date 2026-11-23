@@ -479,9 +479,11 @@ class CaptureEvent {
     this.sharedBy,
     this.readOnly = false,
     this.linkKey,
+    this.visibility,
     this.contributions = const [],
     this.phrases = const {},
     this.clonedFrom,
+    this.clonedPages = const {},
     this.trashed,
     this.deletedPages = const [],
   }) : updated = updated ?? created;
@@ -588,6 +590,15 @@ class CaptureEvent {
   /// one, made the first time ([Library.copyToAdd]).
   final String? clonedFrom;
 
+  /// On a clone ([clonedFrom]): the pages of the original it has taken,
+  /// by their ID there, each to its own page's ID ('' for one taken before
+  /// this was kept, whose page isn't known). Made by the clone, and grown
+  /// as the user's copy of a capture shared with them catches up with it
+  /// ([Library.copyToAdd]): a page the original has and this doesn't name
+  /// is new to the copy; one it names stays as the user left it (deleted
+  /// from the copy, it stays deleted). Synced, in event.json.
+  final Map<String, String> clonedPages;
+
   /// What people added ([Contribution]), before what a reader adds went
   /// to their own copy instead: on the owner's devices, everyone's who
   /// did; on a reader's, their own (one at most), which also keeps their
@@ -637,6 +648,20 @@ class CaptureEvent {
   /// so every device of the owner's copies the same link.
   final String? linkKey;
 
+  /// Who may open the capture by its link, as its owner chose in Share;
+  /// null until they choose ([shownVisibility]). Synced, so every device
+  /// of the owner's shows the same; the share API keeps what counts.
+  final CaptureVisibility? visibility;
+
+  /// [visibility], or what it is until the owner chooses: unlisted once
+  /// the capture has its link key (anyone holding the link opens it, as
+  /// before there was a choice), else private.
+  CaptureVisibility get shownVisibility =>
+      visibility ??
+      (linkKey != null
+          ? CaptureVisibility.unlisted
+          : CaptureVisibility.private);
+
   /// A file name for exports: the title, safe for any file system.
   String get fileName {
     final name = [
@@ -662,9 +687,11 @@ class CaptureEvent {
     String? sharedBy,
     bool? readOnly,
     String? linkKey,
+    CaptureVisibility? visibility,
     List<Contribution>? contributions,
     Map<String, PhraseTimes>? phrases,
     String? clonedFrom,
+    Map<String, String>? clonedPages,
     DateTime? Function()? trashed,
     List<EventPage>? deletedPages,
   }) => CaptureEvent(
@@ -686,9 +713,11 @@ class CaptureEvent {
     sharedBy: sharedBy ?? this.sharedBy,
     readOnly: readOnly ?? this.readOnly,
     linkKey: linkKey ?? this.linkKey,
+    visibility: visibility ?? this.visibility,
     contributions: contributions ?? this.contributions,
     phrases: phrases ?? this.phrases,
     clonedFrom: clonedFrom ?? this.clonedFrom,
+    clonedPages: clonedPages ?? this.clonedPages,
     trashed: trashed == null ? this.trashed : trashed(),
     deletedPages: deletedPages ?? this.deletedPages,
   );
@@ -714,8 +743,10 @@ class CaptureEvent {
     if (owner != null) 'owner': owner,
     if (shares.isNotEmpty) 'shares': [for (final s in shares) s.toJson()],
     if (linkKey != null) 'linkKey': linkKey,
+    if (visibility != null) 'visibility': visibility!.name,
     if (phrases.isNotEmpty) 'phrases': PhraseTimes.mapToJson(phrases),
     if (clonedFrom != null) 'clonedFrom': clonedFrom,
+    if (clonedPages.isNotEmpty) 'clonedPages': clonedPages,
     if (trashed != null) 'trashed': trashed!.toUtc().toIso8601String(),
     if (deletedPages.isNotEmpty)
       'deletedPages': [for (final p in deletedPages) p.toJson()],
@@ -761,6 +792,10 @@ class CaptureEvent {
         final String k when isLinkKey(k) => k,
         _ => null,
       },
+      visibility: switch (json['visibility']) {
+        final String v => CaptureVisibility.values.asNameMap()[v],
+        _ => null,
+      },
       contributions: [
         for (final c in json['contributions'] as List? ?? const [])
           Contribution.fromJson((c as Map).cast<String, Object?>()),
@@ -774,6 +809,17 @@ class CaptureEvent {
       clonedFrom: switch (json['clonedFrom']) {
         final String id when _id.hasMatch(id) => id,
         _ => null,
+      },
+      clonedPages: switch (json['clonedPages']) {
+        final Map<Object?, Object?> taken => {
+          for (final MapEntry(:key, :value) in taken.entries)
+            if (key is String &&
+                _id.hasMatch(key) &&
+                value is String &&
+                (value.isEmpty || _id.hasMatch(value)))
+              key: value,
+        },
+        _ => const {},
       },
     );
   }
@@ -799,6 +845,21 @@ class CaptureEvent {
           deletedPages: const [],
         )
       : this;
+}
+
+/// Who may open a capture by its link ([CaptureEvent.visibility]), as on
+/// YouTube.
+enum CaptureVisibility {
+  /// Anyone: it's also found by tabs.cam's search (the dictionary's) and
+  /// by search engines.
+  public,
+
+  /// Anyone holding its link.
+  unlisted,
+
+  /// Only its owner: the link opens it for nobody else, and nobody it was
+  /// shared with (by the link or by email) sees it any more.
+  private,
 }
 
 final RegExp _linkKey = RegExp(r'^[A-Za-z0-9_-]{12,64}$');

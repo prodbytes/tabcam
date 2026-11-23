@@ -37,7 +37,7 @@ Parameters:
       chat apps' crawlers asking for a capture's link get its preview page
       (/preview/<id>/<key>, from the API): its title, not the app's. And
       short links (/s/<key>) are answered by the API, a redirect to the
-      full link.
+      full link, as is /sitemap.xml (public captures' short links).
   RedirectTo:
     Type: String
     Default: ''
@@ -400,6 +400,20 @@ Resources:
               AllowedMethods: [GET, HEAD]
               CachedMethods: [GET, HEAD]
               CachePolicyId: !Ref ShortLinkCachePolicy
+              ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
+            - !Ref AWS::NoValue
+          # Search engines' list of public captures' short links, from the
+          # share API (which reads x-tabcam-site: production's lists them,
+          # the RC's none), cached as it says (an hour).
+          - !If
+            - HasPreviews
+            - PathPattern: /sitemap.xml
+              TargetOriginId: share-api
+              ViewerProtocolPolicy: redirect-to-https
+              Compress: true
+              AllowedMethods: [GET, HEAD]
+              CachedMethods: [GET, HEAD]
+              CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
               ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # Managed-SecurityHeadersPolicy
             - !Ref AWS::NoValue
           # A user's folder, at its keys' paths (every folder is a Cognito

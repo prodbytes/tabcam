@@ -4882,7 +4882,95 @@ spec.
    [sharing](sharing.md#opening-a-link), [cloud sync](cloud-sync.md) and
    [sessions](sessions.md).
 
-4. **"For all the text view, let the user have another button to select
+4. **"In the share link button, let the share be public, unlisted or
+   private (same meanings as youtube)"**, and, asked where Public
+   captures are found: search engines and the dictionary; **"also in the
+   home in the future when we have enough public pages to show there"**.
+   Share still copies the link on the tap; for the capture's owner a
+   sheet then shows **Who can open it**: Public (anyone, also found by
+   the dictionary's search and search engines; "Make public only what
+   you have the right to share"), Unlisted (anyone with the link, what
+   every link was until now, and the default) or Private (only the
+   owner, even with the link). A choice applies at once and the link
+   stays the same (its key is kept), saved on the capture (`visibility`,
+   synced) and recorded by the share API, which keeps it in a new
+   captures table. Private refuses the link's credentials and joining
+   ("This capture is private: only its owner can open it.") and suspends
+   every grant of the capture, so it goes from the libraries of whoever
+   it was shared with, until it's unlisted or public again. Public keeps
+   the title and artist (re-sent each time the capture syncs, so renames
+   follow; in the trash it's unlisted) in a sparse index the new
+   `GET /public?q=` searches; the dictionary shows "Public on tabs.cam"
+   over YouTube's results when it finds some, a tap opening the capture
+   as its link does. For search engines: `/robots.txt`, a `/sitemap.xml`
+   of public short links (production's site only, from the share API
+   through CloudFront), and no `noindex` on a public capture's preview
+   and short link there. Home's list of public captures is left for
+   later. The privacy policy and the store notes say so. See
+   [sharing](sharing.md#who-can-open-it), [shared
+   captures](shared-captures.md), [dictionary](dictionary.md#public-captures).
+
+5. **"Lets add a stem separation feature. In the editor, per track. When
+   activated, this feature 'splits' the sound into its instruments. No
+   need for a great algorithm for now, do the easy thing now we'll
+   improve it later."** Each of the video editor's sound lanes (the Take
+   row's and the Song row's) has **Split into instruments**, a switch in
+   its volume popup under Channels and Balance; on, the lane has four
+   instruments, **Vocals**, **Drums**, **Bass** and **Other**, each with
+   a Mute and a 0–100% slider of its own (muting keeps the level), kept
+   with the edit (`ownStems`, `songStems`, written only while split, with
+   the instruments not at 100%; older apps keep them and play the lanes
+   whole). The easy split, on the device: a Linkwitz-Riley crossover at
+   200 Hz (Bass) and 4 kHz (Drums), the band between split by its place in
+   the mix, its middle Vocals and its sides Other; at 100% throughout it
+   sounds as it did, and isn't processed. (Its middle band as "the sound
+   minus its lows and highs", simpler still, was ruled out: the low band's
+   phase would leave most of the bass in with Bass muted.) Download
+   applies it on all three platforms (Web Audio IIR filters in the web's
+   mix; a Media3 `StemsProcessor` on Android; the lane's processing tap on
+   iOS), each a copy of `StemSplit.apply` in Dart, the frequencies sent
+   from there; the preview and the file screen's player play the lane
+   whole, as they do its channels and balance, with a note saying so,
+   until the editor's Download is kept. Picking another song, Remove and
+   Reset put a lane back whole. Tested in `lane_stems_test.dart` (the
+   model, the plan and the split's levels at each pitch),
+   `video_edit_test.dart` (the popup), `web_lane_stems_test.dart` (Chrome)
+   and `RunnerTests` (iOS); the Kotlin compiled. See
+   [instruments](stems.md), [video edit](video-edit.md#a-lanes-instruments).
+
+6. **"only show the tools (metronome, dictionary, help) to logged in
+   users. same for navigation (edit, rename, delete). only show edit
+   rename and delete for the same user that created (owns) the file.
+   other users are read only and must not see those buttons."** Signed
+   out, a capture opened by its link (the only screen a signed-out user
+   reaches besides the welcome) and a file opened from it have no
+   **Dictionary**, **Metronome** or **keyboard shortcuts' help**: not
+   their app bar buttons, not their items in a phone's Text view More
+   menu, not the H key, and not their sidebars, even left open
+   app-wide from before signing out (the metronome stops there, as on
+   a screen without it). Signed in, a link's capture has them as
+   before. On the file screen, **Rotate**, **Edit**, **Rename** and
+   **Delete** now show only to the capture's owner: on a capture shared
+   with the user or opened by its link, and on a contributed file,
+   they're gone instead of greyed out (an image keeps its Original /
+   Scan view, which only changes what shows; a reader's video, PDF,
+   recording or link has no bottom bar at all). The capture's own
+   screen, Home's cards and the play-along sidebar already left Rename,
+   Delete, reordering, a take's Edit and the text tab's editing tools
+   out for readers. Tests: `public_capture_test.dart` (signed out, with
+   the dictionary left open: no tools or sidebars on the capture, its
+   Text view, a phone's More menu or a file's screen, which has only
+   its view; signed in by its link: the tools, no Rename) and
+   `rename_files_test.dart` (a reader's link has no bar, its name
+   renames nothing; a reader's photo has only its view). See
+   [event screen](event-screen.md#file-screen),
+   [sharing](sharing.md#opening-a-link),
+   [shared captures](shared-captures.md),
+   [navigation](navigation.md#signed-out-the-welcome),
+   [dictionary](dictionary.md), [metronome](metronome.md) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
+7. **"For all the text view, let the user have another button to select
    text vertically (besides the edit in place / insert mode). For all
    buttons, if there is a selection, make the action only on the
    selected notes. Let's have a select all shortcut (cmd+a) and select
@@ -4917,3 +5005,179 @@ spec.
    phone. See
    [tab recognition](tab-recognition.md#selecting) and
    [keyboard shortcuts](keyboard-shortcuts.md).
+
+## 2026-11-22
+
+1. **"if a user is already logged in, in the index page, move to the
+   app"**. The index page (`/`) sends anyone signed in on the browser
+   (a tabs.cam session, or a Google sign-in whose token is still good:
+   the same check that showed "Open your tabs" and "Signed in as …")
+   straight on to `/app/`, from its first script, the page blank
+   meanwhile and replaced in the history so Back skips it. Those
+   signed-in touches are gone with it, as only visitors not signed in
+   see the page now; a capture's link naming the root (`/?c=…`) still
+   goes on to the app with its query. Checked in Chromium, WebKit and
+   Firefox. See [index page](index-page.md#signed-in-already).
+
+2. **"in the text tab view in the editor also let it have zoom and drag
+   controls"**. The Text view (the tab's text editor) gets a PDF view's
+   **Zoom in** and **Zoom out**, over its bottom right, with **Drag to
+   move** (a hand, a toggle) over them, in the editor and in Two columns.
+   The zoom is the text's size (50% to 300% in eight steps; zoomed, the
+   percentage shows between the buttons and, tapped, puts it back to
+   100%), so the text still edits and the widest lines don't wrap; a
+   button's zoom keeps the top left of what shows in place. A pinch (two
+   fingers or a trackpad's) and Ctrl / ⌘ + the wheel zoom too, about
+   where they are, the wheel not scrolling meanwhile. Drag to move puts
+   a layer over the text: a drag, a mouse's too, moves it any way
+   instead of selecting or editing, and the wheel still scrolls. Neither
+   is kept. Tested in `text_zoom_test.dart`. See [tab
+   recognition](tab-recognition.md#zoom-and-drag-to-move).
+
+3. **"add a "back to beggining" button to mini player sidebar (equals
+   pressing zero)"**. The play-along sidebar's frame has a **|◀** button
+   first among its controls, before «: "Back to the start (0)" (in
+   Spanish and Portuguese too), which does what the **0** key does
+   (`BackingTrack.restart`, the one method both call): back to the start
+   of the file, or of its section when one is set, count-in included;
+   paused, it stays paused there; playing, it starts over as Play starts
+   it. In every screen with the sidebar (Cam, the file screen, the
+   editor). The row of buttons still fits the narrowest sidebar (160
+   px), scaled down as before. Tested in `backing_section_test.dart`.
+   See [Cam](cam.md#playing-along-with-a-file).
+
+4. **"when spacepar is pressed to pause the mini player also stop the
+   recording"**. In Cam, the space bar pausing the play-along sidebar's
+   song (playing, or counting in) while a take records now stops the
+   take too, saved as Stop (Rec) saves it; until now the take recorded
+   on. **1**, the song's play / pause as the space bar (one key in the
+   request of 2026-11-17, one code path), does the same. Playing the
+   song with either never starts a take, and the frame's own Pause
+   button still only pauses the song. `PlayAlongKeys` tells a key's
+   pause (`onKeyPause`, through `PlayAlongBeside`), and Cam answers with
+   `CamSession.keyPaused`: Rec's Stop when a take records and Rec can
+   be pressed. The other screens with the sidebar have no take, so
+   nothing changes there. Tested in `play_along_test.dart`. See
+   [Cam](cam.md#space-stops-take).
+
+5. **"make sure that when a capture is shared all files are included,
+   including timings so that auto pass works"**. Checked end to end:
+   the capture's `event.json` reaches whoever it's shared with as a
+   whole (by email, joined, or by its link; the share API's read-only
+   credentials cover its whole folder, `<owner>/events/<id>/*`, with
+   no filter by file), and with it every page's take log and the songs'
+   phrase passes, so the shared capture itself has them all. The gap
+   was the user's **own copy** of a shared capture, where Cam records
+   (and Add adds): made once, the first time, it never took what the
+   owner added after, neither files nor timings: a copy made before the
+   owner recorded the passes had none, so auto-pass didn't turn the tab
+   there. Now the copy [catches up](library.md#catching-up) each time
+   Cam, Add or a file's edit view goes to it: the files it never had
+   (each with its take log, naming the copy's songs), the owner's passes
+   for songs it has none for, and a take's song found in its sound; what
+   the user deleted or recorded in it stays theirs. A clone keeps which
+   page of the original each of its pages is (`clonedPages`, synced),
+   and copies each page whole, as its JSON has it (any key a newer app
+   keeps with a page comes too), instead of field by field. The zip
+   download is unchanged: it's the files for people (no take logs, no
+   passes), not something tabs.cam reads back. No server change. Tested
+   in `shared_timings_test.dart`. See [library](library.md#catching-up),
+   [shared captures](shared-captures.md).
+
+6. **"when the user places a phrase pass event, mark it in the take
+   track timeline just as it is marked on the mini-player timeline."**,
+   then, instead: **"actually, make the time marks show in the backing
+   track track, and associate with that so that users can delete their
+   takes and keep the timings for auto pass"**. The song's phrase
+   passes (its own, kept with the capture by its page ID, as before)
+   are now marked on the video editor's song rows with the play-along
+   player's ticks (`PhraseMarks`, made public from the sidebar): on
+   Cam's main row (the backing track, on its own time; a pass recorded
+   shows at once, Clear takes them away) and on the edit view's Song
+   lane, where the song plays them along the video (moved and trimmed
+   with it, clip by clip, zoomed with the lanes; `songPhrasesOnLane`).
+   The timings were already the song's, apart from any take: deleting
+   or purging a take never touched them, and auto-pass keeps turning
+   the tab along the song with no take left (now tested). For songs
+   with none kept while their takes have passes (none noted, or
+   cleared by an older app), a take deleted, purged or deleted from the
+   user's contribution now gives the song its takes' passes, at the
+   song's times their logs noted (`songPhrasesOf`), all the capture's
+   takes along it merged oldest first as live passes are, so they
+   outlive the take. Clear on the player's bar now keeps the song as
+   cleared, an empty list in `phrases` (older apps read it as none), so
+   no take gives its passes back. Several takes along one song: the
+   song's passes are all of theirs merged, as recorded. See
+   [cam](cam.md#phrase-passes), [Cam's main row](cam.md#the-main-row),
+   [video edit](video-edit.md#the-song-row), [trash](trash.md).
+
+7. **"also the waveform preview would be great to work, seems not to be
+   appearing since merger with cam mode"**. The editor's lanes still
+   drew their waveforms (checked live), but Cam's rows, which came with
+   the merge, never had any: Cam's main row ("Song") now draws the
+   song's sound over its bar (brighter in the section), and the take's
+   row, once the take is saved, the take's own sound in its blocks,
+   fitted to the song's speed. Read on the device as the editor's, and
+   the last six kept (`WaveCache`), so Cam opened again draws them at
+   once without reading again; none while recording, nor on a desktop
+   build. `WavePainter` takes a rate per span for the fitting. Tested
+   in `studio_test.dart` and `waveform_test.dart`. See [Cam](cam.md#waveforms-in-cams-rows).
+
+8. **"in the index page add an "open source and learnable" link pointing
+   to our github project and prodbytes substack"**, then **"make it
+   "Open" in the top menu"**. The index page's top bar has **Open**
+   after Scan, Record and Share, to a new box under the features
+   (`#open`, numbered 04, like Share's without a picture): **Open source
+   and learnable**, the code open under the MIT License to read, run
+   and learn from, and the Production Bytes newsletter on how it's built
+   and shipped, with links to the GitHub project
+   (https://github.com/prodbytes/tabcam) and the Substack
+   (https://prodbytes.substack.com/). The top bar's links now scroll
+   their section to just below the bar (`scroll-margin-top`), where the
+   pictureless boxes (Share, Open) used to land with their top under
+   it. See [index page](index-page.md#the-page).
+
+9. **"i dont see the download and settings tab (with watermark, title,
+   faders, etc) that are gone since merger of views, they should be a
+   tab of the sidebar now"**, then, asked: the tab replaces the panel
+   everywhere, and with the camera in the main row it offers Edit the
+   take. Since the merge, the Download settings showed only while a page
+   was edited, in a panel beside or under the viewer (on a phone, under
+   it), and never with the camera in Cam's main row. They're now the
+   **Download** tab of the editor's sidebar: in Cam's view the
+   play-along sidebar has tabs at its top (`SidebarTabs`,
+   [`sidebar_tabs.dart`](../tabcam_app/lib/screens/sidebar_tabs.dart)),
+   **Play along** (its files, kept loaded meanwhile) and **Download**,
+   and ✕ to hide it; in the editor alone (over the file screen) a
+   sidebar of its own with the Download tab alone
+   (`DownloadSidebarBeside`), as wide as the play-along sidebar (one
+   width, `SidebarWidths.playAlong`, at least 224 points on Download).
+   The panel beside and under the viewer is gone, and with it the
+   phone's fields in place of the chips and their Done buttons, the
+   Fades chip's tune button and the Tab chip's palette: the tab always
+   has the roomy layout (chips, then the title's fields, the Master,
+   the fades' sliders and the tab's style, then the song). A take's Edit
+   turns the sidebar to Download, the camera back to Play along. With
+   the camera in the main row, the Download tab says a take's download
+   is set while it's edited, over **Edit the take** (the take's row's
+   take, in the camera's place, the sidebar staying on Download, even
+   on a phone; greyed with no take, while one records or saves, or
+   during a download). The app bar's **Download settings** (tune) and
+   **Play along** (♫) show the sidebar on their tab, or hide it where
+   theirs shows. A phone opens the editor alone with the sidebar
+   hidden (the editor keeps its width), until asked; a tap on the
+   picture that opens a field (the title, a fade's badge, a long press
+   on the band) shows the sidebar at it. In a sidebar under 400 points
+   high (a phone on its side) there are no tabs, so the play-along
+   player keeps its room (the app bar's buttons switch). A take's Edit
+   on a phone on its side no longer hides the sidebar (the editor
+   keeps 360 points beside it). In English, Spanish and Portuguese
+   ("Play along", "Download", "Hide the sidebar"; the Done and "Change
+   the fades" strings, unused now, removed). Tests: the Download
+   settings suite rewritten for the sidebar (`download_settings_test`),
+   the phone tests of the tab's style, the fades and the title
+   (`tab_style_test`, `fades_test`, `title_watermark_test`), and in
+   `studio_test` the tabs through Edit and Back and the Download tab's
+   Edit the take with the camera (wide and on a phone). See
+   [video edit](video-edit.md#download-settings) and
+   [Cam](cam.md#the-sidebars-tabs).

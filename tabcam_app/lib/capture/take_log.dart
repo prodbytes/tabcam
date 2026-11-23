@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import '../library/json_extra.dart';
+import '../library/phrase_times.dart';
 
 /// What Cam noted while a take recorded, kept with the take's page
 /// (`takeLog` in its details, `EventPage.takeLog`): written once, when the
@@ -605,6 +606,41 @@ List<({int from, int to})> songSpansOn(
     if (s.page == page && s.to > s.at)
       (from: s.from, to: s.from + ((s.to - s.at) * s.speed).round()),
 ];
+
+/// A take's own phrase passes ([take], on the take's clock: what Cam
+/// keeps for the take, `takePhrases`) at song [page]'s own times: each
+/// made while that song played in the take ([segments], [TakeLog.song])
+/// put where the song was then (`from + (t - at) * speed`), the others
+/// (the song paused, another song, none) left out; added to [into] as
+/// passes recorded live are ([PhraseTimes.add]: merged within two
+/// seconds of one the same way). What a song's passes are, from its
+/// takes, where the song has none kept (`Library`, when a take goes).
+PhraseTimes songPhrasesOf(
+  PhraseTimes take,
+  Iterable<SongSegment> segments,
+  String page, {
+  PhraseTimes into = PhraseTimes.none,
+}) {
+  final played = [
+    for (final s in segments)
+      if (s.page == page && s.to > s.at) s,
+  ];
+  var times = into;
+  for (final p in take.passes) {
+    final t = p.at.inMilliseconds;
+    for (final s in played) {
+      if (t < s.at || t > s.to) continue;
+      final ms = s.from + ((t - s.at) * s.speed).round();
+      times = times.add(
+        Duration(milliseconds: max(0, ms)),
+        p.direction,
+        p.line,
+      );
+      break;
+    }
+  }
+  return times;
+}
 
 /// Where the song played along really is in a take ([TakeLog.sync]),
 /// measured after the take was saved by finding the song's sound in the

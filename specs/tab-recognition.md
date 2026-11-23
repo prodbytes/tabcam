@@ -292,12 +292,43 @@ same font.
 
 The event screen's Text view ([lib/screens/tab_text_view.dart](../tabcam_app/lib/screens/tab_text_view.dart)):
 the read tab, unwrapped (long lines scroll sideways; the text is at
-least the view's width, and at most 1600 px or the view's, if wider), in a
+least the view's width, and at most 1600 px times the [zoom](#zoom-and-drag-to-move)
+or the view's, if wider), in a
 text editor to fix what OCR got wrong. Edits are saved a second after the
 last one, and on leaving, and make the text the user's (no read replaces
 it). A read that ends while the view shows fills it in, unless the user
 has started editing. Read only for an event shared read only (no editing
 tools, no Fix). Sharing is the event screen's **Share** in the app bar.
+
+<a id="zoom-and-drag-to-move"></a>**Zoom and Drag to move**, as a PDF's
+view has them ([file screen](event-screen.md#file-screen)): over the
+text's bottom right, one over the other, round tonal buttons
+([lib/screens/text_zoom.dart](../tabcam_app/lib/screens/text_zoom.dart)),
+in the editor and in Two columns alike (not in Fix's review):
+
+- **Drag to move** (a hand), a toggle, filled while on ("Move the tab by
+  dragging it" / "Stop moving the tab"). On, a layer over the text takes
+  the pointer: a drag, a mouse's as well as a finger's, moves the text
+  any way (down, and sideways in the column the drag began on, within
+  the text's ends; the cursor a grabbing hand), instead of editing or
+  selecting it, and the wheel still scrolls. Turning it on puts the
+  keyboard away. Off, as before: a drag edits or selects the text.
+- **Zoom in** (+) and **Zoom out** (−): the text's size, 15 px usually,
+  times 50%, 75%, 100%, 125%, 150%, 200%, 250% or 300%, one step each,
+  each off at its end. Zoomed, the zoom shows between them (`125%`);
+  tapped ("Back to the usual size"), it's 100% again. A button's zoom
+  keeps the top left of what shows where it is, as a text editor's zoom
+  does, so the line being read stays in view from its start.
+- **A pinch** (two fingers, or a trackpad's), and **Ctrl / ⌘ + the
+  wheel**, zoom too, anywhere from 50% to 300%, about where they are
+  (in Two columns, sideways only in the column they're over), and with
+  Ctrl / ⌘ held the wheel doesn't scroll the text (nor the browser zoom
+  the page).
+
+The zoom is the text's size, not a picture of it: the editor still
+edits, the cursor and the red notes stay where they are in the text, and
+the widest lines don't wrap (the editor's 1600 px grow with it). Neither
+is kept: the view opens at 100%, Drag to move off.
 
 **Doubtful notes in red**: the notes the [cloud](cloud-ocr.md#doubtful-notes)
 read with little confidence, likely wrong, are in red, bold, on a light
