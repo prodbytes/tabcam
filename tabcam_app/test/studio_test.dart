@@ -559,12 +559,12 @@ void main() {
       // One player: the song's, loaded paused.
       expect(video.lastPlayer, 0);
       expect(video.playing, isEmpty);
-      expect(tester.widget<IconButton>(play).tooltip, 'Play the song');
+      expect(tester.widget<IconButton>(play).tooltip, 'Play the song (space)');
 
       await tester.tap(play);
       await camFrames(tester);
       expect(video.playing, {0});
-      expect(tester.widget<IconButton>(play).tooltip, 'Pause the song');
+      expect(tester.widget<IconButton>(play).tooltip, 'Pause the song (space)');
       await tester.tap(play);
       await camFrames(tester);
       expect(video.playing, isEmpty);

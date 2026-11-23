@@ -88,8 +88,11 @@ the view shows it with the widgets in
   among them; **Backspace**, **↑** and **Page Up** go to the one
   before, and so does **←** while nothing plays along. Shift, Control, Alt,
   Meta, Caps Lock, Fn and Escape pressed alone do nothing. A tap on the
-  phrase goes to the next; the arrows beside it (**Previous line**,
-  **Next line**) to either side. It stops at the first and the last.
+  phrase goes to the next; the arrows beside it to either side: **↑**
+  on its left ("Previous phrase (↑)") and **↓** on its right ("Next
+  phrase (↓)"), arrows as the keys are (until 2026-11-22 they were ‹
+  and ›, "Previous line" and "Next line"). It stops at the first and
+  the last.
 - <a id="head-gestures"></a>**Head gestures** (Android, iOS and the web): a nod
   **up**, or a turn of the head to the user's **right**, goes to the next
   phrase; a nod **down** or a turn to the **left**, to the one before
@@ -145,7 +148,7 @@ the view shows it with the widgets in
   ([the keys in every screen](#keys-in-every-screen)); until 2026-11-17
   it was Rec / Stop. Either, pausing the song while a take records,
   stops the take too ([below](#space-stops-take)). The button's tooltip names the keys: "Rec (.)",
-  and "Stop · new take (/) · redo (.)" while recording, in English,
+  and "Stop · new take (/ or ,) · redo (.)" while recording, in English,
   Spanish and Portuguese. The take is then added to
   the capture as a video, at the end of its files, named by **the time
   it started** (Rec, / or . pressed), in hours and minutes, 24-hour:
@@ -664,6 +667,8 @@ sidebar's player (`BackingTrack`), the same one, so its count-in,
 section, speed, Repeat, phrase passes and keys are the player's, never
 doubled; the sidebar's player stays, the same song's picture and
 controls. The row's header has **Play the song** / **Pause the song**
+(its tooltip naming the space bar, "Play the song (space)", while the
+sidebar shows, where the space bar is the song's)
 (Pause while it counts in too), as the player's Play. Its bar, as long
 as the ruler (the file's length), has the file's name, the file's
 **waveform** (as the editor's lanes draw theirs, [waveforms](#waveforms-in-cams-rows)),
@@ -896,8 +901,10 @@ view).
   name in small type, then **|◀** (back to the start, as the **0** key,
   below: the file's or its section's, count-in included; "Back to the
   start (0)"), **«** (10 seconds back, not before the
-  start), **Play** / **Pause** (Pause while it counts in too), **Stop** (pauses it, back at its start),
-  **»** (10 seconds forward) and **Repeat** (on by default, in the
+  start; "Back 10 seconds (←)"), **Play** / **Pause** (Pause while it
+  counts in too; "Play (space)"), **Stop** (pauses it, back at its
+  start), **»** (10 seconds forward; "Forward 10 seconds (→)") and
+  **Repeat** (on by default, in the
   primary colour while on: at its end it starts over; a recording or
   video loops, a YouTube video is started over when it says it ended, a
   page's first video or sound loops). It has no Close: something is

@@ -293,6 +293,12 @@ void main() {
       await _settle(tester);
     }
 
+    // Their tooltips name their keys, Home and End, as Play names space.
+    String? tip(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key))).tooltip;
+    expect(tip('video-edit-to-start'), 'To the start (Home)');
+    expect(tip('video-edit-to-end'), 'To the end (End)');
+
     // From 1:30, in the kept part: its start, 1:00, then the video's.
     await clickRuler(tester, 0.5);
     await press('video-edit-to-start');

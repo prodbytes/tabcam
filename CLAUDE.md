@@ -12,6 +12,11 @@
   little per use (sign-in, sync, sharing) may serve everyone; the
   expensive ones (paid APIs, heavy Lambda work such as cloud OCR and Fix)
   are for tabs.cam Premium users only ([specs/cloud-ocr.md](specs/cloud-ocr.md)).
+- **Keys in tooltips.** Every button that has a keyboard shortcut
+  names it in its tooltip, after what it does: "Redo (.)", "To the
+  start (Home)", "Back 10 seconds (←)". A new button with a key, or a new
+  key for a button, gets it there in the same change
+  ([specs/keyboard-shortcuts.md](specs/keyboard-shortcuts.md)).
 - **"Cam" or "camera", never "scanner".** In labels, descriptions, store
   listings, docs and specs, call tabs.cam and its capture "cam" or
   "camera" (e.g. "the system document camera"), not "scanner". Keep

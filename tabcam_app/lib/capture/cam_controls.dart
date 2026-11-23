@@ -125,7 +125,8 @@ class CamView extends StatelessWidget {
 }
 
 /// The tab, one phrase (neckline) at a time, along the bottom: a tap
-/// passes to the next, the arrows beside it to either side.
+/// passes to the next, the arrows beside it to either side (↑ before it,
+/// ↓ after, as the keys; their tooltips name them).
 class CamPhrase extends StatelessWidget {
   const CamPhrase({super.key, required this.cam});
 
@@ -159,7 +160,8 @@ class CamPhrase extends StatelessWidget {
           tooltip: l10n.camPrevious,
           color: color,
           disabledColor: Colors.white24,
-          icon: const Icon(Icons.chevron_left),
+          // ↑ and ↓, as the keys that pass the phrase.
+          icon: const Icon(Icons.keyboard_arrow_up),
           onPressed: line > 0 ? () => unawaited(cam.pass(-1)) : null,
         ),
         Expanded(
@@ -205,7 +207,7 @@ class CamPhrase extends StatelessWidget {
           tooltip: l10n.camNext,
           color: color,
           disabledColor: Colors.white24,
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(Icons.keyboard_arrow_down),
           onPressed: line < lines.length - 1
               ? () => unawaited(cam.pass(1))
               : null,
