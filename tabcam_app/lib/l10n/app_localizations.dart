@@ -2065,25 +2065,25 @@ abstract class AppLocalizations {
   /// Tooltip of the − button
   ///
   /// In en, this message translates to:
-  /// **'Fret down (the number under the cursor)'**
+  /// **'Fret down (the selected notes, or the number under the cursor)'**
   String get textViewFretDown;
 
   /// Tooltip of the + button
   ///
   /// In en, this message translates to:
-  /// **'Fret up (the number under the cursor)'**
+  /// **'Fret up (the selected notes, or the number under the cursor)'**
   String get textViewFretUp;
 
   /// Tooltip of ++: the note under the cursor to the string above
   ///
   /// In en, this message translates to:
-  /// **'Note up a string (cycles round)'**
+  /// **'Note up a string (the selected notes, or the one under the cursor; cycles round)'**
   String get textViewNoteUp;
 
   /// Tooltip of −−: the note under the cursor to the string below
   ///
   /// In en, this message translates to:
-  /// **'Note down a string (cycles round)'**
+  /// **'Note down a string (the selected notes, or the one under the cursor; cycles round)'**
   String get textViewNoteDown;
 
   /// Snackbar when ++ or −− finds no note under the cursor
@@ -2101,25 +2101,25 @@ abstract class AppLocalizations {
   /// Tooltip of |: a bar line across the staff at the cursor
   ///
   /// In en, this message translates to:
-  /// **'Bar line: a | across every string, at the cursor'**
+  /// **'Bar line: a | across every string at the cursor, or on the selected lines'**
   String get textViewBar;
 
   /// Tooltip of =: a dash down the cursor's phrase (staff), at its column
   ///
   /// In en, this message translates to:
-  /// **'Spacer: a - on every line of the phrase, at the cursor'**
+  /// **'Spacer: a - on every line of the phrase at the cursor, or on the selected lines'**
   String get textViewSpacer;
 
   /// Tooltip of |>: pads every line (string) of each phrase (staff) to the longest
   ///
   /// In en, this message translates to:
-  /// **'End together at the last end: each phrase\'s lines padded to the longest'**
+  /// **'End together at the last end: each phrase\'s lines (or the selected ones) padded to the longest'**
   String get textViewEndsLast;
 
   /// Tooltip of <|: cuts every line (string) of each phrase (staff) to the shortest, never cutting a note
   ///
   /// In en, this message translates to:
-  /// **'End together at the first end: each phrase\'s lines cut to the shortest, notes kept'**
+  /// **'End together at the first end: each phrase\'s lines (or the selected ones) cut to the shortest, notes kept'**
   String get textViewEndsFirst;
 
   /// Snackbar when | or = finds the cursor off the strings
@@ -2157,6 +2157,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Insert: typing pushes the line right'**
   String get textViewOvertypeOff;
+
+  /// Tooltip of the vertical selection toggle while on
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical selection: a drag selects the same columns on every line'**
+  String get textViewVerticalOn;
+
+  /// Tooltip of the vertical selection toggle while off
+  ///
+  /// In en, this message translates to:
+  /// **'Line selection: a drag selects the text line by line'**
+  String get textViewVerticalOff;
+
+  /// Tooltip of Select all; shortcut is the key, ⌘A or Ctrl+A
+  ///
+  /// In en, this message translates to:
+  /// **'Select all ({shortcut})'**
+  String textViewSelectAll(String shortcut);
+
+  /// Tooltip of Select phrase (a phrase is a staff); shortcut is the key, ⌘L or Ctrl+L
+  ///
+  /// In en, this message translates to:
+  /// **'Select the phrase; again, the next one too ({shortcut})'**
+  String textViewSelectPhrase(String shortcut);
+
+  /// Message after Copy with text selected
+  ///
+  /// In en, this message translates to:
+  /// **'Selection copied'**
+  String get textViewSelectionCopied;
+
+  /// Message when + − ++ or −− find no fret number on the selected string lines
+  ///
+  /// In en, this message translates to:
+  /// **'There are no notes in the selection'**
+  String get textViewNoNotesSelected;
+
+  /// Message when + or − would take a selected note below 0 or past 99 (nothing changes)
+  ///
+  /// In en, this message translates to:
+  /// **'A selected note can\'t go further: frets go from 0 to 99'**
+  String get textViewFretLimit;
+
+  /// Message when ++ or −− can't move every selected note (nothing moves)
+  ///
+  /// In en, this message translates to:
+  /// **'No string has room there for every selected note'**
+  String get textViewNoRoomSelected;
+
+  /// Message when | or = find no line of a phrase in the selection
+  ///
+  /// In en, this message translates to:
+  /// **'The selection has no string lines'**
+  String get textViewSelectStrings;
+
+  /// Message when Select phrase finds no phrase (staff) in the text
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no phrase to select'**
+  String get textViewNoPhrase;
+
+  /// Message when Select phrase, pressed again, finds no next phrase
+  ///
+  /// In en, this message translates to:
+  /// **'No more phrases below'**
+  String get textViewNoMorePhrases;
 
   /// Text view sidebar: the notation sheet's heading
   ///
@@ -3958,12 +4024,6 @@ abstract class AppLocalizations {
   /// **'No title'**
   String get videoEditTitleOff;
 
-  /// Video edit: closes the title's text fields (on a phone)
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get videoEditTitleDone;
-
   /// Video edit: the chip of the small "tabs.cam" at the bottom right of the video (only Premium can turn it off)
   ///
   /// In en, this message translates to:
@@ -4005,12 +4065,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Both sounds together, up to 200%'**
   String get videoEditMasterAbout;
-
-  /// Video edit: the Fades chip's button that opens their sliders
-  ///
-  /// In en, this message translates to:
-  /// **'Change the fades'**
-  String get videoEditFadesEdit;
 
   /// Video edit: the slider of how long the start fades in from black
   ///
@@ -4666,6 +4720,30 @@ abstract class AppLocalizations {
   /// **'Shift'**
   String get keyShift;
 
+  /// Keyboard shortcuts: the section on the Text view's keys
+  ///
+  /// In en, this message translates to:
+  /// **'In the Text view'**
+  String get keysTextView;
+
+  /// Keyboard shortcuts: what ⌘A / Ctrl+A does in the Text view
+  ///
+  /// In en, this message translates to:
+  /// **'Select all the text'**
+  String get keysSelectAll;
+
+  /// Keyboard shortcuts: what ⌘L / Ctrl+L does in the Text view
+  ///
+  /// In en, this message translates to:
+  /// **'Select the phrase at the cursor; again, the next one too'**
+  String get keysSelectPhrase;
+
+  /// A key's name, as on the keyboard: Control
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl'**
+  String get keyCtrl;
+
   /// Video edit: the song delay control's label, beside its millisecond steps
   ///
   /// In en, this message translates to:
@@ -4852,17 +4930,41 @@ abstract class AppLocalizations {
   /// **'Kept for {output}: its takes open with it'**
   String videoEditSongDelayKept(String output);
 
-  /// Video edit: the app bar's button (tune icon) that shows the sidebar of what Download puts in the file (on the video, fades, master, the song), and that sidebar's title
+  /// Video edit: the app bar's button (tune icon) that shows the editor's sidebar on its Download tab (what Download puts in the file: on the video, fades, master, the song)
   ///
   /// In en, this message translates to:
   /// **'Download settings'**
   String get downloadSettings;
 
-  /// Video edit: the app bar's tune button while the Download settings show, and the sidebar's close button
+  /// Video edit: the app bar's tune button while the sidebar shows its Download tab (a press hides the sidebar)
   ///
   /// In en, this message translates to:
   /// **'Hide the download settings'**
   String get downloadSettingsHide;
+
+  /// Video edit and Cam: the sidebar's first tab (♫), the files to play along with
+  ///
+  /// In en, this message translates to:
+  /// **'Play along'**
+  String get sidebarPlayAlong;
+
+  /// Video edit and Cam: the sidebar's tab (tune icon) with the Download settings: what Download puts in the file and how it sounds
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get sidebarDownload;
+
+  /// Video edit and Cam: the ✕ at the right of the sidebar's tabs
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the sidebar'**
+  String get sidebarHide;
+
+  /// Cam, with the camera in the main row: the sidebar's Download tab says this over an Edit the take button
+  ///
+  /// In en, this message translates to:
+  /// **'A take\'s download is set while it\'s edited: what\'s on the video, how it sounds and its song.'**
+  String get downloadTabCam;
 
   /// Video edit, on a phone: the app bar's menu (⋮) with Dictionary, Metronome, Share and About the edit
   ///

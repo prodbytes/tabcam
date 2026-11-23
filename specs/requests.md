@@ -4938,6 +4938,74 @@ spec.
    and `RunnerTests` (iOS); the Kotlin compiled. See
    [instruments](stems.md), [video edit](video-edit.md#a-lanes-instruments).
 
+6. **"only show the tools (metronome, dictionary, help) to logged in
+   users. same for navigation (edit, rename, delete). only show edit
+   rename and delete for the same user that created (owns) the file.
+   other users are read only and must not see those buttons."** Signed
+   out, a capture opened by its link (the only screen a signed-out user
+   reaches besides the welcome) and a file opened from it have no
+   **Dictionary**, **Metronome** or **keyboard shortcuts' help**: not
+   their app bar buttons, not their items in a phone's Text view More
+   menu, not the H key, and not their sidebars, even left open
+   app-wide from before signing out (the metronome stops there, as on
+   a screen without it). Signed in, a link's capture has them as
+   before. On the file screen, **Rotate**, **Edit**, **Rename** and
+   **Delete** now show only to the capture's owner: on a capture shared
+   with the user or opened by its link, and on a contributed file,
+   they're gone instead of greyed out (an image keeps its Original /
+   Scan view, which only changes what shows; a reader's video, PDF,
+   recording or link has no bottom bar at all). The capture's own
+   screen, Home's cards and the play-along sidebar already left Rename,
+   Delete, reordering, a take's Edit and the text tab's editing tools
+   out for readers. Tests: `public_capture_test.dart` (signed out, with
+   the dictionary left open: no tools or sidebars on the capture, its
+   Text view, a phone's More menu or a file's screen, which has only
+   its view; signed in by its link: the tools, no Rename) and
+   `rename_files_test.dart` (a reader's link has no bar, its name
+   renames nothing; a reader's photo has only its view). See
+   [event screen](event-screen.md#file-screen),
+   [sharing](sharing.md#opening-a-link),
+   [shared captures](shared-captures.md),
+   [navigation](navigation.md#signed-out-the-welcome),
+   [dictionary](dictionary.md), [metronome](metronome.md) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
+7. **"For all the text view, let the user have another button to select
+   text vertically (besides the edit in place / insert mode). For all
+   buttons, if there is a selection, make the action only on the
+   selected notes. Let's have a select all shortcut (cmd+a) and select
+   next / phrase (cmd+l), with respective buttons."** The Text view's
+   editing tools gain three, after Overtype: **Vertical selection**, a
+   toggle (off by default) under which a drag, Shift and the arrows, or
+   a phone's handles select a block, the same columns on every line
+   (drawn by the text's controller, the field's own selection hidden);
+   **Select all** (⌘A, Ctrl+A off Apple's systems); and **Select
+   phrase** (⌘L / Ctrl+L): the cursor's phrase, and pressed again the
+   next one too. With notes selected, the tools work on them alone: −
+   and + change every selected fret together (none past 0 or 99), ++
+   and −− move every selected note a string together (all or none; a
+   block follows them), | and = go into the selected lines alone at the
+   selection's first column, |> and <| end only the selected lines
+   together, New phrase goes under the selection, and Copy copies the
+   selection (a block a line of it per line). Typing, pasting or
+   deleting over a block does it on each of its lines (Overtype keeping
+   the columns), and ⌘C / ⌘X copy and cut a block. The keys overlay
+   lists ⌘A and ⌘L under "In the Text view". Logic in
+   [`tab_editing.dart`](../tabcam_app/lib/screens/tab_editing.dart)
+   (`TextBlock`, `selectionSpans`, `bumpSelected`, `moveSelected`,
+   `barOnLines`, `spacerOnLines`, `replaceBlock`, `BlockFormatter`);
+   tested in `tab_selection_test.dart` and
+   `tab_text_selection_test.dart` (a mouse drag making a block, the
+   keys on Android and macOS, Copy, ⌘C, typing and Backspace over a
+   block), and in Chromium, WebKit and Firefox on a web build of the
+   Text view driven by Playwright (⌘L, ⌘A, a mouse drag making a block,
+   ⌘C copying it, + on it, a key and Backspace typed through the
+   browser's text input going on each of its lines, Select phrase, and
+   typing at a cursor as before once it's off). Not yet tried on a
+   phone. See
+   [tab recognition](tab-recognition.md#selecting) and
+   [keyboard shortcuts](keyboard-shortcuts.md).
+
 ## 2026-11-22
 
 1. **"if a user is already logged in, in the index page, move to the
@@ -5069,7 +5137,52 @@ spec.
    pictureless boxes (Share, Open) used to land with their top under
    it. See [index page](index-page.md#the-page).
 
-9. **"Add both buttons "." (clear take, restart from the beginning) and
+9. **"i dont see the download and settings tab (with watermark, title,
+   faders, etc) that are gone since merger of views, they should be a
+   tab of the sidebar now"**, then, asked: the tab replaces the panel
+   everywhere, and with the camera in the main row it offers Edit the
+   take. Since the merge, the Download settings showed only while a page
+   was edited, in a panel beside or under the viewer (on a phone, under
+   it), and never with the camera in Cam's main row. They're now the
+   **Download** tab of the editor's sidebar: in Cam's view the
+   play-along sidebar has tabs at its top (`SidebarTabs`,
+   [`sidebar_tabs.dart`](../tabcam_app/lib/screens/sidebar_tabs.dart)),
+   **Play along** (its files, kept loaded meanwhile) and **Download**,
+   and ✕ to hide it; in the editor alone (over the file screen) a
+   sidebar of its own with the Download tab alone
+   (`DownloadSidebarBeside`), as wide as the play-along sidebar (one
+   width, `SidebarWidths.playAlong`, at least 224 points on Download).
+   The panel beside and under the viewer is gone, and with it the
+   phone's fields in place of the chips and their Done buttons, the
+   Fades chip's tune button and the Tab chip's palette: the tab always
+   has the roomy layout (chips, then the title's fields, the Master,
+   the fades' sliders and the tab's style, then the song). A take's Edit
+   turns the sidebar to Download, the camera back to Play along. With
+   the camera in the main row, the Download tab says a take's download
+   is set while it's edited, over **Edit the take** (the take's row's
+   take, in the camera's place, the sidebar staying on Download, even
+   on a phone; greyed with no take, while one records or saves, or
+   during a download). The app bar's **Download settings** (tune) and
+   **Play along** (♫) show the sidebar on their tab, or hide it where
+   theirs shows. A phone opens the editor alone with the sidebar
+   hidden (the editor keeps its width), until asked; a tap on the
+   picture that opens a field (the title, a fade's badge, a long press
+   on the band) shows the sidebar at it. In a sidebar under 400 points
+   high (a phone on its side) there are no tabs, so the play-along
+   player keeps its room (the app bar's buttons switch). A take's Edit
+   on a phone on its side no longer hides the sidebar (the editor
+   keeps 360 points beside it). In English, Spanish and Portuguese
+   ("Play along", "Download", "Hide the sidebar"; the Done and "Change
+   the fades" strings, unused now, removed). Tests: the Download
+   settings suite rewritten for the sidebar (`download_settings_test`),
+   the phone tests of the tab's style, the fades and the title
+   (`tab_style_test`, `fades_test`, `title_watermark_test`), and in
+   `studio_test` the tabs through Edit and Back and the Download tab's
+   Edit the take with the camera (wide and on a phone). See
+   [video edit](video-edit.md#download-settings) and
+   [Cam](cam.md#the-sidebars-tabs).
+
+10. **"Add both buttons "." (clear take, restart from the beginning) and
    ("," or "/") (start a new take, from beginning, but keep the old one).
    When I say beginning that should include the 2s "breath" intro."**
    Cam's controls gain **Redo** (the . key; on only while a take

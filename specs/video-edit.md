@@ -93,8 +93,9 @@ is uploaded to make it, and no server is involved.
 
 <a id="the-edit-screen"></a>**The edit screen** ([`video_edit_screen.dart`](../tabcam_app/lib/screens/video_edit_screen.dart)),
 with the file's name in its app bar, then **Reset** and **Download**
-([below](#reset-and-download)), **Download settings** (a tune icon,
-[below](#download-settings)), **Dictionary** and **Metronome** (their
+([below](#reset-and-download)), **Download settings** (a tune icon:
+the sidebar on its Download tab, [below](#download-settings)),
+**Dictionary** and **Metronome** (their
 sidebars, as on the file's screen: [dictionary](dictionary.md),
 [metronome](metronome.md)), **Share**, the keyboard button
 ([keyboard shortcuts](keyboard-shortcuts.md)) and **ⓘ** (it says "Your
@@ -105,22 +106,24 @@ the file's name keeps some room, the menu starting with [Rec over
 this](#rec-over-this) (a phone's transport has no room for it). It
 opens with the video's edit as it was left. It's **a frame that
 doesn't scroll**, as a small video editor's: **the viewer** on top,
-with the **Download settings** beside
-it or under it; and docked at the bottom edge, the whole width, **the
+and docked at the bottom edge, the whole width, **the
 transport** right over **the rows** (the ruler, the video's row, the
 Song row once there's a song, and the cut's steps). The dock is as
 high as its rows: 82 points for the video alone (the ruler, 32; the
 row, 44; 6 under it), 128 with a Song row (another 44, 2 apart), so a
-video alone leaves the viewer more room. The dictionary's and the
-metronome's sidebars open at the right of it all, the body's whole
-height, and stay usable during a download. The editor's body is laid out at least
+video alone leaves the viewer more room. At the right of it all, the
+body's whole height, is **the editor's sidebar**, its **Download** tab
+with the [Download settings](#download-settings) (in Cam's view beside
+its **Play along** tab, [below](#in-cam)), and beyond it the
+dictionary's and the metronome's sidebars, which stay usable during a
+download. The editor's body is laid out at least
 360 points wide (or the screen's width, where that's narrower): on a
-phone with the dictionary's or the metronome's sidebar open beside it,
-it's cut at the sidebar's edge rather than squeezed. While the
-on-screen keyboard is open (the title typed in), the transport and the
-rows give their room to the viewer and the field, and come back as it
-closes; in a window too short for them, the cut's steps go first, then
-the rows, then the transport.
+phone with a sidebar open beside it, it's cut at the sidebar's edge
+rather than squeezed. While the
+on-screen keyboard is open (the title typed in the sidebar), the
+transport and the rows give their room to the viewer, and come back as
+it closes; in a window too short for them, the cut's steps go first,
+then the rows, then the transport.
 
 <a id="in-cam"></a>**In Cam** the editor is the same view: the editor
 and [Cam](cam.md) are one widget, `StudioView`
@@ -136,11 +139,13 @@ Cam's play-along sidebar, or **Edit the take** in the
 in the main row in place of the camera, with no screen pushed over
 Cam: the viewer shows the take with its layers, the dock has the
 transport, the take's rows (Take, then its
-Song lined up) and the cut's steps, the Download settings are beside or
-under the viewer as above, and the app bar is the editor's, with
+Song lined up) and the cut's steps, the sidebar turns to its
+**Download** tab (the [Download settings](#download-settings)), and the
+app bar is the editor's, with
 **Back** at its start and **Play along** (♫) after Metronome (on a
 phone, in the More menu). The play-along sidebar stays at the right,
-the body's whole height, as the dictionary's and the metronome's do;
+the body's whole height, as the dictionary's and the metronome's do,
+its files on its **Play along** tab (♫, or the tab, turns it there):
 the take edited shows neither Edit nor Delete there, and its song,
 deleted there, leaves the Song row first, as **Remove** does (its player
 let go of, the edit no longer naming it). The keys are the
@@ -152,12 +157,12 @@ hidden, its head gestures paused (no frame goes to them; Cam's
 meanwhile takes this one's place, its edit kept first. **Back** (the
 app bar's, the system's, the browser's) keeps the edit and puts the
 camera back, with the song in the main row as it was; so does a file
-tapped in the sidebar, which then plays in the main row. On a phone,
-where the sidebar would leave the editor narrower than 360 points, or
-on its side, too narrow for the Download settings beside the viewer
-(560 points in a window under 480 high), the Edit hides the sidebar,
-and it shows again when the camera is back (Play along shows it
-meanwhile). During a download Back does nothing and the
+tapped in the sidebar, which then plays in the main row; the sidebar
+turns back to its Play along tab. On a phone, where the sidebar would
+leave the editor narrower than 360 points, a take's Edit hides the
+sidebar (not the Download tab's **Edit the take**, which keeps it on
+that tab), and it shows again when the camera is back (Play along, or
+Download settings, shows it meanwhile). During a download Back does nothing and the
 sidebar takes no taps, as the rest of the editor. What's in the main
 row changes in place (`_switchMain`): a change not yet kept is kept with
 its page at once, the players are let go of, everything known of the
@@ -234,51 +239,80 @@ has, no lock shows, and the card checks first. With it:
 
 <a id="download-settings"></a>**The Download settings**
 ([`download_settings.dart`](../tabcam_app/lib/screens/download_settings.dart)):
-what Download puts in the file and how it sounds, in a sidebar with its
-title ("Download settings") and ✕ at the top, then, scrolling, the
-[**Master**](#master), [**On the video**](#on-the-video) (its chips,
-the fields they open and the tab's style) and [the song's
-details](#the-songs-details), or, with no song, **Add a song**. The app
-bar's **Download settings** button (a tune icon, in the primary colour while they show, then "Hide the
-download settings") shows and hides it, as the dictionary's and the
-metronome's buttons do theirs; its ✕ hides it too.
+what Download puts in the file and how it sounds, the **Download** tab
+of the editor's sidebar (`SidebarTabs`,
+[`sidebar_tabs.dart`](../tabcam_app/lib/screens/sidebar_tabs.dart)),
+scrolling: [**On the video**](#on-the-video) (its chips, then the
+title's fields, the [**Master**](#master), the fades' sliders and the
+tab's style) and [the song's details](#the-songs-details), or, with no
+song, **Add a song**.
 
-- **Where**: beside the viewer, on its right, where the editor's room is
-  **wide**: 840 points and more, or 560 in a window under 480 high (a
-  phone on its side). The width is the editor's own room's, not the
-  screen's: with the dictionary's or the metronome's sidebar beside the
-  editor, a 900-point window has the settings under the viewer. The
-  height is the window's, which the on-screen keyboard doesn't change:
-  typing the title on a tablet in split view or a foldable's inner
-  screen, the settings stay where they were. Beside it, its default
-  width is 320 points (at most 40% of the room); its left edge is a
-  separator to drag (`SplitHandle`, as the other sidebars') wider or
-  narrower, from 224 points (40% of the narrowest wide room, where the
-  Master's slider keeps some room at the largest text size; the other
-  sidebars go down to 160) up to leaving the viewer 96, a double tap
-  putting the default back, and the width is kept on the device with
-  the other sidebars' ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart),
-  `downloadSettings`). Elsewhere (a phone) it's under the viewer, across
-  it: the viewer as high as the picture needs, leaving the settings at
-  least 160 points, their title included (a tall video takes the rest).
-  Hidden, the viewer takes all the room, and the picture grows into it
+- **The sidebar's tabs**, at its top: **Play along** (♫, the files to
+  play along, in Cam's view only, [Cam](cam.md#cams-view)) and
+  **Download** (a tune icon), the one showing underlined in the primary
+  colour, a tap on the other showing it; then **✕** ("Hide the
+  sidebar"). Their names show beside their icons where the sidebar is
+  240 points wide or more; narrower, the icons alone, their names in
+  tooltips. In a sidebar under 400 points high (a phone on its side)
+  there are no tabs, so the play-along player keeps its room: the app
+  bar's buttons show one tab or the other. In Cam's view the Play
+  along tab's files stay loaded while Download shows (a link's page
+  isn't reloaded). The sidebar's background is the play-along
+  sidebar's, whichever tab shows.
+- **The app bar's Download settings** button (a tune icon, "Download
+  settings"; in the primary colour, "Hide the download settings", while
+  the sidebar shows its Download tab) shows the sidebar on that tab, or
+  hides the sidebar where that tab shows; **Play along** (♫) does the
+  same for its tab. Showing the Download tab loads nothing in the
+  play-along player.
+- **Which tab shows**: a page put in the main row (a take's Edit, Back
+  to a page) turns the sidebar to Download; the camera back (Back, a
+  file tapped, Rec over this) turns it to Play along, as does Cam's
+  **Play along with a song…**; the user turns it either way meanwhile.
+- **With the camera in the main row** (Cam), the Download tab says "A
+  take's download is set while it's edited: what's on the video, how it
+  sounds and its song." over **Edit the take** (scissors): the take in
+  the [take's row](cam.md#the-takes-row) (the capture's last as Cam
+  opens, the one just recorded after Stop), opened in the camera's
+  place as its row's Edit does, the sidebar staying on Download, even
+  on a phone. It's greyed with no take, while a take records or saves,
+  and during a download.
+- **Where**: in Cam's view, the play-along sidebar is the editor's
+  sidebar, as wide as it is (half the screen, 160 to 360 points, or as
+  dragged), never narrower than 224 points on the Download tab (where
+  the Master's slider keeps some room at the largest text size), and
+  shown or hidden as it is (`PlayAlong.open`). In the editor alone
+  (over the file screen) it's a sidebar of its own,
+  `DownloadSidebarBeside`, with the Download tab alone: the same width
+  (`SidebarWidths.playAlong`, at least 224), its left edge a separator
+  to drag (`SplitHandle`) wider or narrower, up to leaving the editor
+  120 points, a double tap putting the default back, the width kept on
+  the device with the other sidebars'
+  ([`SidebarWidths`](../tabcam_app/lib/screens/sidebar_widths.dart)).
+  Hidden, the editor takes all the room, and the picture grows into it
   where it can.
-- **Open the first time** in each session of the app; hidden, it stays
-  hidden for the session, in this editor and the next, until it's shown
-  again (app-wide, `DownloadSettingsState`, not kept on the device).
-- **A tap on the picture that opens one of its fields shows it** where
-  it's hidden, scrolled to that field: a tap on the title, a fade's
-  badge, a long press on the tab's band on a phone, and, on a wide
-  screen, a tap that picks the band (its style is in the settings).
-  Hidden, the fields a chip opened in the chips' place (on a phone)
-  close, as Done does.
+- **Open the first time** in each session of the app, where it leaves
+  the editor its least (360 points) beside its default width: a phone
+  opens the editor with it hidden, the editor having the whole width,
+  until the Download settings button (or a tap on the picture, below)
+  shows it, the editor then cut at its edge. Hidden (its ✕, the
+  button), it stays hidden for the session, in this editor and the
+  next, until it's shown again (app-wide, `DownloadSettingsState`, not
+  kept on the device). The on-screen keyboard (the title typed) leaves
+  it where it was.
+- **A tap on the picture that opens one of its fields shows it** on its
+  Download tab where it isn't showing it, scrolled to that field: a tap
+  on the title (its first field focused), a fade's badge, a long press
+  on the tab's band on a phone (or its palette button on the picture),
+  and, on a wide screen, a tap that picks the band (its style is in the
+  settings).
 - During a download it takes no taps, as the rest of the editor.
 
 - **The viewer**, at the top: the video as large as its box allows, on
   black (a tap on the black plays or pauses it): the video
   (its taps are the [on-picture controls'](#on-the-picture): a tap on
   what's drawn picks it, elsewhere it plays or pauses; on a phone, a
-  long press on the tab's band opens its style),
+  long press on the tab's band shows its style in the sidebar),
   with what Download draws over it (the [layers](#layers): a take's
   tab, the title, the watermark as this user's download would have
   it), drawn by the same code, so the preview is what the file will be
@@ -319,7 +353,7 @@ metronome's buttons do theirs; its ✕ hides it too.
   - **The tab's band**: **Smaller tab** and **Larger tab** (a step of
     the Size slider, greyed at its ends), its four **colours** (small
     swatches, "3" in each one's colours, the one in use ringed), on a
-    phone its whole **style** (the palette, as the chip's), and **Hide
+    phone its whole **style** (the palette: the sidebar shown at it), and **Hide
     the tab** (the Tab chip off). A **handle** at the band's top right
     ("Drag up or down to resize the tab") resizes it: dragged up, the
     band grows by as much as it's dragged (half its height up: half as
@@ -333,8 +367,8 @@ metronome's buttons do theirs; its ✕ hides it too.
     which shows Premium's card, as the chip does.
   While a fade covers the frame shown, a **badge** at the picture's top
   right says so ("Fade in · 3.0 s", "Fade out · 3.0 s"); a tap on it
-  opens the fades' sliders (on a phone, in place of the chips), showing
-  the [Download settings](#download-settings) where they're hidden.
+  brings the fades' sliders into view, the sidebar shown on its
+  [Download tab](#download-settings) where it wasn't.
 - **The transport**, one row 48 points high right over the lanes: at
   its left **the current time** (`0:12.3`, to the tenth of a second)
   over the part kept (`Keep 0:02.5–0:41.0`, in the primary colour once
@@ -592,10 +626,8 @@ metronome's buttons do theirs; its ✕ hides it too.
   unmutes it), its level beside it (in the primary colour when it's not
   100% or it's muted, struck through while muted). It's in the
   [Download settings](#download-settings), **right above the fades'
-  sliders**: beside the viewer, under **On the video**'s chips, between
-  the title's fields and the fades; under the viewer (a phone), at the
-  top, above **On the video** (whose Fades chip opens the sliders in its
-  place, so it's above them too). Keys `video-edit-master`, `-mute`, `-slider`,
+  sliders**: under **On the video**'s chips, between the title's fields
+  and the fades. Keys `video-edit-master`, `-mute`, `-slider`,
   `-level`. 100% by default; Reset puts it back. **Past 100% only the
   download is louder**: the players can't play a file louder than it
   is (video_player's volume and the browser's media element stop at
@@ -604,10 +636,9 @@ metronome's buttons do theirs; its ✕ hides it too.
   what goes past full scale rather than wrapping it
   (**How it's rendered**, under [fades](#fades)).
 - <a id="on-the-video"></a>**On the video**, in the [Download
-  settings](#download-settings): what's drawn over the video, as chips
-  (beside the viewer, where the editor is wide, the title's fields, the
-  master, the fades' sliders and the tab's style are under its chips;
-  under it, on a phone, each opens in the chips' place):
+  settings](#download-settings): what's drawn over the video, as chips,
+  with the title's fields, the master, the fades' sliders and the tab's
+  style under them:
   - **Tab** (on a take only; none on a take without a tab: its log has
     none, or, with no log, its capture's tab text has no necklines): on
     by default, for a take whose tab is kept apart from its picture (its
@@ -623,13 +654,12 @@ metronome's buttons do theirs; its ✕ hides it too.
     it" (no log, in a capture with a tab). (A `Tooltip` around the
     chip: a disabled chip shows none of its own; no line of text, which
     would stay under every such take.)
-    **The tab's style**: on a take whose tab can be drawn, the chip's
-    **palette** button ("Change how the tab looks"), or, on a phone, a
-    long press on the tab's band in the preview, opens it: on a phone in
-    place of the chips ("Tab style · How the tab looks over the video");
-    on a wide screen it's always under the fades' sliders ("How the tab
-    looks over the video"), without the button or Done (and no long
-    press on the band there). The band picked on the preview has its
+    **The tab's style**: on a take whose tab can be drawn, under the
+    fades' sliders ("How the tab looks over the video"); on a phone, a
+    long press on the tab's band in the preview (or the band's palette
+    button on the picture, "Change how the tab looks") brings it into
+    view, the sidebar shown (no long press on the band on a wide
+    screen, where picking it does). The band picked on the preview has its
     size and colours [on the picture](#on-the-picture) too. It
     has **Size** (the tab's usual size times 50% to 200%, in steps of
     5%, but only the sizes that change the band over this video: from
@@ -658,25 +688,24 @@ metronome's buttons do theirs; its ✕ hides it too.
     edit kept then now draws its tab to the left; kept as `align` in
     the `tabStyle`, only when it isn't left),
     **Default style** (on once it's anything but the default: back to
-    100%, 70%, white on black, to the left) and, on a phone, **Done**. The preview
+    100%, 70%, white on black, to the left). The preview
     draws each change at once, a slider's as it's dragged (a new
     picture of the band showing; nothing is sought or rendered), and
     it's kept a moment later, as every change. A change turns the tab on
-    (as typing turns the title on). The title's fields, the fades'
-    sliders and the tab's style take each other's place on a phone. It
-    fits a 360-point phone at the largest text size (the swatches wrap;
-    their sample text doesn't grow). Reset puts it back with the rest.
+    (as typing turns the title on). It fits the sidebar at its least
+    (224 points) at the largest text size (the swatches wrap; their
+    sample text doesn't grow). Reset puts it back with the rest.
   - **Title** ✎ (every video): on by default, showing the capture's
     name ([the title](#layers)); with no name to show (the name the
     app gave the capture, "Tab 2026-11-11 10:00"), the chip says
     **+ Title** and a tap opens its text. Tapped, it's on or off (its
-    text kept). **✎**, or a tap on the title in the preview, opens its
-    text: on a phone in place of the chips ("Title · Top left · the
-    first and last 15 s"), with **First line** and **Second line** (80
-    characters each), **Use the capture's name** (the text typed goes:
-    the capture's name again, and it follows a rename), **No title**
-    (off, the text typed kept) and **Done**; on a wide screen the same
-    fields are always under the chips, without Done. Typing shows in
+    text kept). Its fields are under the chips ("Top left · the first
+    and last 15 s"): **First line** and **Second line** (80 characters
+    each), **Use the capture's name** (the text typed goes: the
+    capture's name again, and it follows a rename) and **No title**
+    (off, the text typed kept); **✎**, or a tap on the title in the
+    preview, brings them into view, the first focused, the sidebar
+    shown where it wasn't. Typing shows in
     the preview at once, kept a moment after the last key (as every
     change), and never seeks the song again (nothing it plays by
     changed); typing turns the title on.
@@ -697,19 +726,15 @@ metronome's buttons do theirs; its ✕ hides it too.
     sounds with it"): on by default, 3 s in and 3 s out
     ([fades](#fades)). Tapped, off (both none, kept as `fadeInMs: 0`,
     `fadeOutMs: 0`) or on again, as they were before it was turned off
-    (3 s each if they never were). Its **tune** button ("Change the
-    fades") opens the sliders: on a phone in place of the chips ("Fades
-    · The video from and to black, both sounds with it"), with **Fade
-    in** and **Fade out** (each from 0 to 10 s in tenths of a second,
-    its length beside it, "3.0 s"), **No fades** (both none; the chip
-    then puts them back) and **Done**; on a wide screen the same sliders
-    are always under the title's fields, without Done (and the chip has
-    no button). A slider goes at most to half the kept part (a fade kept
-    longer plays that long, and is back when the kept part is long
-    enough again). The preview plays a change at once (it moves no
+    (3 s each if they never were). Its sliders are under the Master
+    ("The video from and to black, both sounds with it"): **Fade in**
+    and **Fade out** (each from 0 to 10 s in tenths of a second, its
+    length beside it, "3.0 s") and **No fades** (both none; the chip
+    then puts them back). A slider goes at most to half the kept part (a
+    fade kept longer plays that long, and is back when the kept part is
+    long enough again). The preview plays a change at once (it moves no
     sound: nothing is sought), and it's kept a moment later, as every
-    change. The title's fields and the sliders take each other's place
-    on a phone.
+    change.
 - <a id="the-songs-details"></a>**Under them, the song's details**
   (when there's one; with none, **Add a song** (**Add a track**), which
   opens the sheet the Take row's menu does): its lane

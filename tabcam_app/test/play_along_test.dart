@@ -239,6 +239,13 @@ final _camStop = find.byElementPredicate((e) {
   return !inSidebar;
 });
 
+/// The play-along list's own "Play along" heading (not the tab named so
+/// above it, in Cam's view).
+Finder alongHeading() => find.descendant(
+  of: find.byKey(const Key('cam-along-sidebar')),
+  matching: find.text('Play along'),
+);
+
 void main() {
   late FakeCameraPlatform camera;
   late FakeVideoPlatform video;
@@ -2830,6 +2837,12 @@ B|--5--8--|
       'there; space pauses and plays it; Stop and 0 go back to the start; '
       '← and → skip in it, ↑ and ↓ turn the tab; '
       'hidden, it pauses and space turns the tab', (tester) async {
+    // Tall enough for the sidebar to list its files under its tabs and
+    // its frame.
+    tester.view
+      ..physicalSize = const Size(800, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final (library, id) = await capture(tester, tab: _tab);
     late String audio, youTube;
     await tester.runAsync(() async {
@@ -3203,7 +3216,7 @@ B|--5--8--|
     expect(sidebar, findsOneWidget);
     expect(find.byKey(const Key('cam-along-frame')), findsNothing);
     expect(find.text('Follow a PDF'), findsOneWidget);
-    expect(find.text('Play along'), findsNothing);
+    expect(alongHeading(), findsNothing);
     final tile = find.byKey(ValueKey('cam-along-$pdf'));
     expect(
       find.descendant(of: tile, matching: find.text('Sheet')),
@@ -4311,7 +4324,7 @@ B|--5--8--|
       expect(top(order[i - 1]), lessThan(top(order[i])), reason: '$i');
     }
     // The songs' heading over the songs, the PDF's under them.
-    expect(top(find.text('Play along')), lessThan(top(row('song'))));
+    expect(top(alongHeading()), lessThan(top(row('song'))));
     expect(top(find.text('Follow a PDF')), greaterThan(top(row('lesson'))));
     // The song loaded first, not Take 1 (the capture's first file).
     expect(tester.widget<ListTile>(row('song')).selected, isTrue);
@@ -4325,6 +4338,12 @@ B|--5--8--|
 
   testWidgets('with only takes to play along, the most recent loads, '
       'listed first', (tester) async {
+    // Tall enough for the sidebar to list its files under its tabs and
+    // its frame.
+    tester.view
+      ..physicalSize = const Size(800, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final (library, id) = await capture(tester, tab: _tab);
     late String take1, take2;
     await tester.runAsync(() async {
@@ -4357,7 +4376,7 @@ B|--5--8--|
     );
     await frames(tester);
     expect(find.text('Takes'), findsOneWidget);
-    expect(find.text('Play along'), findsNothing);
+    expect(alongHeading(), findsNothing);
     final first = find.byKey(ValueKey('cam-along-$take1'));
     final second = find.byKey(ValueKey('cam-along-$take2'));
     expect(tester.widget<ListTile>(second).selected, isTrue);
@@ -4505,6 +4524,12 @@ B|--5--8--|
       'the text tab none; it asks first, as the list does: cancelled, the '
       'take stays; confirmed, it goes with its file, the player lets go of '
       'it and Play has no take', (tester) async {
+    // Tall enough for the sidebar to list its files under its tabs and
+    // its frame.
+    tester.view
+      ..physicalSize = const Size(800, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final (library, id) = await capture(tester, tab: _tab);
     await tester.pumpWidget(
       app(
@@ -4902,6 +4927,12 @@ B|--5--8--|
       'reader\'s own take (from before adding went to their copy) after the '
       'owner\'s files; only theirs has Delete, and it deletes it from their '
       'contribution', (tester) async {
+    // Tall enough for the sidebar to list its files under its tabs and
+    // its frame.
+    tester.view
+      ..physicalSize = const Size(800, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final library = Library(PlatformEventStore(), null, (_) async => null);
     late String id;
     late EventPage song, mine;

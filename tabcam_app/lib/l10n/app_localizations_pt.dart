@@ -1261,16 +1261,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get textViewMarkCorrect => 'Marcar a leitura como verificada';
 
   @override
-  String get textViewFretDown => 'Descer traste (o número sob o cursor)';
+  String get textViewFretDown =>
+      'Descer traste (as notas selecionadas, ou o número sob o cursor)';
 
   @override
-  String get textViewFretUp => 'Subir traste (o número sob o cursor)';
+  String get textViewFretUp =>
+      'Subir traste (as notas selecionadas, ou o número sob o cursor)';
 
   @override
-  String get textViewNoteUp => 'Nota uma corda acima (dá a volta)';
+  String get textViewNoteUp =>
+      'Nota uma corda acima (as notas selecionadas, ou a do cursor; dá a volta)';
 
   @override
-  String get textViewNoteDown => 'Nota uma corda abaixo (dá a volta)';
+  String get textViewNoteDown =>
+      'Nota uma corda abaixo (as notas selecionadas, ou a do cursor; dá a volta)';
 
   @override
   String get textViewPutCursorOnNote =>
@@ -1282,19 +1286,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get textViewBar =>
-      'Barra de compasso: uma | em todas as cordas, no cursor';
+      'Barra de compasso: uma | em todas as cordas no cursor, ou nas linhas selecionadas';
 
   @override
   String get textViewSpacer =>
-      'Espaçador: um - em cada linha da frase, no cursor';
+      'Espaçador: um - em cada linha da frase no cursor, ou nas linhas selecionadas';
 
   @override
   String get textViewEndsLast =>
-      'Terminar juntas no último final: as linhas de cada frase vão até a mais longa';
+      'Terminar juntas no último final: as linhas de cada frase (ou as selecionadas) vão até a mais longa';
 
   @override
   String get textViewEndsFirst =>
-      'Terminar juntas no primeiro final: as linhas de cada frase são cortadas na mais curta, sem cortar notas';
+      'Terminar juntas no primeiro final: as linhas de cada frase (ou as selecionadas) são cortadas na mais curta, sem cortar notas';
 
   @override
   String get textViewPutCursorOnString =>
@@ -1317,6 +1321,47 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get textViewOvertypeOff =>
       'Inserir: digitar empurra a linha para a direita';
+
+  @override
+  String get textViewVerticalOn =>
+      'Seleção vertical: arrastar seleciona as mesmas colunas em cada linha';
+
+  @override
+  String get textViewVerticalOff =>
+      'Seleção por linhas: arrastar seleciona o texto linha a linha';
+
+  @override
+  String textViewSelectAll(String shortcut) {
+    return 'Selecionar tudo ($shortcut)';
+  }
+
+  @override
+  String textViewSelectPhrase(String shortcut) {
+    return 'Selecionar a frase; de novo, também a seguinte ($shortcut)';
+  }
+
+  @override
+  String get textViewSelectionCopied => 'Seleção copiada';
+
+  @override
+  String get textViewNoNotesSelected => 'Não há notas na seleção';
+
+  @override
+  String get textViewFretLimit =>
+      'Uma nota selecionada não pode ir além: os trastes vão de 0 a 99';
+
+  @override
+  String get textViewNoRoomSelected =>
+      'Nenhuma corda tem espaço ali para todas as notas selecionadas';
+
+  @override
+  String get textViewSelectStrings => 'A seleção não tem linhas de corda';
+
+  @override
+  String get textViewNoPhrase => 'Não há nenhuma frase para selecionar';
+
+  @override
+  String get textViewNoMorePhrases => 'Não há mais frases abaixo';
 
   @override
   String get textViewNotation => 'Notação de tablatura';
@@ -2371,9 +2416,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditTitleOff => 'Sem título';
 
   @override
-  String get videoEditTitleDone => 'Concluído';
-
-  @override
   String get videoEditLayerWatermark => 'Marca d\'água';
 
   @override
@@ -2396,9 +2438,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditMasterAbout => 'Os dois sons juntos, até 200%';
-
-  @override
-  String get videoEditFadesEdit => 'Ajustar os fades';
 
   @override
   String get videoEditFadeIn => 'Fade de entrada';
@@ -2783,6 +2822,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get keyShift => 'Shift';
 
   @override
+  String get keysTextView => 'Na visualização de texto';
+
+  @override
+  String get keysSelectAll => 'Selecionar todo o texto';
+
+  @override
+  String get keysSelectPhrase =>
+      'Selecionar a frase do cursor; de novo, também a seguinte';
+
+  @override
+  String get keyCtrl => 'Ctrl';
+
+  @override
   String get videoEditDelay => 'Atraso';
 
   @override
@@ -2931,6 +2983,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get downloadSettingsHide => 'Ocultar as configurações do download';
+
+  @override
+  String get sidebarPlayAlong => 'Tocar junto';
+
+  @override
+  String get sidebarDownload => 'Download';
+
+  @override
+  String get sidebarHide => 'Ocultar a barra lateral';
+
+  @override
+  String get downloadTabCam =>
+      'O download de um take é ajustado enquanto ele é editado: o que vai sobre o vídeo, como soa e a música.';
 
   @override
   String get videoEditMore => 'Mais';

@@ -64,7 +64,8 @@ review notes ([app stores](app-stores.md)).
   recordings, PDFs and links) as a list with previews, Files, Text and
   Add and Cam (the list reorders in place by drag handles), plus Rename,
   Clone and one Share; a tap opens a file alone, with
-  its view (Original or Scan), Rotate and Delete, the play-along
+  its view (Original or Scan), Rotate, Edit, Rename and Delete (those
+  four shown to the owner only, never to readers), the play-along
   sidebar beside an image or a PDF, and a recording playing in it with
   the capture's pages and PDFs to follow beside. Text and Cam are
   Premium's: locked, each opens as a preview under the Premium card.
@@ -86,16 +87,18 @@ review notes ([app stores](app-stores.md)).
   average time), and **Auto-pass** turns the tab there the next time
   through.
 - [Dictionary](dictionary.md): a book icon at the top of every file
-  viewer, the video editor, Cam and Home opens a search in a sidebar on
+  viewer, the video editor, Cam and Home (signed in; a capture's link
+  opened signed out has no tools) opens a search in a sidebar on
   the right: a chord shows
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
   among tabs.cam's public captures, on YouTube and on Cifra Club. Its Rotate button makes it a panel under the screen, the
   necks lying down. Every sidebar (the dictionary, the metronome, the
-  play-along player, the video editor's Download settings) is resizable
-  by dragging its edge, the width kept on the device.
+  play-along player and the video editor's, whose tabs are Play along
+  and Download) is resizable by dragging its edge, the width kept on
+  the device.
 - [Metronome](metronome.md): a stopwatch icon beside the dictionary's
-  opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
+  (signed in) opens a metronome in a sidebar: 80 BPM in 4/4 by default, the tempo set
   with −, + and a slider (30–250), the common time signatures (2/4 to
   12/8), a light per beat, Start / Stop; clicks made on the device (Web
   Audio on the web, a looping WAV on the phones), accented on the bar.
@@ -105,9 +108,10 @@ review notes ([app stores](app-stores.md)).
   listing that screen's keys.
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
-  top, with the Download settings (the master, what's drawn on the
-  video, the fades, the song's details) in a sidebar beside it or under
-  it, shown and hidden by a tune button in the app bar; and docked at
+  top, the editor's sidebar at the right (its Download tab: the master,
+  what's drawn on the video, the fades, the song's details; in Cam's
+  view beside its Play along tab), shown and hidden by a tune button in
+  the app bar (a phone opens it hidden); and docked at
   the bottom the transport (To the start, Play /
   Pause, To the end; the space bar, Home, End and the arrows) right
   over the rows, on one time axis (a click on it moves the playhead,
@@ -145,7 +149,7 @@ review notes ([app stores](app-stores.md)).
   without Premium), for text tabs
   and typeset tab staves, never over the user's edits or a reading marked
   correct; the Text view, a tab editor (Copy, Rescan and Verified
-  in the app bar, the editing tools on their own line; overtype first, − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase; Zoom in, Zoom out and Drag to move over its bottom right) where a reading is marked
+  in the app bar, the editing tools on their own line; overtype first, then vertical selection (a drag selects a block of columns), Select all (⌘A) and Select phrase (⌘L, again the next one too), − and + on a fret, ++ and −− moving a note across strings, | a bar line and = a spacer dash down the phrase, |> and <| ending every phrase's lines together at the last or the first end, New phrase an empty six-line phrase; with notes selected, the tools and Copy work on them alone; Zoom in, Zoom out and Drag to move over its bottom right) where a reading is marked
   verified (the event then opens on it).
 - [Auto-correct](autocorrect.md): Fix, **hidden for now** (on only in a
   build with `TABCAM_FIX=true`): lines the tab up, and for Premium Claude

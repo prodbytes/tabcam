@@ -144,6 +144,13 @@ class _KeysHelp extends StatelessWidget {
 
   final KeysScreen screen;
 
+  /// The shortcuts' key: ⌘ on macOS and iOS, Ctrl elsewhere.
+  static String _command(AppLocalizations l10n) =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.iOS
+      ? '⌘'
+      : l10n.keyCtrl;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -175,7 +182,18 @@ class _KeysHelp extends StatelessWidget {
         ),
         playAlong,
       ],
-      if (screen == KeysScreen.player) playAlong,
+      if (screen == KeysScreen.player) ...[
+        playAlong,
+        // The Text view's, in its text: ⌘ on Apple's systems, Ctrl
+        // elsewhere.
+        (
+          l10n.keysTextView,
+          [
+            (['${_command(l10n)} + A'], l10n.keysSelectAll),
+            (['${_command(l10n)} + L'], l10n.keysSelectPhrase),
+          ],
+        ),
+      ],
       if (screen == KeysScreen.videoEdit)
         (
           l10n.keysPreview,

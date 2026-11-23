@@ -309,7 +309,9 @@ void main() {
     // Closed: the text and its tools have the width, Overtype first on
     // the tools' first line.
     expect(find.byKey(const Key('cam-along-sidebar')), findsNothing);
-    final fretUp = find.byTooltip('Fret up (the number under the cursor)');
+    final fretUp = find.byTooltip(
+      'Fret up (the selected notes, or the number under the cursor)',
+    );
     expect(
       tester.getRect(find.byKey(const Key('text-overtype'))).top,
       closeTo(tester.getRect(fretUp).top, 0.5),
@@ -324,7 +326,9 @@ void main() {
     final sidebar = tester.getRect(find.byKey(const Key('cam-along-sidebar')));
     expect(sidebar.width, greaterThan(100));
     final plus = tester.getRect(
-      find.byTooltip('Fret up (the number under the cursor)'),
+      find.byTooltip(
+        'Fret up (the selected notes, or the number under the cursor)',
+      ),
     );
     expect(plus.width, closeTo(40, 0.5));
     // Every tool left of the sidebar: on more lines, not past the edge.

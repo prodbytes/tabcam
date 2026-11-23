@@ -117,6 +117,7 @@ extension _CamRows on _StudioViewState {
         bar: _AddAlong(
           label: l10n.videoEditMainAdd,
           onTap: () {
+            _sidebarTab.value = StudioTab.playAlong;
             along.show();
             _keys.requestFocus();
           },

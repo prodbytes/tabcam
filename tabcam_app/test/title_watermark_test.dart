@@ -17,6 +17,7 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/download_settings.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/premium_card.dart';
@@ -526,7 +527,11 @@ void main() {
         return true;
       };
     });
-    tearDown(() => VideoEditor.instance = null);
+    tearDown(() {
+      VideoEditor.instance = null;
+      // A test that hid the sidebar leaves it hidden for the session.
+      DownloadSettingsState.instance.reset();
+    });
 
     Future<void> frames(WidgetTester tester) async {
       for (var i = 0; i < 20; i++) {
@@ -720,14 +725,43 @@ void main() {
       expect(platform.seeksOf[song], seeks);
     });
 
-    testWidgets('on a phone, ✎ or a tap on the title in the preview opens '
-        'its fields in place of the chips; Done closes them', (tester) async {
+    testWidgets('on a phone, a tap on the title in the preview shows the '
+        'sidebar on its Download tab, at the title\'s fields, the first '
+        'focused; ✕ hides it; elsewhere, the picture plays', (tester) async {
       sized(tester, const Size(400, 900));
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
+      // A phone opens the editor with the sidebar hidden.
       expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
+      expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
+      expect(previewTitle(tester)!.fadeIn, TitleLayout.fade);
 
+      // A tap on the title, at the preview's top left.
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      final short = box.shortestSide;
+      final played = [...platform.playing];
+      await tester.tapAt(box.topLeft + Offset(short * 0.05, short * 0.05));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
+      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
+      expect(platform.playing, played, reason: 'not played');
+      // Its first field focused: the preview shows it as it ends up.
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('video-edit-title-1')))
+            .focusNode!
+            .hasFocus,
+        isTrue,
+      );
+      expect(previewTitle(tester)!.fadeIn, Duration.zero);
+
+      // ✎ shows it too, once hidden.
+      await tester.tap(find.byKey(const Key('sidebar-close')));
+      await settle(tester);
+      expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await settle(tester);
       await tester.ensureVisible(
         find.byKey(const Key('video-edit-title-edit')),
       );
@@ -735,42 +769,10 @@ void main() {
       await tester.tap(find.byKey(const Key('video-edit-title-edit')));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
-      expect(previewTitle(tester)!.fadeIn, Duration.zero);
-      await tester.ensureVisible(
-        find.byKey(const Key('video-edit-title-done')),
-      );
-      await settle(tester);
-      await tester.tap(find.byKey(const Key('video-edit-title-done')));
-      await settle(tester);
-      expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
-      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
-      expect(previewTitle(tester)!.fadeIn, TitleLayout.fade);
 
-      // Back at the top, where the preview is (the master pushes the
-      // fields' Done down the list).
-      Future<void> top() async {
-        await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
-        await settle(tester);
-      }
-
-      // A tap on the title, at the preview's top left.
-      await top();
-      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
-      final short = box.shortestSide;
-      final played = [...platform.playing];
-      await tester.tapAt(box.topLeft + Offset(short * 0.05, short * 0.05));
+      // Hidden, elsewhere on the picture, it plays.
+      await tester.tap(find.byKey(const Key('sidebar-close')));
       await settle(tester);
-      expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
-      expect(platform.playing, played, reason: 'not played');
-      // Elsewhere, it plays.
-      await tester.ensureVisible(
-        find.byKey(const Key('video-edit-title-done')),
-      );
-      await settle(tester);
-      await tester.tap(find.byKey(const Key('video-edit-title-done')));
-      await settle(tester);
-      await top();
       await tester.tapAt(box.bottomRight - const Offset(4, 4));
       await settle(tester);
       expect(platform.playing, isNotEmpty);
@@ -988,16 +990,16 @@ void main() {
         final (library, id) = await capture(tester, take: true);
         await tester.pumpWidget(editScreen(library, id));
         await settle(tester);
-        expect(find.byKey(const Key('video-edit-watermark')), findsOneWidget);
-        if (size.width < 840) {
-          await tester.ensureVisible(
-            find.byKey(const Key('video-edit-title-edit')),
-          );
-          // Scrolled to (it's under the cut's steps, further down now).
-          await tester.pump();
-          await tester.tap(find.byKey(const Key('video-edit-title-edit')));
+        // A phone shows the sidebar once asked.
+        if (find.byKey(const Key('video-edit-side')).evaluate().isEmpty) {
+          await tester.tap(find.byKey(const Key('video-edit-settings')));
           await settle(tester);
         }
+        expect(find.byKey(const Key('video-edit-watermark')), findsOneWidget);
+        await tester.ensureVisible(
+          find.byKey(const Key('video-edit-title-capture')),
+        );
+        await settle(tester);
         expect(find.byKey(const Key('video-edit-title-1')), findsOneWidget);
         expect(
           find.byKey(const Key('video-edit-title-capture')),

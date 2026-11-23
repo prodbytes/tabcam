@@ -2597,8 +2597,9 @@ void main() {
         expect(control.center.dy, closeTo(bar.center.dy, 1), reason: lane);
         expect(bar.height, greaterThanOrEqualTo(44), reason: lane);
       }
-      // Both lanes' levels, and the master's.
-      expect(find.text('100%'), findsNWidgets(3));
+      // Both lanes' levels, and the master's (on a phone, in the sidebar
+      // once it's shown).
+      expect(find.text('100%'), findsNWidgets(size.width < 600 ? 2 : 3));
       expect(tester.takeException(), isNull);
     });
   }

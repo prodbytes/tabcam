@@ -158,9 +158,10 @@ void main() {
 
   final settings = find.byKey(const Key('video-edit-settings-panel'));
   final button = find.byKey(const Key('video-edit-settings'));
-  final close = find.byKey(const Key('video-edit-settings-close'));
+  final close = find.byKey(const Key('sidebar-close'));
   final split = find.byKey(const Key('video-edit-settings-split'));
   final preview = find.byKey(const Key('video-edit-preview'));
+  final side = find.byKey(const Key('video-edit-side'));
 
   /// The viewer's box: the black around the picture, as large as it gets.
   Rect viewer(WidgetTester tester) => tester.getRect(
@@ -180,28 +181,41 @@ void main() {
     return shown.top >= list.top - 0.5 && shown.top < list.bottom;
   }
 
-  testWidgets('on a phone, they show under the viewer the first time; the '
-      'tune button hides them, the viewer taking the room, and shows them '
-      'again; their ✕ hides them too', (tester) async {
+  testWidgets('on a phone, the sidebar is hidden as the editor opens, the '
+      'editor having the width; the Download settings button shows it, its '
+      'Download tab alone, at the right, the editor cut at its edge; '
+      'pressed again, or its ✕, hides it', (tester) async {
     await open(tester, const Size(390, 844));
+    expect(settings, findsNothing);
+    expect(side, findsNothing);
+    expect(selected(tester), isFalse);
+    expect(tester.widget<IconButton>(button).tooltip, 'Download settings');
+    final alone = viewer(tester);
+    expect(alone.width, 390);
+
+    await tester.tap(button);
+    await frames(tester);
     expect(settings, findsOneWidget);
-    expect(find.byKey(const Key('video-edit-inspector')), findsOneWidget);
-    expect(find.byKey(const Key('video-edit-side')), findsNothing);
-    expect(split, findsNothing);
     expect(selected(tester), isTrue);
     expect(
       tester.widget<IconButton>(button).tooltip,
       'Hide the download settings',
     );
+    // Its tabs: Download alone (nothing to play along with here), its
+    // name a tooltip in a sidebar this narrow.
+    expect(find.byKey(const Key('sidebar-tab-download')), findsOneWidget);
+    expect(find.byKey(const Key('sidebar-tab-playAlong')), findsNothing);
     expect(
-      find.descendant(of: settings, matching: find.text('Download settings')),
+      find.descendant(of: settings, matching: find.byTooltip('Download')),
       findsOneWidget,
     );
-    // Under the viewer, across it.
-    final before = viewer(tester);
-    final under = tester.getRect(settings);
-    expect(under.top, closeTo(before.bottom, 0.5));
-    expect(under.width, 390);
+    // At the right, at its least; the editor laid out as wide as a small
+    // phone, cut at its edge, not squeezed.
+    final sidebar = tester.getRect(settings);
+    expect(sidebar.right, 390);
+    expect(sidebar.width, DownloadSidebarBeside.minWidth);
+    expect(tester.getRect(split).right, sidebar.left);
+    expect(viewer(tester).width, 360);
     // Its content: the master, On the video.
     for (final key in ['video-edit-master', 'video-edit-on-video']) {
       expect(
@@ -210,25 +224,20 @@ void main() {
         reason: key,
       );
     }
+    expect(tester.takeException(), isNull);
 
     await tester.tap(button);
     await frames(tester);
     expect(settings, findsNothing);
     expect(find.byKey(const Key('video-edit-master')), findsNothing);
     expect(selected(tester), isFalse);
-    expect(tester.widget<IconButton>(button).tooltip, 'Download settings');
-    final alone = viewer(tester);
-    expect(alone.top, before.top);
-    expect(alone.height, closeTo(before.height + under.height, 0.5));
+    expect(viewer(tester), alone);
     // The transport and the lanes stay where they were.
     expect(find.byKey(const Key('video-edit-take-bar')), findsOneWidget);
-    expect(tester.takeException(), isNull);
 
     await tester.tap(button);
     await frames(tester);
     expect(settings, findsOneWidget);
-    expect(viewer(tester), before);
-
     await tester.tap(close);
     await frames(tester);
     expect(settings, findsNothing);
@@ -237,15 +246,21 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('on a wide screen they\'re beside the viewer; hidden, the '
-      'picture grows into their room', (tester) async {
+  testWidgets('on a wide screen the sidebar is beside the editor, on its '
+      'Download tab, as it opens; hidden, the picture grows into its room', (
+    tester,
+  ) async {
     await open(tester, const Size(900, 1600));
-    expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
-    expect(find.byKey(const Key('video-edit-inspector')), findsNothing);
-    final side = tester.getRect(settings);
-    expect(side.width, 320);
-    expect(side.right, 900);
-    expect(tester.getRect(split).right, side.left);
+    expect(side, findsOneWidget);
+    final sidebar = tester.getRect(settings);
+    expect(sidebar.width, 360);
+    expect(sidebar.right, 900);
+    expect(tester.getRect(split).right, sidebar.left);
+    // Wide enough for the tab's name beside its icon.
+    expect(
+      find.descendant(of: settings, matching: find.text('Download')),
+      findsOneWidget,
+    );
     final picture = tester.getRect(preview);
     expect(picture.right, lessThanOrEqualTo(tester.getRect(split).left));
     for (final key in [
@@ -273,57 +288,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('their edge drags them wider and narrower, within the room; '
-      'a double tap puts them back; the width is kept with the other '
-      'sidebars\'', (tester) async {
+  testWidgets('its edge drags it wider and narrower, within the room; a '
+      'double tap puts it back; the width is the play-along sidebar\'s', (
+    tester,
+  ) async {
     await open(tester, const Size(1280, 800));
     double width() => tester.getSize(settings).width;
-    expect(width(), 320);
+    expect(width(), 360);
 
     // The drag's slop aside, it follows the edge.
     await tester.drag(split, const Offset(-120, 0));
     await frames(tester);
     final wider = width();
-    expect(wider, inInclusiveRange(410, 440));
-    expect(SidebarWidths.instance.of(SidebarWidths.downloadSettings), wider);
+    expect(wider, inInclusiveRange(450, 480));
+    expect(SidebarWidths.instance.of(SidebarWidths.playAlong), wider);
     await tester.drag(split, const Offset(220, 0));
     await frames(tester);
     expect(width(), inInclusiveRange(wider - 220, wider - 190));
 
-    // Never narrower than the least, nor so wide the viewer goes; nothing
+    // Never narrower than the least, nor so wide the editor goes; nothing
     // overflows at either end.
     await tester.drag(split, const Offset(600, 0));
     await frames(tester);
-    expect(width(), DownloadSettingsBeside.minWidth);
+    expect(width(), DownloadSidebarBeside.minWidth);
     expect(tester.takeException(), isNull);
     await tester.drag(split, const Offset(-2000, 0));
     await frames(tester);
     expect(
       width(),
-      1280 - DownloadSettingsBeside.minViewer - SplitHandle.thickness,
+      1280 - DownloadSidebarBeside.minChild - SplitHandle.thickness,
     );
     expect(tester.takeException(), isNull);
 
-    // Hidden and shown again, they keep their width.
+    // Hidden and shown again, it keeps its width.
     await tester.tap(button);
     await frames(tester);
     await tester.tap(button);
     await frames(tester);
     expect(
       width(),
-      1280 - DownloadSettingsBeside.minViewer - SplitHandle.thickness,
+      1280 - DownloadSidebarBeside.minChild - SplitHandle.thickness,
     );
 
     await tester.tap(split);
     await tester.pump(const Duration(milliseconds: 50));
     await tester.tap(split);
     await frames(tester);
-    expect(width(), 320);
-    expect(SidebarWidths.instance.of(SidebarWidths.downloadSettings), isNull);
+    expect(width(), 360);
+    expect(SidebarWidths.instance.of(SidebarWidths.playAlong), isNull);
   });
 
   for (final locale in const [Locale('en'), Locale('es'), Locale('pt')]) {
-    testWidgets('dragged to their least at the largest text, all of them '
+    testWidgets('dragged to its least at the largest text, all of them '
         'fit: the Master, On the video, the fades, the tab\'s style and the '
         'song\'s details: ${locale.languageCode}', (tester) async {
       sized(tester, const Size(1280, 800), text: 2);
@@ -333,7 +349,7 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.drag(split, const Offset(600, 0));
       await frames(tester);
-      expect(tester.getSize(settings).width, DownloadSettingsBeside.minWidth);
+      expect(tester.getSize(settings).width, DownloadSidebarBeside.minWidth);
       expect(tester.takeException(), isNull);
       // Down the whole list, each part laid out in turn.
       final list = tester
@@ -364,7 +380,7 @@ void main() {
     });
   }
 
-  testWidgets('hidden, they stay hidden in the next editor of the session, '
+  testWidgets('hidden, it stays hidden in the next editor of the session, '
       'until shown again', (tester) async {
     final (library, id) = await open(tester, const Size(1280, 800));
     await tester.tap(button);
@@ -387,7 +403,27 @@ void main() {
     expect(selected(tester), isTrue);
   });
 
-  group('hidden, a tap on the picture shows them at its field', () {
+  testWidgets('in a short window (a phone on its side) it has no tabs at '
+      'its top, the Download settings button showing and hiding it', (
+    tester,
+  ) async {
+    await open(tester, const Size(844, 390));
+    expect(settings, findsOneWidget);
+    expect(find.byKey(const Key('sidebar-tabs')), findsNothing);
+    expect(
+      find.descendant(
+        of: settings,
+        matching: find.byKey(const Key('video-edit-master')),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(button);
+    await frames(tester);
+    expect(settings, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  group('hidden, a tap on the picture shows it at its field', () {
     /// A point on the title, at the picture's top left.
     Offset onTitle(WidgetTester tester) {
       final box = tester.getRect(preview);
@@ -400,7 +436,7 @@ void main() {
         tester.getRect(preview).bottomCenter - const Offset(0, 2);
 
     Future<void> hide(WidgetTester tester) async {
-      if (!DownloadSettingsState.instance.open) return;
+      if (settings.evaluate().isEmpty) return;
       await tester.tap(button);
       await frames(tester);
       expect(settings, findsNothing);
@@ -415,15 +451,6 @@ void main() {
       expect(settings, findsOneWidget);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
       expect(inView(tester, 'video-edit-title-fields'), isTrue);
-      // Done is under the fields, below the list's edge on a phone.
-      final done = find.byKey(const Key('video-edit-title-done'));
-      await tester.ensureVisible(done);
-      await frames(tester);
-      await tester.tap(done);
-      await settle(tester);
-      expect(find.byKey(const Key('video-edit-title-fields')), findsNothing);
-      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
-      expect(settings, findsOneWidget);
 
       await hide(tester);
       await tester.longPressAt(onBand(tester));
@@ -431,13 +458,6 @@ void main() {
       expect(settings, findsOneWidget);
       expect(find.byKey(const Key('video-edit-tab-style')), findsOneWidget);
       expect(inView(tester, 'video-edit-tab-style'), isTrue);
-
-      // Hidden, the fields a chip opened close, as Done does.
-      await hide(tester);
-      await tester.tap(button);
-      await frames(tester);
-      expect(find.byKey(const Key('video-edit-tab-style')), findsNothing);
-      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
 
       await hide(tester);
       // At the start, fading in: the badge.
@@ -480,7 +500,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('showing, a tap on the band neither scrolls them nor opens '
+    testWidgets('showing, a tap on the band neither scrolls it nor opens '
         'anything', (tester) async {
       await open(tester, const Size(1280, 800));
       final list = find
@@ -498,7 +518,7 @@ void main() {
     });
   });
 
-  testWidgets('during a Download they take no taps; the dictionary and the '
+  testWidgets('during a Download it takes no taps; the dictionary and the '
       'metronome still do', (tester) async {
     sized(tester, const Size(1280, 800));
     final (library, id) = await capture(tester);
@@ -537,18 +557,15 @@ void main() {
   });
 
   testWidgets('the dictionary\'s and the metronome\'s sidebars open beside '
-      'the editor; with the dictionary there, a 900-wide window has the '
-      'settings under the viewer', (tester) async {
-    await open(tester, const Size(900, 1600));
-    expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+      'the editor and its sidebar, the settings staying in it', (tester) async {
+    await open(tester, const Size(1280, 1000));
+    expect(side, findsOneWidget);
     await tester.tap(find.byKey(const Key('dictionary')));
     await frames(tester);
     final dictionary = find.byKey(const Key('dictionary-sidebar'));
     expect(dictionary, findsOneWidget);
-    expect(tester.getRect(dictionary).right, 900);
-    // The editor's room is narrower than a wide one now.
-    expect(find.byKey(const Key('video-edit-side')), findsNothing);
-    expect(find.byKey(const Key('video-edit-inspector')), findsOneWidget);
+    expect(tester.getRect(dictionary).right, 1280);
+    expect(side, findsOneWidget);
     expect(
       tester.getRect(settings).right,
       lessThanOrEqualTo(tester.getRect(dictionary).left),
@@ -565,7 +582,7 @@ void main() {
     // Closed, the editor has its keys back: the space bar plays.
     await tester.tap(find.byKey(const Key('dictionary-close')));
     await frames(tester);
-    expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
+    expect(side, findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
     await settle(tester);
     expect(platform.playing, isNotEmpty);
@@ -576,14 +593,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a window 560 to 839 wide is wide only when it\'s short, '
-      'the on-screen keyboard aside: typing the title, it stays as it '
-      'was', (tester) async {
-    await open(tester, const Size(700, 800));
-    final inspector = find.byKey(const Key('video-edit-inspector'));
-    final side = find.byKey(const Key('video-edit-side'));
-    expect(inspector, findsOneWidget);
-    // The title tapped on the picture: its fields in place of the chips.
+  testWidgets('typing the title, the on-screen keyboard up, the sidebar '
+      'stays as it was', (tester) async {
+    await open(tester, const Size(900, 800));
+    expect(side, findsOneWidget);
+    // The title tapped on the picture: its fields in view, the first one
+    // focused.
     final box = tester.getRect(preview);
     await tester.tapAt(
       box.topLeft + Offset(box.shortestSide * 0.05, box.shortestSide * 0.05),
@@ -591,27 +606,18 @@ void main() {
     await settle(tester);
     final fields = find.byKey(const Key('video-edit-title-fields'));
     expect(fields, findsOneWidget);
+    final before = tester.getRect(settings);
     // The keyboard up: the body is 344 high, the window still 800.
     tester.view.viewInsets = const FakeViewPadding(bottom: 400);
     await frames(tester);
-    expect(inspector, findsOneWidget);
-    expect(side, findsNothing);
+    expect(side, findsOneWidget);
     expect(fields, findsOneWidget);
+    expect(tester.getRect(settings).width, before.width);
     expect(tester.takeException(), isNull);
     tester.view.viewInsets = FakeViewPadding.zero;
     await frames(tester);
-    expect(inspector, findsOneWidget);
-    expect(fields, findsOneWidget);
-
-    // A window 520 high (its body 464) isn't short; one 440 high is.
-    tester.view.physicalSize = const Size(700, 520);
-    await frames(tester);
-    expect(inspector, findsOneWidget);
-    expect(side, findsNothing);
-    tester.view.physicalSize = const Size(700, 440);
-    await frames(tester);
     expect(side, findsOneWidget);
-    expect(inspector, findsNothing);
+    expect(fields, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -693,7 +699,7 @@ void main() {
       );
     }
     expect(find.byKey(const Key('video-edit-more')), findsNothing);
-    // 800 × 600: not wide, so the settings are under the viewer.
-    expect(find.byKey(const Key('video-edit-inspector')), findsOneWidget);
+    // 800 × 600: room for the sidebar beside the editor, from the start.
+    expect(find.byKey(const Key('video-edit-side')), findsOneWidget);
   });
 }
