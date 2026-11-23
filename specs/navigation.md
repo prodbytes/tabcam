@@ -61,7 +61,9 @@ a progress line while a saved session is restored at launch, and
 **Privacy policy**. No tabs, no Capture, no Profile: tabs.cam's features
 are for signed-in users, except a capture's link with its key: it opens
 that capture, read only, instead of the welcome, with **Sign in** to go to
-the welcome ([opening a link](sharing.md#opening-a-link)). Signing in opens
+the welcome ([opening a link](sharing.md#opening-a-link)), and without
+the tools (Dictionary, Metronome, the keyboard shortcuts' help), which
+are signed-in users' too. Signing in opens
 Home (where a capture's link, opened signed out, then opens); signing out
 goes back to the welcome.
 

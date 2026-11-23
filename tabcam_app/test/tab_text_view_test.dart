@@ -217,7 +217,9 @@ void main() {
     // before them.
     expect(tester.widget(overtype), isA<IconButton>());
     final fretDown = find.ancestor(
-      of: find.byTooltip('Fret down (the number under the cursor)'),
+      of: find.byTooltip(
+        'Fret down (the selected notes, or the number under the cursor)',
+      ),
       matching: find.byType(IconButton),
     );
     expect(tester.getSize(overtype), tester.getSize(fretDown));

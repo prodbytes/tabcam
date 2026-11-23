@@ -197,12 +197,18 @@ coming back to it. A failed look (offline) keeps what shows; a link gone
 for good (a wrong key, the capture deleted) stops looking. It shows
 "Opening the capture…" meanwhile, then the event screen, read only, with
 a banner "Opened by its link · Read only": no Rename, Add, Reorder,
-editing or Clone (it isn't in the user's library);
+editing or Clone (it isn't in the user's library), and on its files'
+screens no Rotate, Edit, Rename or Delete (only the owner sees them);
 Share copies the same link. Signed out, the app bar ends with the
 [one-click sign-in](navigation.md#the-one-click-sign-in-top-right) (on
 the capture, on a file opened over it, and while it opens or fails),
 which signs in right there; and the banner (and the screen when it
 fails) has **Sign in**, which goes to the welcome, with every way in.
+Signed out, neither the capture nor a file opened from it has the
+tools: no Dictionary, Metronome or keyboard shortcuts' help (their
+buttons, the phone's More menu items and the H key), nor their sidebars,
+even left open app-wide (the metronome stops there, as on a screen
+without it); signed in, it has them.
 Either way the link stays waiting, so once signed in Home opens it (the
 user's, shared with them, or by its link again). A wrong key, a deleted capture, one not in the
 cloud yet, or no connection: "This capture can't be opened…", with **Try

@@ -12,6 +12,7 @@ import 'package:tabcam_app/l10n/app_localizations.dart';
 import 'package:tabcam_app/library/capture_event.dart';
 import 'package:tabcam_app/library/event_store_memory.dart';
 import 'package:tabcam_app/library/library.dart';
+import 'package:tabcam_app/screens/download_settings.dart';
 import 'package:tabcam_app/screens/edited_playback.dart';
 import 'package:tabcam_app/screens/file_screen.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
@@ -299,7 +300,11 @@ void main() {
         return true;
       };
     });
-    tearDown(() => VideoEditor.instance = null);
+    tearDown(() {
+      VideoEditor.instance = null;
+      // A test that hid the sidebar leaves it hidden for the session.
+      DownloadSettingsState.instance.reset();
+    });
 
     Future<void> frames(WidgetTester tester) async {
       for (var i = 0; i < 20; i++) {
@@ -364,13 +369,6 @@ void main() {
         pickFile: () async => null,
       ),
     );
-
-    /// Scrolls to [key]'s widget, and taps it.
-    Future<void> tapVisible(WidgetTester tester, String key) async {
-      await tester.ensureVisible(find.byKey(Key(key)));
-      await settle(tester);
-      await tester.tap(find.byKey(Key(key)));
-    }
 
     InputChip chip(WidgetTester tester) =>
         tester.widget<InputChip>(find.byKey(const Key('video-edit-fades')));
@@ -443,7 +441,6 @@ void main() {
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
       expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-fades-edit')), findsNothing);
       // A 4 s kept part: at most 2 s each, though 3 s is kept.
       expect(slider(tester, 'in').max, 2);
       expect(shown(tester, 'in'), '2.0 s');
@@ -498,55 +495,53 @@ void main() {
       expect(slider(tester, 'out').value, 3);
     });
 
-    testWidgets('on a phone, the chip\'s button opens the sliders in place '
-        'of the chips (closing the title\'s fields); Done closes them; they '
-        'fit at the largest text size', (tester) async {
+    testWidgets('on a phone, the sidebar\'s Download tab, once shown, has '
+        'the sliders under the chips; a tap on the title in the preview '
+        'brings its fields into view; they fit at the largest text size', (
+      tester,
+    ) async {
       sized(tester, const Size(400, 900));
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
+      // A phone opens the editor with the sidebar hidden.
       expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
+      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
 
-      await tapVisible(tester, 'video-edit-fades-edit');
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await settle(tester);
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-fade-fields')),
+      );
       await settle(tester);
       expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-on-video')), findsNothing);
+      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
       slider(tester, 'out').onChanged!(0);
       await settle(tester);
       expect(kept(library, id)!.fadeOut, Duration.zero);
       expect(kept(library, id)!.fadeIn, s(3));
-      expect(tester.takeException(), isNull);
-
-      await tapVisible(tester, 'video-edit-fades-done');
-      await settle(tester);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
-      expect(find.byKey(const Key('video-edit-on-video')), findsOneWidget);
       // Still fading in: the chip's on.
       expect(chip(tester).selected, isTrue);
+      expect(tester.takeException(), isNull);
 
-      // Open again, a tap on the title in the preview opens its fields in
-      // their place.
-      await tapVisible(tester, 'video-edit-fades-edit');
+      // Hidden, a tap on the title in the preview shows it again, at the
+      // title's fields.
+      await tester.tap(find.byKey(const Key('sidebar-close')));
       await settle(tester);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsOneWidget);
-      await tester.ensureVisible(find.byKey(const Key('video-edit-preview')));
-      await settle(tester);
-      final box = tester.getRect(find.byKey(const Key('video-edit-preview')));
+      expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
       await tester.tapAt(
         box.topLeft + Offset(box.shortestSide * 0.05, box.shortestSide * 0.05),
       );
       await settle(tester);
       expect(find.byKey(const Key('video-edit-title-fields')), findsOneWidget);
-      expect(find.byKey(const Key('video-edit-fade-fields')), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the master: right above the fades\' sliders on a wide '
-        'screen, above On the video on a phone; 0–200%, kept and '
-        'downloaded through both lanes, the preview at most 100%; Mute and '
-        'Reset', (tester) async {
+    testWidgets('the master: right above the fades\' sliders, in the '
+        'sidebar\'s Download tab; 0–200%, kept and downloaded through both '
+        'lanes, the preview at most 100%; Mute and Reset', (tester) async {
       sized(tester, const Size(1280, 1000));
       final (library, id) = await capture(tester);
       await tester.pumpWidget(editScreen(library, id));
@@ -596,18 +591,18 @@ void main() {
       expect(kept(library, id), isNull);
       expect(tester.widget<Text>(level).data, '100%');
 
-      // On a phone: above On the video (where the Fades chip is), and
-      // above the fades' sliders when they open in its place.
+      // On a phone, the same, once the sidebar shows.
       sized(tester, const Size(400, 900));
       await tester.pumpWidget(const SizedBox());
       await tester.pumpWidget(editScreen(library, id));
       await settle(tester);
-      final onVideo = find.byKey(const Key('video-edit-on-video'));
-      expect(
-        tester.getRect(master).bottom,
-        lessThanOrEqualTo(tester.getRect(onVideo).top),
+      expect(master, findsNothing);
+      await tester.tap(find.byKey(const Key('video-edit-settings')));
+      await settle(tester);
+      expect(find.descendant(of: side, matching: master), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const Key('video-edit-fade-fields')),
       );
-      await tapVisible(tester, 'video-edit-fades-edit');
       await settle(tester);
       expect(
         tester.getRect(master).bottom,
