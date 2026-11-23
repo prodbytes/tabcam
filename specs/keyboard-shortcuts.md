@@ -4,7 +4,9 @@
 does: "Rec (.)", "Redo (.): …", "New take (/ or ,): …", "Previous
 phrase (↑)", "Next phrase (↓)", "Back to the start (0)", "Back 10
 seconds (←)", "Play (space)", "Forward 10 seconds (→)", "To the start
-(Home)", "To the end (End)", "Keyboard shortcuts (H)". A key that's the button's only some of the time (the space bar
+(Home)", "To the end (End)", the Text view's "Select all (⌘A)" and
+"Select the phrase; again, the next one too (⌘L)", "Keyboard shortcuts
+(H)". A key that's the button's only some of the time (the space bar
 plays Cam's main-row song only while the sidebar shows) is named only
 then. Buttons with no key (Tab, Auto-pass, the microphone's menu,
 Stop's own beyond the take keys) say what they do alone.

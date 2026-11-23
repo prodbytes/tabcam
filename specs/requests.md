@@ -5206,7 +5206,7 @@ spec.
    Not yet tried on a phone. See [Cam](cam.md#new-take-key) and
    [keyboard shortcuts](keyboard-shortcuts.md).
 
-10. **"In the cam view (record / editor) also have button for down and
+11. **"In the cam view (record / editor) also have button for down and
    up (pass phrase up and down), always tooltip the keyboard shortcut
    on all buttons."** The arrows beside Cam's phrase, which pass it, are
    now **↑** and **↓** (they were ‹ and ›), as the keys that pass it,
