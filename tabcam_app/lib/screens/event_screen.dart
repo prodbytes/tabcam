@@ -18,6 +18,7 @@ import '../import/tab_page_import.dart';
 import '../l10n/language.dart';
 import '../library/library.dart';
 import '../library/capture_event.dart';
+import '../library/dictionary_pin.dart';
 import '../metronome/metronome.dart';
 import '../recognition/auto_reader.dart';
 import '../recognition/file_dividers.dart';
@@ -124,7 +125,8 @@ class EventScreen extends StatefulWidget {
   State<EventScreen> createState() => _EventScreenState();
 }
 
-class _EventScreenState extends State<EventScreen> implements LinkAdder {
+class _EventScreenState extends State<EventScreen>
+    implements LinkAdder, PinKeeper {
   final _list = ScrollController();
   bool _busy = false;
 
@@ -143,6 +145,9 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
     if (event != null && !event.readOnly && !widget.byLink) {
       DictionaryState.instance.attachLinker(this);
     }
+    // What's pinned in the dictionary is the capture's, and shows at its
+    // end while the capture is open (read only too: it can't change).
+    DictionaryState.instance.attachKeeper(this);
     // A reload: the file the user had open, over the list again.
     final file = event?.allPages.where((p) => p.id == widget.initialFile);
     if (file?.firstOrNull case final page?) {
@@ -264,6 +269,7 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
   @override
   void dispose() {
     DictionaryState.instance.detachLinker(this);
+    DictionaryState.instance.detachKeeper(this);
     _stopReopenCam?.call();
     _stopFollowing();
     _list.dispose();
@@ -581,6 +587,40 @@ class _EventScreenState extends State<EventScreen> implements LinkAdder {
         replaceMessage(context, l10n.dictionaryLinkAdded);
       }
     });
+  }
+
+  /// The dictionary's pins on this capture ([CaptureEvent.pins]).
+  @override
+  List<DictionaryPin> get pins =>
+      _library.byId(widget.eventId)?.pins ?? const [];
+
+  /// Pins change the capture: not on one read only, or opened by its link.
+  @override
+  bool get canPin {
+    final event = _library.byId(widget.eventId);
+    return event != null && !event.readOnly && !widget.byLink;
+  }
+
+  @override
+  Listenable get pinsChanged => _library;
+
+  /// Pins [pin] last, or unpins it; past [DictionaryPin.max], the oldest
+  /// goes. Saved in the capture's event.json, so it syncs and is shared
+  /// with it.
+  @override
+  Future<void> togglePin(DictionaryPin pin) async {
+    final event = _library.byId(widget.eventId);
+    if (event == null || !canPin) return;
+    final pinned = event.pins.contains(pin);
+    final pins = [
+      for (final p in event.pins)
+        if (p != pin) p,
+      if (!pinned) pin,
+    ];
+    final kept = pins.length > DictionaryPin.max
+        ? pins.sublist(pins.length - DictionaryPin.max)
+        : pins;
+    await _library.update(event.copyWith(pins: List.unmodifiable(kept)));
   }
 
   /// Cam: the camera, with the tab under it, to record playing along

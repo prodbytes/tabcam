@@ -1952,6 +1952,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String dictionaryPin(String name) {
+    return 'Pin $name to this capture';
+  }
+
+  @override
+  String dictionaryUnpin(String name) {
+    return 'Unpin $name';
+  }
+
+  @override
+  String get dictionaryPinned => 'Pinned';
+
+  @override
+  String dictionaryLookUp(String name) {
+    return 'Look up $name';
+  }
+
+  @override
   String get dictionaryWriteBusy => 'The text can\'t be changed right now';
 
   @override

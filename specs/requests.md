@@ -5297,3 +5297,28 @@ spec.
    names, inside a note, right after one, low E on top, touching
    phrases); two tests that expected `03` now expect `0-3`. See
    [dictionary](dictionary.md#writing-in-the-text).
+
+6. **"In the chord dictionary, add a pin button beside the add button
+   that pins a chord or scale in the view; in that case, show in the end
+   of the dictionary sidebar the pinned chords,"** then **"remember the
+   pinned chords for each capture in a dictionary metadata file
+   (hidden),"** **"better yet, make it part of the capture metadata file
+   so that it is easier to share,"** and **"all hidden to the user, just
+   thinking on the system."** Beside each + (under every chord diagram,
+   beside a scale's name) a **pin** pins that voicing or scale to the
+   capture open, and unpins it again; it shows wherever the capture's
+   screen is open underneath, on a capture the user can change. What's
+   pinned shows at the dictionary's end under "Pinned", oldest first, as
+   diagrams and necks with their names (tapped, looked up), + and pin;
+   read only, the owner's pins show without pins. They're kept in the
+   capture's event.json (`pins`: each the dictionary's query and, for a
+   chord, the voicing's frets), so they sync, are shared with the
+   capture and kept by a clone, and no file shows them. In
+   `library/dictionary_pin.dart` (`DictionaryPin`), `capture_event.dart`
+   (`pins`), `library.dart` (the clone), `dictionary_sidebar.dart`
+   (`PinKeeper`, `DictionaryState.keeper`, `_PinButton`, `_Pinned`) and
+   `event_screen.dart` (the keeper); tested in
+   `dictionary_pins_test.dart` (the JSON and what's left out, event.json
+   and a clone, every chord and scale read back, pinning, the end
+   section, looking up, unpinning, read only, Home, the event screen).
+   See [dictionary](dictionary.md#pinned) and [library](library.md#events).

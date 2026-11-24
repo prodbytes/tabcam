@@ -310,6 +310,43 @@ user's). While Rescan reads or Fix's review shows, it says "The text
 can't be changed right now" and writes nothing
 ([`writeColumns`](../tabcam_app/lib/screens/tab_editing.dart)).
 
+<a id="pinned"></a>**Pinning (the pin)**: beside each **+**, under every
+chord diagram and beside a scale's name, a **pin** (a push pin in the
+primary colour, outlined, filled once pinned) pins that voicing or that
+scale to the capture open: its tooltip says "Pin C x32010 to this
+capture" (or the scale's name), and once pinned "Unpin C x32010"; a tap
+unpins it again. The pin is there wherever the capture's screen is open
+underneath (its files, its Text view, a file opened over it, Cam), on a
+capture the user can change, even where there's no text to write in and
+so no +; not on Home, not on a capture shared with the user (read only)
+or opened by its link.
+
+What's pinned shows at the **end of the dictionary**, after whatever was
+looked up (a chord, a scale, the pills with nothing typed, the
+searches' results), under a line and "Pinned", oldest first: each
+chord's voicing as its diagram under the chord's name, then each
+scale's neck under its name, each with its + (while there's a text to
+write in) and its pin (to unpin it). Tapping a name looks it up, as if
+typed. On a capture read only (one shared with the user) its owner's
+pins show, without pins to tap; on Home nothing pinned shows.
+
+They're **the capture's**: kept in its event.json
+([`CaptureEvent.pins`](library.md#events), no file of its own, so the
+user never sees one), each as what the dictionary looks up to show it
+again, `{"query": "C", "frets": [null, 3, 2, 0, 1, 0]}` for a chord's
+voicing (the chord's name and the voicing's frets, low E to high E) or
+`{"query": "A minor pentatonic scale"}` for a scale (its root and type in
+English, whatever the app's language). So they sync to the user's other
+devices, show to everyone the capture is shared with, and a clone keeps
+them. At most 48 (pinning one more lets the oldest go); reading
+event.json keeps only valid ones (a query of 1 to 80 characters, frets
+six of 0 to 24 or none), each once, and the dictionary leaves out one
+it can't read back
+([`DictionaryPin`](../tabcam_app/lib/library/dictionary_pin.dart),
+`PinKeeper` and `DictionaryState.keeper` in
+[dictionary_sidebar.dart](../tabcam_app/lib/dictionary/dictionary_sidebar.dart),
+kept by the event screen).
+
 Nothing typed, the field's placeholder says **"Type anything"** ("Escribe
 lo que quieras", "Digite o que quiser"), with no paragraph explaining it
 (dropped 2026-11-19), and pills to tap: **the capture's title first**, on

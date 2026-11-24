@@ -2651,6 +2651,37 @@
       }
     }
   },
+  "dictionaryPin": "Pin {name} to this capture",
+  "@dictionaryPin": {
+    "description": "Dictionary: tooltip of the pin beside a chord's voicing's + (under its diagram) or a scale's (beside its name), which keeps it at the end of the dictionary while this capture is open; name is the chord and its frets, as C x32010, or the scale's name, as A minor pentatonic",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dictionaryUnpin": "Unpin {name}",
+  "@dictionaryUnpin": {
+    "description": "Dictionary: tooltip of the pin of a chord's voicing or a scale already pinned to the capture, which unpins it; name as in dictionaryPin",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dictionaryPinned": "Pinned",
+  "@dictionaryPinned": {
+    "description": "Dictionary: heading of its last section, the chords' voicings and scales pinned to the capture open"
+  },
+  "dictionaryLookUp": "Look up {name}",
+  "@dictionaryLookUp": {
+    "description": "Dictionary: tooltip of a pinned chord's or scale's name, which looks it up (shows it at the top, as if typed); name as C or A minor pentatonic",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "dictionaryWriteBusy": "The text can't be changed right now",
   "@dictionaryWriteBusy": {
     "description": "Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix"

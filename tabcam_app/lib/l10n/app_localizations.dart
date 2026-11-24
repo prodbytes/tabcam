@@ -3280,6 +3280,30 @@ abstract class AppLocalizations {
   /// **'Write {scale} in the text'**
   String dictionaryWriteScale(String scale);
 
+  /// Dictionary: tooltip of the pin beside a chord's voicing's + (under its diagram) or a scale's (beside its name), which keeps it at the end of the dictionary while this capture is open; name is the chord and its frets, as C x32010, or the scale's name, as A minor pentatonic
+  ///
+  /// In en, this message translates to:
+  /// **'Pin {name} to this capture'**
+  String dictionaryPin(String name);
+
+  /// Dictionary: tooltip of the pin of a chord's voicing or a scale already pinned to the capture, which unpins it; name as in dictionaryPin
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin {name}'**
+  String dictionaryUnpin(String name);
+
+  /// Dictionary: heading of its last section, the chords' voicings and scales pinned to the capture open
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get dictionaryPinned;
+
+  /// Dictionary: tooltip of a pinned chord's or scale's name, which looks it up (shows it at the top, as if typed); name as C or A minor pentatonic
+  ///
+  /// In en, this message translates to:
+  /// **'Look up {name}'**
+  String dictionaryLookUp(String name);
+
   /// Dictionary: message when + is pressed while the Text view is rescanning or reviewing Fix
   ///
   /// In en, this message translates to:
