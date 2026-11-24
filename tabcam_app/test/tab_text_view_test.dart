@@ -241,10 +241,11 @@ void main() {
         )
         .properties
         .toggled;
-    expect(toggled(), isTrue);
+    // Off by default: typing inserts.
+    expect(toggled(), isFalse);
     await tester.tap(overtype);
     await tester.pump();
-    expect(toggled(), isFalse);
+    expect(toggled(), isTrue);
     // On one line with the other buttons: the tools to the left of Copy.
     final copy = find.widgetWithText(FilledButton, 'Copy');
     expect(

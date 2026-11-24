@@ -5225,3 +5225,15 @@ spec.
    and `video_edit_frame_test.dart` (Home, End). Built on the Redo and
    New take change before it. See [Cam](cam.md) and
    [video edit](video-edit.md).
+
+## 2026-11-24
+
+1. **"Make the default text edit type be overtype disabled (currently
+   enabled)."** The Text view's **Overtype** toggle now starts off, so
+   typing inserts (pushes the line right) until it's turned on; it was
+   on by default. Still not remembered: each Text view opens in insert
+   mode. In `tab_text_view.dart` (`_overtype`); tested in
+   `tab_text_view_test.dart` (off at first, on when tapped) and
+   `tab_text_keys_test.dart` (the Insert tooltip);
+   `tab_text_selection_test.dart` turns it on for typing over a block.
+   See [tab recognition](tab-recognition.md).
