@@ -125,7 +125,7 @@ with, and one shared with the user has `sharedBy` (the owner's email) and
 it has a `linkKey` ([sharing](sharing.md)), synced, and once its owner
 chooses who can open it, a `visibility` (`public`, `unlisted` or
 `private`; [who can open it](sharing.md#who-can-open-it)), synced; a
-clone has neither, and has `clonedFrom` (the ID of the capture it's a copy of), synced, and `clonedPages`, which page of the original each of its pages is (the original's page ID to the clone's; `''` for one taken before this was kept, whose page isn't known), synced. A page has an ID, a kind (**image**,
+clone has neither, and has `clonedFrom` (the ID of the capture it's a copy of), synced, and `clonedPages`, which page of the original each of its pages is (the original's page ID to the clone's; `''` for one taken before this was kept, whose page isn't known), synced. The chords' voicings and scales pinned in the [dictionary](dictionary.md#pinned) for it are its `pins` (oldest first, at most 48; each `{"query", "frets"}`), in event.json with the rest, so synced, shared with it and kept by a clone; the user never sees them as a file. A page has an ID, a kind (**image**,
 **video**, **audio**, **pdf** or **link**), its file's extension, and a
 [filter](page-filters.md) (used for images only). A video Cam recorded is
 marked `take` ([Cam](cam.md)), kept when it's renamed, edited, cloned or

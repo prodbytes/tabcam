@@ -93,7 +93,9 @@ review notes ([app stores](app-stores.md)).
   its notes and voicings as chord diagrams, a scale its notes on the
   fretboard (both worked out on the device); anything else is searched
   among tabs.cam's public captures, on YouTube and on Cifra Club. Its Rotate button makes it a panel under the screen, the
-  necks lying down. Every sidebar (the dictionary, the metronome, the
+  necks lying down. A voicing's or a scale's pin pins it to the capture
+  open (kept in its event.json, so synced and shared with it), and
+  what's pinned shows at the dictionary's end. Every sidebar (the dictionary, the metronome, the
   play-along player and the video editor's, whose tabs are Play along
   and Download) is resizable by dragging its edge, the width kept on
   the device.

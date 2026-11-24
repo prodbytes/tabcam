@@ -1993,6 +1993,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String dictionaryPin(String name) {
+    return 'Fijar $name en esta captura';
+  }
+
+  @override
+  String dictionaryUnpin(String name) {
+    return 'Desfijar $name';
+  }
+
+  @override
+  String get dictionaryPinned => 'Fijados';
+
+  @override
+  String dictionaryLookUp(String name) {
+    return 'Consultar $name';
+  }
+
+  @override
   String get dictionaryWriteBusy => 'El texto no se puede cambiar ahora';
 
   @override

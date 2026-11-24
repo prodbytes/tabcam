@@ -158,6 +158,7 @@ class Library extends ChangeNotifier {
       tabTextCorrect: event.tabTextCorrect,
       tabTextDoubts: event.tabTextDoubts,
       hideImages: event.hideImages,
+      pins: event.pins,
       phrases: {
         for (final MapEntry(:key, :value) in phrases.entries) ?ids[key]: value,
       },

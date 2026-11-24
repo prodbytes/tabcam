@@ -19,6 +19,7 @@ import 'package:flutter/scheduler.dart';
 import '../cloud/share_api.dart';
 import '../export/incoming_links.dart';
 import '../l10n/language.dart';
+import '../library/dictionary_pin.dart';
 import '../screens/link_page.dart';
 import '../screens/sidebar_widths.dart';
 import '../screens/split_handle.dart';
@@ -46,6 +47,23 @@ abstract interface class LinkAdder {
   /// Adds [url] to the capture as a link named [title], and says so (or
   /// that the capture already has it).
   Future<void> addLink(Uri url, {String? title});
+}
+
+/// The capture open on the event screen, which keeps what the user pins
+/// in the dictionary for it ([CaptureEvent.pins], in its event.json, so
+/// it syncs and is shared with it) ([DictionaryState.keeper]).
+abstract interface class PinKeeper {
+  /// What's pinned, oldest first.
+  List<DictionaryPin> get pins;
+
+  /// Whether the user can pin and unpin: not on a capture read only.
+  bool get canPin;
+
+  /// Pins [pin], or unpins it when it's pinned.
+  Future<void> togglePin(DictionaryPin pin);
+
+  /// Notifies when [pins] may have changed.
+  Listenable get pinsChanged;
 }
 
 /// Whether the dictionary's sidebar shows, and what's typed in it,
@@ -102,6 +120,27 @@ class DictionaryState extends ChangeNotifier {
     if (_linkers.length != before) _notifyLater();
   }
 
+  /// The capture whose pins show at the dictionary's end, and that its
+  /// pins pin to: the newest event screen's (one opened over another's:
+  /// the top one's), on a capture read only too (its pins show, and none
+  /// can be added). Null elsewhere (Home): nothing pinned shows, and
+  /// there are no pins.
+  PinKeeper? get keeper => _keepers.lastOrNull;
+  final List<PinKeeper> _keepers = [];
+
+  /// [keeper] keeps the pins, until it [detachKeeper]s.
+  void attachKeeper(PinKeeper keeper) {
+    if (_keepers.any((k) => identical(k, keeper))) return;
+    _keepers.add(keeper);
+    _notifyLater();
+  }
+
+  void detachKeeper(PinKeeper keeper) {
+    final before = _keepers.length;
+    _keepers.removeWhere((k) => identical(k, keeper));
+    if (_keepers.length != before) _notifyLater();
+  }
+
   /// After the frame: a view attaches and detaches as it's built and
   /// disposed, when the sidebar can't be rebuilt.
   void _notifyLater() {
@@ -134,6 +173,7 @@ class DictionaryState extends ChangeNotifier {
     _query = '';
     _writer = null;
     _linkers.clear();
+    _keepers.clear();
     notifyListeners();
   }
 }
@@ -631,46 +671,14 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
                 final room = below ? box.maxHeight - 24 : null;
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(12),
-                  child: switch (_lookup) {
-                    ChordLookup(:final chord) => _ChordResult(
-                      chord: chord,
-                      voicings: _voicings,
-                      below: below,
-                    ),
-                    ScaleLookup(:final scale) => _ScaleResult(
-                      scale: scale,
-                      below: below,
-                      room: room,
-                    ),
-                    Other() when query.trim().isEmpty => _Intro(
-                      title: widget.title,
-                      onExample: _set,
-                    ),
-                    // tabs.cam's public captures (when it finds some),
-                    // YouTube's videos, and Cifra Club's tabs under them.
-                    Other() => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_captures case final captures?
-                            when captures.isNotEmpty) ...[
-                          _PublicResult(captures: captures),
-                          const SizedBox(height: 20),
-                        ],
-                        _YouTubeResult(
-                          query: query,
-                          videos: _videos,
-                          searching: _searching,
-                          failed: _failed,
-                        ),
-                        const SizedBox(height: 20),
-                        _CifraClubResult(
-                          songs: _songs,
-                          searching: _searchingSongs,
-                          failed: _failedSongs,
-                        ),
-                      ],
-                    ),
-                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _result(query, below: below, room: room),
+                      // At the end: what's pinned to the capture open.
+                      _Pinned(below: below, room: room, onLookUp: _set),
+                    ],
+                  ),
                 );
               },
             ),
@@ -678,6 +686,50 @@ class _DictionarySidebarState extends State<DictionarySidebar> {
         ],
       ),
     );
+  }
+
+  /// What the query found: a chord, a scale, the pills to tap with
+  /// nothing typed, or the searches' results.
+  Widget _result(String query, {required bool below, double? room}) {
+    return switch (_lookup) {
+      ChordLookup(:final chord) => _ChordResult(
+        chord: chord,
+        voicings: _voicings,
+        below: below,
+      ),
+      ScaleLookup(:final scale) => _ScaleResult(
+        scale: scale,
+        below: below,
+        room: room,
+      ),
+      Other() when query.trim().isEmpty => _Intro(
+        title: widget.title,
+        onExample: _set,
+      ),
+      // tabs.cam's public captures (when it finds some),
+      // YouTube's videos, and Cifra Club's tabs under them.
+      Other() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_captures case final captures? when captures.isNotEmpty) ...[
+            _PublicResult(captures: captures),
+            const SizedBox(height: 20),
+          ],
+          _YouTubeResult(
+            query: query,
+            videos: _videos,
+            searching: _searching,
+            failed: _failed,
+          ),
+          const SizedBox(height: 20),
+          _CifraClubResult(
+            songs: _songs,
+            searching: _searchingSongs,
+            failed: _failedSongs,
+          ),
+        ],
+      ),
+    };
   }
 }
 
@@ -860,9 +912,9 @@ class _Heading extends StatelessWidget {
   /// A chord's name in words and its other symbols, under the degrees.
   final String? also;
 
-  /// Its + beside the title (a scale's), shown while there's a text to
-  /// write in.
-  final _WriteButton? write;
+  /// Beside the title (a scale's): its + and its pin, each shown while
+  /// there's a text to write in or a capture to pin to.
+  final Widget? write;
 
   @override
   Widget build(BuildContext context) {
@@ -986,11 +1038,21 @@ class _ChordResult extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ChordDiagram(chord: chord, voicing: v, lying: below),
-                      _WriteButton(
-                        key: Key('dictionary-write-${v.label}'),
-                        tooltip: l10n.dictionaryWriteChord(v.label),
-                        columns: () => [v.frets],
-                        name: chord.name,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _WriteButton(
+                            key: Key('dictionary-write-${v.label}'),
+                            tooltip: l10n.dictionaryWriteChord(v.label),
+                            columns: () => [v.frets],
+                            name: chord.name,
+                          ),
+                          _PinButton(
+                            key: Key('dictionary-pin-${v.label}'),
+                            pin: chordPin(chord, v),
+                            name: '${chord.name} ${v.label}',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1021,11 +1083,21 @@ class _ScaleResult extends StatelessWidget {
         kind: l10n.dictionaryScale,
         notes: scale.notes,
         degrees: scale.type.degrees,
-        write: _WriteButton(
-          key: const Key('dictionary-write-scale'),
-          tooltip: l10n.dictionaryWriteScale(title),
-          columns: () => scalePosition(scale),
-          name: title,
+        write: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _WriteButton(
+              key: const Key('dictionary-write-scale'),
+              tooltip: l10n.dictionaryWriteScale(title),
+              columns: () => scalePosition(scale),
+              name: title,
+            ),
+            _PinButton(
+              key: const Key('dictionary-pin-scale'),
+              pin: scalePin(scale),
+              name: title,
+            ),
+          ],
         ),
       ),
       picture: ScaleFretboard(scale: scale, lying: below, maxHeight: room),
@@ -1067,6 +1139,190 @@ class _WriteButton extends StatelessWidget {
       },
     );
   }
+}
+
+/// What pins [voicing] of [chord]: the chord's name, which the dictionary
+/// reads back, and the voicing's frets.
+DictionaryPin chordPin(Chord chord, Voicing voicing) =>
+    DictionaryPin(chord.name, List.unmodifiable(voicing.frets));
+
+/// What pins [scale]: its root and type in English, which the dictionary
+/// reads back whatever the app's language (`A minor pentatonic scale`).
+DictionaryPin scalePin(Scale scale) =>
+    DictionaryPin('${scale.root.name} ${scale.type.key} scale');
+
+/// A pin: pins [pin] to the capture open ([DictionaryState.keeper]), or
+/// unpins it, filled while it's pinned; nothing shows without a capture
+/// the user can change.
+class _PinButton extends StatelessWidget {
+  const _PinButton({super.key, required this.pin, required this.name});
+
+  final DictionaryPin pin;
+
+  /// What its tooltip calls it: `C x32010`, `A Minor pentatonic`.
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = DictionaryState.instance;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final keeper = state.keeper;
+        if (keeper == null || !keeper.canPin) return const SizedBox.shrink();
+        return ListenableBuilder(
+          listenable: keeper.pinsChanged,
+          builder: (context, _) {
+            final l10n = context.l10n;
+            final pinned = keeper.pins.contains(pin);
+            return Semantics(
+              toggled: pinned,
+              child: IconButton(
+                tooltip: pinned
+                    ? l10n.dictionaryUnpin(name)
+                    : l10n.dictionaryPin(name),
+                visualDensity: VisualDensity.compact,
+                color: Theme.of(context).colorScheme.primary,
+                isSelected: pinned,
+                icon: const Icon(Icons.push_pin_outlined),
+                selectedIcon: const Icon(Icons.push_pin),
+                onPressed: () => unawaited(keeper.togglePin(pin)),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// At the dictionary's end: what's pinned to the capture open
+/// ([DictionaryState.keeper]), oldest first, under "Pinned": a chord's
+/// voicing as its diagram, a scale as its neck, each with its name (a
+/// tap looks it up, [onLookUp]), its + (while there's a text to write
+/// in) and its pin (a tap unpins it; none on a capture read only).
+/// Nothing without a capture, or with nothing pinned; a pin the
+/// dictionary can't read back is left out.
+class _Pinned extends StatelessWidget {
+  const _Pinned({required this.below, required this.onLookUp, this.room});
+
+  final bool below;
+
+  /// In the panel, the height it leaves a scale's neck.
+  final double? room;
+  final ValueChanged<String> onLookUp;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = DictionaryState.instance;
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final keeper = state.keeper;
+        if (keeper == null) return const SizedBox.shrink();
+        return ListenableBuilder(
+          listenable: keeper.pinsChanged,
+          builder: (context, _) => _build(context, keeper.pins),
+        );
+      },
+    );
+  }
+
+  Widget _build(BuildContext context, List<DictionaryPin> pins) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final chords = <Widget>[];
+    final scales = <Widget>[];
+    for (final pin in pins) {
+      switch (Lookup.of(pin.query)) {
+        case ChordLookup(:final chord)
+            when pin.frets != null && fingersOf(pin.frets!) != null:
+          final voicing = Voicing(pin.frets!);
+          chords.add(
+            Column(
+              key: Key('dictionary-pinned-${chord.name}-${voicing.label}'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _name(context, chord.name),
+                ChordDiagram(chord: chord, voicing: voicing, lying: below),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _WriteButton(
+                      tooltip: l10n.dictionaryWriteChord(voicing.label),
+                      columns: () => [voicing.frets],
+                      name: chord.name,
+                    ),
+                    _PinButton(
+                      pin: pin,
+                      name: '${chord.name} ${voicing.label}',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        case ScaleLookup(:final scale) when pin.frets == null:
+          final title = '${scale.root.name} ${scaleTypeName(l10n, scale.type)}';
+          scales.add(
+            Column(
+              key: Key('dictionary-pinned-${pin.query}'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(child: _name(context, title, look: pin.query)),
+                    _WriteButton(
+                      tooltip: l10n.dictionaryWriteScale(title),
+                      columns: () => scalePosition(scale),
+                      name: title,
+                    ),
+                    _PinButton(pin: pin, name: title),
+                  ],
+                ),
+                ScaleFretboard(scale: scale, lying: below, maxHeight: room),
+              ],
+            ),
+          );
+        default:
+          break;
+      }
+    }
+    if (chords.isEmpty && scales.isEmpty) return const SizedBox.shrink();
+    return Column(
+      key: const Key('dictionary-pinned'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        Row(
+          children: [
+            Icon(
+              Icons.push_pin_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(l10n.dictionaryPinned, style: theme.textTheme.titleMedium),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (chords.isNotEmpty)
+          Wrap(spacing: 12, runSpacing: 12, children: chords),
+        for (final scale in scales) ...[const SizedBox(height: 12), scale],
+      ],
+    );
+  }
+
+  /// A pinned chord's or scale's [name]: tapped, it's looked up ([look],
+  /// or the name).
+  Widget _name(BuildContext context, String name, {String? look}) => TextButton(
+    onPressed: () => onLookUp(look ?? name),
+    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+    child: Tooltip(
+      message: context.l10n.dictionaryLookUp(name),
+      child: Text(name, style: Theme.of(context).textTheme.titleMedium),
+    ),
+  );
 }
 
 /// Not a chord or a scale: the videos YouTube found ([videos]), each

@@ -3,6 +3,7 @@ import 'dart:math';
 import '../capture/take_log.dart';
 import '../processing/page_filter.dart';
 import '../recognition/tab_doubts.dart';
+import 'dictionary_pin.dart';
 import 'json_extra.dart';
 import 'page_edit.dart';
 import 'phrase_times.dart';
@@ -486,6 +487,7 @@ class CaptureEvent {
     this.clonedPages = const {},
     this.trashed,
     this.deletedPages = const [],
+    this.pins = const [],
   }) : updated = updated ?? created;
 
   /// What's left of [event] once deleted: a tombstone, so the deletion
@@ -611,6 +613,13 @@ class CaptureEvent {
   /// the rest, no file of its own, so no list shows it.
   final Map<String, PhraseTimes> phrases;
 
+  /// The chords' voicings and scales the user pinned in the dictionary
+  /// for it, oldest first: shown at the end of the dictionary while the
+  /// capture is open. Kept in event.json with the rest (no file of its
+  /// own, so no list shows it), synced, shared with it and kept by a
+  /// clone.
+  final List<DictionaryPin> pins;
+
   /// The user's own contribution, on a capture shared with them.
   Contribution? get myContribution =>
       isShared ? contributions.firstOrNull : null;
@@ -694,6 +703,7 @@ class CaptureEvent {
     Map<String, String>? clonedPages,
     DateTime? Function()? trashed,
     List<EventPage>? deletedPages,
+    List<DictionaryPin>? pins,
   }) => CaptureEvent(
     id: id,
     title: title ?? this.title,
@@ -720,6 +730,7 @@ class CaptureEvent {
     clonedPages: clonedPages ?? this.clonedPages,
     trashed: trashed == null ? this.trashed : trashed(),
     deletedPages: deletedPages ?? this.deletedPages,
+    pins: pins ?? this.pins,
   );
 
   /// The event as saved: with its [owner] and [shares]; on the device
@@ -750,6 +761,7 @@ class CaptureEvent {
     if (trashed != null) 'trashed': trashed!.toUtc().toIso8601String(),
     if (deletedPages.isNotEmpty)
       'deletedPages': [for (final p in deletedPages) p.toJson()],
+    if (pins.isNotEmpty) 'pins': [for (final p in pins) p.toJson()],
     if (local && sharedBy != null) 'sharedBy': sharedBy,
     if (local && readOnly) 'readOnly': true,
     if (local && contributions.isNotEmpty)
@@ -806,6 +818,7 @@ class CaptureEvent {
         for (final p in json['deletedPages'] as List? ?? const [])
           EventPage.fromJson((p as Map).cast<String, Object?>()),
       ],
+      pins: DictionaryPin.listFromJson(json['pins']),
       clonedFrom: switch (json['clonedFrom']) {
         final String id when _id.hasMatch(id) => id,
         _ => null,
