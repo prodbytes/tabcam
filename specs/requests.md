@@ -5264,3 +5264,10 @@ spec.
    the text's columns at 100%, zoomed and scrolled sideways, staying put
    as the text scrolls down, none in Columns). See
    [tab recognition](tab-recognition.md#column-ruler).
+
+4. **"In the chord dictionary, in the label with string description
+   (x2345) make the font a little larger."** The frets written under a
+   chord diagram (`x32010`) are 1.2 times the theme's labelSmall: about
+   12 px in the dictionary (its text is 0.9 of the app's), from 9.9. In
+   `diagrams.dart` (`fretsLabelScale`); tested in `dictionary_test.dart`
+   (the frets' size). See [dictionary](dictionary.md).

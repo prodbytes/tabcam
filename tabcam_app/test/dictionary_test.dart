@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:tabcam_app/cloud/share_api.dart';
 import 'package:tabcam_app/dictionary/cifraclub_search.dart';
+import 'package:tabcam_app/dictionary/diagrams.dart' show fretsLabelScale;
 import 'package:tabcam_app/dictionary/dictionary_sidebar.dart';
 import 'package:tabcam_app/dictionary/music_theory.dart';
 import 'package:tabcam_app/dictionary/public_search.dart';
@@ -604,6 +605,25 @@ void main() {
     final query = find.byKey(const Key('dictionary-query'));
     final split = find.byKey(const Key('dictionary-split'));
     double width(WidgetTester tester) => tester.getSize(sidebar).width;
+
+    testWidgets('the frets under a chord diagram are a little larger than '
+        'the small labels', (tester) async {
+      await open(tester);
+      await tester.enterText(query, 'C');
+      await tester.pumpAndSettle();
+      final frets = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('chord-diagram')).first,
+          matching: find.text('x32010'),
+        ),
+      );
+      final small = Theme.of(
+        tester.element(find.byKey(const Key('chord-diagram')).first),
+      ).textTheme.labelSmall!.fontSize!;
+      expect(frets.style!.fontSize, closeTo(small * fretsLabelScale, 0.01));
+      // About 12 px: the dictionary's labelSmall is 11 × 0.9.
+      expect(frets.style!.fontSize, closeTo(11 * 0.9 * 1.2, 0.01));
+    });
 
     testWidgets('beside the Text view, + writes a chord or a scale in the '
         'text; elsewhere there is no +', (tester) async {
