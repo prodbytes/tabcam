@@ -89,7 +89,7 @@ void main() {
     expect(text.selection.baseOffset, 8);
 
     for (final tool in [
-      'Overtype: typing replaces characters, columns stay put',
+      'Insert: typing pushes the line right',
       'Note up a string (the selected notes, or the one under the cursor; '
           'cycles round)',
       'Note down a string (the selected notes, or the one under the '

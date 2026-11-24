@@ -38,7 +38,7 @@ import 'text_zoom.dart';
 /// again (a timer counts while it reads); and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). On the row's
 /// left, the editing tools, round and outlined: first the **Overtype**
-/// toggle (on by default), making typing replace characters instead of
+/// toggle (off by default: insert), making typing replace characters instead of
 /// pushing the line right; the **Vertical selection** toggle, a drag then
 /// selecting a block (the same columns on every line); **Select all**
 /// (⌘A) and **Select phrase** (⌘L, again the next one too); **−** and
@@ -141,7 +141,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   /// The text as last loaded or saved: what's on screen unless edited.
   String? _known;
   Timer? _saveSoon;
-  bool _overtype = true;
+  bool _overtype = false;
 
   /// Vertical selection is on: a drag (or Shift and the arrows) selects a
   /// block, the same columns on each line ([TextBlock]), drawn by the

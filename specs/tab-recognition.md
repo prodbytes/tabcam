@@ -452,9 +452,10 @@ Copy and Verified on this line, on its right, scaled down and greyed
 under the Premium card
 ([lib/screens/tab_editing.dart](../tabcam_app/lib/screens/tab_editing.dart)):
 
-- **Overtype**, first, set apart from the edits: a toggle (on by
-  default; filled while on, outlined while off; tap to switch to
-  insert), its keyboard icon's tooltip saying which mode. On, typing
+- **Overtype**, first, set apart from the edits: a toggle (off by
+  default, so typing inserts; filled while on, outlined while off; tap
+  to switch to overtype), its keyboard icon's tooltip saying which
+  mode. On, typing
   replaces the characters after the cursor on its line instead of
   pushing them right, and backspace on a line of a phrase leaves a
   dash, so the columns stay lined up. Enter still breaks the line.
