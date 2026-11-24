@@ -55,9 +55,12 @@ class ChordDiagram extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
+        // The frets, a little larger than the small labels (labelSmall,
+        // about 12 px in the dictionary rather than 9.9), to read at a
+        // glance.
         Text(
           voicing.label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          style: _fretsStyle(Theme.of(context).textTheme.labelSmall)?.copyWith(
             color: scheme.onSurfaceVariant,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
@@ -66,6 +69,15 @@ class ChordDiagram extends StatelessWidget {
     );
   }
 }
+
+/// The frets' label under a chord diagram: [small] (the theme's
+/// labelSmall) times [fretsLabelScale].
+TextStyle? _fretsStyle(TextStyle? small) =>
+    small?.copyWith(fontSize: (small.fontSize ?? 11) * fretsLabelScale);
+
+/// How much larger the frets under a chord diagram (`x32010`) are than
+/// the theme's labelSmall.
+const fretsLabelScale = 1.2;
 
 class _ChordPainter extends CustomPainter {
   const _ChordPainter({

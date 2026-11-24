@@ -92,7 +92,9 @@ search field, focused, and under it, scrolling, what was typed is:
   high E, the nut (or the starting fret, "5fr") at the top, a dot per
   fretted string (the root notes in the primary colour), ○ for an open
   string, × for one not played, a bar for a barre, each string's note
-  under it, and the frets written under the diagram (`x32010`). In the
+  under it, and the frets written under the diagram (`x32010`), a
+  little larger than the small labels (the theme's labelSmall times 1.2,
+  about 12 px in the dictionary, whose text is 0.9 of the app's). In the
   panel under the screen the same diagram **lies down**: the nut (or the
   starting fret, labelled under it) at the left, the frets going right,
   the high E at the top and the low E at the bottom, ○ and × before the
