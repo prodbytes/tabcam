@@ -5237,3 +5237,15 @@ spec.
    `tab_text_keys_test.dart` (the Insert tooltip);
    `tab_text_selection_test.dart` turns it on for typing over a block.
    See [tab recognition](tab-recognition.md).
+
+2. **"Make the icon for two column display be two column, currently
+   three," and "let it be named Columns as well."** The Text view's
+   **Two columns** toggle is now **Columns**, and its icon shows two
+   columns side by side: Material's two stacked bars (`view_agenda`,
+   outlined while off, filled while on) turned upright, in place of
+   `view_column`, which has three. Its tooltips name it: "Columns: show
+   the tab in two columns, split in half" and "Columns: back to one
+   column, to edit" (Colunas / Columnas in Portuguese and Spanish). In
+   `tab_text_view.dart` (`_columnsIcon`); tested in
+   `two_columns_test.dart` (the name, both icons, no three-column icon).
+   See [tab recognition](tab-recognition.md).

@@ -304,7 +304,7 @@ tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 view has them ([file screen](event-screen.md#file-screen)): over the
 text's bottom right, one over the other, round tonal buttons
 ([lib/screens/text_zoom.dart](../tabcam_app/lib/screens/text_zoom.dart)),
-in the editor and in Two columns alike (not in Fix's review):
+in the editor and in Columns alike (not in Fix's review):
 
 - **Drag to move** (a hand), a toggle, filled while on ("Move the tab by
   dragging it" / "Stop moving the tab"). On, a layer over the text takes
@@ -321,7 +321,7 @@ in the editor and in Two columns alike (not in Fix's review):
   does, so the line being read stays in view from its start.
 - **A pinch** (two fingers, or a trackpad's), and **Ctrl / ⌘ + the
   wheel**, zoom too, anywhere from 50% to 300%, about where they are
-  (in Two columns, sideways only in the column they're over), and with
+  (in Columns, sideways only in the column they're over), and with
   Ctrl / ⌘ held the wheel doesn't scroll the text (nor the browser zoom
   the page).
 
@@ -357,17 +357,19 @@ say nothing of how sure they are: their text has none
 Above the text, **the editing tools**, on a line of their own
 ([editing tools](#editing-tools)). **In the app bar**, right of the
 title, four buttons (one more in a build that shows Fix): labelled
-compact buttons (Two columns an icon alone, so it comes first, not
+compact buttons (Columns an icon alone, so it comes first, not
 between labelled ones), or on a screen narrower than
-900 px (a tablet held upright, a phone) icons with their tooltips (Two
-columns a column icon and Verified a check, filled and in the primary
-colour while on); narrower than 600 px the event screen's other buttons
+900 px (a tablet held upright, a phone) icons with their tooltips
+(Columns its two-column icon and Verified a check, filled and in the
+primary colour while on); narrower than 600 px the event screen's other buttons
 go in a menu too ([event screen](event-screen.md)). In this order:
 
-- **Two columns**: a toggle, a column icon alone even on a wide screen
-  (a round button, tonal while off and filled while on, so the app bar
-  keeps the title's room; tooltips "Show the tab in two columns, split
-  in half" and "Back to one column, to edit") showing the tab split in half, the first half on the left
+- **Columns**: a toggle, an icon of two columns side by side alone even
+  on a wide screen (Material's two stacked bars, `view_agenda`, turned
+  upright: its column icon has three; a round button, tonal and the
+  icon outlined while off, filled while on, so the app bar keeps the
+  title's room; tooltips "Columns: show the tab in two columns, split
+  in half" and "Columns: back to one column, to edit") showing the tab split in half, the first half on the left
   and the second on the right, side by side with a thin line between
   them, to read a long tab without scrolling down as far
   ([`splitInHalf`](../tabcam_app/lib/screens/tab_editing.dart)). The

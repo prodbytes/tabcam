@@ -42,9 +42,7 @@ void main() {
     });
   });
 
-  testWidgets('Two columns shows the tab split in half, to read', (
-    tester,
-  ) async {
+  testWidgets('Columns shows the tab split in half, to read', (tester) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -63,6 +61,21 @@ void main() {
 
     final toggle = find.byKey(const Key('text-columns'));
     expect(toggle, findsOneWidget);
+    // Named Columns, its icon two columns (not Material's three): two
+    // bars turned upright, outlined while off.
+    expect(
+      find.byTooltip('Columns: show the tab in two columns, split in half'),
+      findsOneWidget,
+    );
+    Finder icon(IconData data) => find.descendant(
+      of: toggle,
+      matching: find.descendant(
+        of: find.byType(RotatedBox),
+        matching: find.byIcon(data),
+      ),
+    );
+    expect(icon(Icons.view_agenda_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.view_column_outlined), findsNothing);
     // First, an icon alone before the labelled buttons.
     expect(
       tester.getTopLeft(toggle).dx,
@@ -72,6 +85,12 @@ void main() {
 
     await tester.tap(toggle);
     await tester.pumpAndSettle();
+    // Filled while on.
+    expect(icon(Icons.view_agenda), findsOneWidget);
+    expect(
+      find.byTooltip('Columns: back to one column, to edit'),
+      findsOneWidget,
+    );
     // No editor and no editing tools while it's on.
     expect(find.byType(TextField), findsNothing);
     expect(find.byKey(const Key('text-new-phrase')), findsNothing);
