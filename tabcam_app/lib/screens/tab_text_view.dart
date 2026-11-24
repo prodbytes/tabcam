@@ -28,7 +28,7 @@ import 'text_zoom.dart';
 /// read that ends while it shows fills it in, unless the user has started
 /// editing. Read only for an event shared read only.
 ///
-/// Above it, in one row, on the right: first **Two columns**, a toggle
+/// Above it, in one row, on the right: first **Columns**, a toggle
 /// showing the tab split in half, side by side, to read (not edit: the
 /// editing tools hide while it's on), an icon alone set before the
 /// labelled ones; **Copy**; **Fix** (off for now,
@@ -38,7 +38,7 @@ import 'text_zoom.dart';
 /// again (a timer counts while it reads); and **Verified**, a toggle marking the text checked (the event
 /// then opens on its Text view, and no read replaces it). On the row's
 /// left, the editing tools, round and outlined: first the **Overtype**
-/// toggle (on by default), making typing replace characters instead of
+/// toggle (off by default: insert), making typing replace characters instead of
 /// pushing the line right; the **Vertical selection** toggle, a drag then
 /// selecting a block (the same columns on every line); **Select all**
 /// (⌘A) and **Select phrase** (⌘L, again the next one too); **−** and
@@ -141,7 +141,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
   /// The text as last loaded or saved: what's on screen unless edited.
   String? _known;
   Timer? _saveSoon;
-  bool _overtype = true;
+  bool _overtype = false;
 
   /// Vertical selection is on: a drag (or Shift and the arrows) selects a
   /// block, the same columns on each line ([TextBlock]), drawn by the
@@ -158,7 +158,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
 
   final _focus = FocusNode(debugLabel: 'Text view');
 
-  /// Two columns is on: the text shows split in half, side by side, to
+  /// Columns is on: the text shows split in half, side by side, to
   /// read; turned off to edit.
   bool _columns = false;
 
@@ -1037,7 +1037,7 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     widget.onRescan!();
   }
 
-  /// Two columns (an icon, first, before the labelled ones), Copy, Fix
+  /// Columns (an icon, first, before the labelled ones), Copy, Fix
   /// (when shown), Rescan (when there's something to read) and Verified:
   /// labelled buttons, or icons with their tooltips when
   /// [compact]. In the text field's tap region, so a press keeps the
@@ -1128,9 +1128,10 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     ];
   }
 
-  /// Two columns, a toggle: a round icon button, tonal while off and
+  /// Columns, a toggle: a round icon button, tonal while off and
   /// filled while on, its name in the tooltip; [compact], a plain icon,
-  /// filled and in the primary colour while on, as Verified.
+  /// filled and in the primary colour while on, as Verified. Its icon is
+  /// two columns ([_columnsIcon]), as the text shows with it on.
   Widget _columnsToggle({required bool enabled, required bool compact}) {
     final l10n = context.l10n;
     final onPressed = enabled
@@ -1152,8 +1153,8 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
           isSelected: _columns,
           color: _columns ? Theme.of(context).colorScheme.primary : null,
           onPressed: onPressed,
-          icon: const Icon(Icons.view_column_outlined),
-          selectedIcon: const Icon(Icons.view_column),
+          icon: _columnsIcon(filled: false),
+          selectedIcon: _columnsIcon(filled: true),
         ),
       );
     }
@@ -1163,18 +1164,25 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
             key: const Key('text-columns'),
             tooltip: tip,
             onPressed: onPressed,
-            icon: const Icon(Icons.view_column),
+            icon: _columnsIcon(filled: true),
           )
         : IconButton.filledTonal(
             key: const Key('text-columns'),
             tooltip: tip,
             onPressed: onPressed,
-            icon: const Icon(Icons.view_column_outlined),
+            icon: _columnsIcon(filled: false),
           );
     return Semantics(toggled: _columns, child: button);
   }
 
-  /// Two columns: the text split in half ([splitInHalf]), the first half
+  /// Two columns side by side, filled or outlined: Material's two
+  /// stacked bars turned upright (its column icon has three).
+  static Widget _columnsIcon({required bool filled}) => RotatedBox(
+    quarterTurns: 1,
+    child: Icon(filled ? Icons.view_agenda : Icons.view_agenda_outlined),
+  );
+
+  /// Columns: the text split in half ([splitInHalf]), the first half
   /// on the left and the second on the right, scrolling down together;
   /// each column's long lines scroll sideways on their own. The red notes
   /// stay red. To read, not edit (the text can still be selected).

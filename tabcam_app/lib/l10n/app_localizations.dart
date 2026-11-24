@@ -1972,22 +1972,22 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get textViewCopy;
 
-  /// Toggle button splitting the Text view in two columns, the tab's first half on the left and the second on the right
+  /// Name of the Columns toggle, splitting the Text view in two columns, the tab's first half on the left and the second on the right
   ///
   /// In en, this message translates to:
-  /// **'Two columns'**
+  /// **'Columns'**
   String get textViewColumns;
 
-  /// Tooltip of the Two columns button while off
+  /// Tooltip of the Columns button while off
   ///
   /// In en, this message translates to:
-  /// **'Show the tab in two columns, split in half'**
+  /// **'Columns: show the tab in two columns, split in half'**
   String get textViewColumnsTip;
 
-  /// Tooltip of the Two columns button while on
+  /// Tooltip of the Columns button while on
   ///
   /// In en, this message translates to:
-  /// **'Back to one column, to edit'**
+  /// **'Columns: back to one column, to edit'**
   String get textViewColumnsOn;
 
   /// Text view: tooltip of the Drag to move button (a hand, at the bottom right with the zoom buttons) while off; on, a drag moves the text instead of editing or selecting it

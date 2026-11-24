@@ -5228,7 +5228,29 @@ spec.
 
 ## 2026-11-24
 
-1. **"Show columns ruler at top of text view."** The Text view's editor
+1. **"Make the default text edit type be overtype disabled (currently
+   enabled)."** The Text view's **Overtype** toggle now starts off, so
+   typing inserts (pushes the line right) until it's turned on; it was
+   on by default. Still not remembered: each Text view opens in insert
+   mode. In `tab_text_view.dart` (`_overtype`); tested in
+   `tab_text_view_test.dart` (off at first, on when tapped) and
+   `tab_text_keys_test.dart` (the Insert tooltip);
+   `tab_text_selection_test.dart` turns it on for typing over a block.
+   See [tab recognition](tab-recognition.md).
+
+2. **"Make the icon for two column display be two column, currently
+   three," and "let it be named Columns as well."** The Text view's
+   **Two columns** toggle is now **Columns**, and its icon shows two
+   columns side by side: Material's two stacked bars (`view_agenda`,
+   outlined while off, filled while on) turned upright, in place of
+   `view_column`, which has three. Its tooltips name it: "Columns: show
+   the tab in two columns, split in half" and "Columns: back to one
+   column, to edit" (Colunas / Columnas in Portuguese and Spanish). In
+   `tab_text_view.dart` (`_columnsIcon`); tested in
+   `two_columns_test.dart` (the name, both icons, no three-column icon).
+   See [tab recognition](tab-recognition.md).
+
+3. **"Show columns ruler at top of text view."** The Text view's editor
    has a **column ruler** over its text: the columns counted from 1,
    every fifth numbered (the number's last figure on its column), dots
    between (`····5···10···15`). It's in the text's font, size and
