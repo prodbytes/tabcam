@@ -5271,3 +5271,29 @@ spec.
    12 px in the dictionary (its text is 0.9 of the app's), from 9.9. In
    `diagrams.dart` (`fretsLabelScale`); tested in `dictionary_test.dart`
    (the frets' size). See [dictionary](dictionary.md).
+
+5. **"Review the function that copies a chord to the neck so it pastes
+   copies correctly regardless where the cursor is (any chord where the
+   cursor is should not matter, copy on the correct strings)."** The
+   dictionary's + (`writeColumns`) was reviewed against every cursor
+   position, and fixed where it went wrong:
+   - A cursor inside a note (between the 1 and the 2 of `12`), on any
+     line, split it (`12` became `10-2`); the chord now goes before the
+     note, which stays whole.
+   - Right after a note, the chord ran into it (`12` then `0` read
+     `120`); a dash now goes first, on every line, and the name over
+     the chord.
+   - A phrase written low E first (`E A D G B e` from the top) got each
+     fret on the wrong string; the lines' names now say which is which.
+   - Two six-line phrases touching (no blank line between) got a new
+     phrase; the cursor's phrase now takes the chord.
+   - The cursor on the line of names (or a heading) just above a phrase
+     started a new phrase; it now writes into the phrase below.
+   - Any line's name or opening bar, not just the cursor's line's, is
+     kept clear.
+   Which line of the phrase the cursor is on still doesn't matter. In
+   `tab_editing.dart` (`writeColumns`, `_phraseAt`, `_lowOnTop`); tested
+   in `tab_editing_test.dart` (every line of the phrase, the line of
+   names, inside a note, right after one, low E on top, touching
+   phrases); two tests that expected `03` now expect `0-3`. See
+   [dictionary](dictionary.md#writing-in-the-text).

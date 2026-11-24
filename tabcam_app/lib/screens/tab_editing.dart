@@ -523,21 +523,30 @@ String _columnsOn(List<List<int?>> columns, int string) => [
 
 /// The dictionary's +: writes [columns] (each a fret per string, low E to
 /// high E, null for a string not played: a chord's voicing is one, a
-/// scale one per note) into the tab. With the cursor on a six-line
-/// phrase, they go in at the cursor's column across it (high E on its
-/// first line), pushing the rest of each line right, so the columns stay
-/// lined up: a line too short to reach the column is lengthened with
-/// dashes before its closing bar, and none goes into a line's name or
-/// opening bar. Anywhere else (another line, a phrase of other than six
-/// lines, no cursor), they go in a new phrase as [newStaff]'s (at least
-/// [newStaffWidth] wide) under the cursor's line or phrase. Either way
-/// the cursor ends just after them on its line, so the next one written
-/// follows them.
+/// scale one per note) into the tab.
+///
+/// With the cursor on a six-line phrase, on any of its lines, or on the
+/// line just above it (its line of names, or a heading), they go in
+/// across the phrase, each fret on its own string wherever the cursor
+/// is ([_phraseAt]): high E on the first line, or, when the lines' names
+/// read `E A D G B e` from the top, low E there. Six-line phrases that
+/// touch (twelve string lines, no blank between) are each one. They go
+/// in at the cursor's column, pushing the rest of each line right, so the
+/// columns stay lined up; but never inside a note (a cursor in `12`, on
+/// any line, puts them before it), never run together with the note
+/// before them (a dash goes first on every line when one ends there), and
+/// never into a line's name or opening bar. A line too short to reach
+/// the column is lengthened with dashes before its closing bar. Anywhere
+/// else (another line, a phrase of other than six lines, no cursor), they
+/// go in a new phrase as [newStaff]'s (at least [newStaffWidth] wide)
+/// under the cursor's line or phrase. Either way the cursor ends just
+/// after them, on its line (on the phrase's first from the line above
+/// it), so the next one written follows them.
 ///
 /// With a [name] (the chord's or the scale's), it goes above the phrase,
-/// starting at the columns' first column ([nameAbove]); the columns are
-/// then at least as wide as the name and a space, dashes after them, so
-/// the names of chords written one after another don't run together.
+/// over the columns' first column ([nameAbove]); the columns are then at
+/// least as wide as the name and a space, dashes after them, so the
+/// names of chords written one after another don't run together.
 TextEditingValue writeColumns(
   TextEditingValue value,
   List<List<int?>> columns, {
@@ -547,41 +556,77 @@ TextEditingValue writeColumns(
   final label = name?.trim() ?? '';
   final wide = columns.isEmpty ? 0 : _columnsOn(columns, 0).length;
   final width = label.isEmpty ? wide : math.max(wide, label.length + 1);
-  // Line k of a phrase is string strings - 1 - k (high E on top).
-  String on(int k) => _columnsOn(columns, strings - 1 - k).padRight(width, '-');
   final lines = value.text.split('\n');
-  if (value.selection.isValid && value.text.isNotEmpty) {
-    final (row, column) = _rowColumn(lines, value.selection.start);
-    if (_isStringLine(lines[row])) {
-      final (first, last) = _staffAround(lines, row);
-      if (last - first + 1 == strings) {
-        final line = lines[row].trimRight();
-        final end = line.length - _closingBars(line).length;
-        final opening = _opening.firstMatch(line)?.end ?? 0;
-        final at = opening > end
-            ? line.length
-            : math.max(math.min(column, end), opening);
-        for (var k = first; k <= last; k++) {
-          final line = lines[k].trimRight();
-          final closing = _closingBars(line);
-          var body = line.substring(0, line.length - closing.length);
-          if (body.length < at) body = body.padRight(at, '-');
-          lines[k] =
-              '${body.substring(0, at)}${on(k - first)}'
-              '${body.substring(at)}$closing';
+  final phrase = value.selection.isValid && value.text.isNotEmpty
+      ? _phraseAt(lines, value.selection.start, strings)
+      : null;
+  if (phrase != null) {
+    final (:first, :row, :column) = phrase;
+    final last = first + strings - 1;
+    final lowOnTop = _lowOnTop(lines.sublist(first, last + 1));
+    // What line k of the phrase gets: its string's frets.
+    String on(int k) => _columnsOn(
+      columns,
+      lowOnTop ? k : strings - 1 - k,
+    ).padRight(width, '-');
+    // Past the end of the cursor's line (its closing bar), just before
+    // its closing bar; never in a line's name or opening bar.
+    final line = lines[row].trimRight();
+    final end = line.length - _closingBars(line).length;
+    var opening = 0;
+    for (var k = first; k <= last; k++) {
+      opening = math.max(opening, _opening.firstMatch(lines[k])?.end ?? 0);
+    }
+    var at = math.max(math.min(column, end), opening);
+    // Not inside a note on any line: before it.
+    bool digit(String line, int i) =>
+        i >= 0 && i < line.length && _digits.hasMatch(line[i]);
+    for (var moved = true; moved;) {
+      moved = false;
+      for (var k = first; k <= last; k++) {
+        while (at > opening && digit(lines[k], at - 1) && digit(lines[k], at)) {
+          at--;
+          moved = true;
         }
-        final added = label.isEmpty
-            ? 0
-            : nameAbove(lines, first, at, width, label);
-        return TextEditingValue(
-          text: lines.join('\n'),
-          selection: TextSelection.collapsed(
-            offset: _offsetOf(lines, row + added, at + width),
-          ),
-        );
       }
     }
+    // A note ending at the column on any line: a dash first, on every
+    // line, so the columns stay lined up.
+    final lead =
+        [
+          for (var k = first; k <= last; k++)
+            digit(lines[k].trimRight(), at - 1),
+        ].any((d) => d)
+        ? '-'
+        : '';
+    for (var k = first; k <= last; k++) {
+      final line = lines[k].trimRight();
+      final closing = _closingBars(line);
+      var body = line.substring(0, line.length - closing.length);
+      if (body.length < at) body = body.padRight(at, '-');
+      lines[k] =
+          '${body.substring(0, at)}$lead${on(k - first)}'
+          '${body.substring(at)}$closing';
+    }
+    // Over the chord: after the dash put first, if one was.
+    final added = label.isEmpty
+        ? 0
+        : nameAbove(
+            lines,
+            first,
+            at,
+            lead.length + width,
+            '${' ' * lead.length}$label',
+          );
+    return TextEditingValue(
+      text: lines.join('\n'),
+      selection: TextSelection.collapsed(
+        offset: _offsetOf(lines, row + added, at + lead.length + width),
+      ),
+    );
   }
+  // A new phrase: line k is string strings - 1 - k (high E on top).
+  String on(int k) => _columnsOn(columns, strings - 1 - k).padRight(width, '-');
   final room = math.max(newStaffWidth - 4, width);
   return _addStaff(
     value,
@@ -595,6 +640,57 @@ TextEditingValue writeColumns(
     row: label.isEmpty ? 0 : 1,
   );
 }
+
+final RegExp _digits = RegExp(r'[0-9]');
+
+/// The six-line phrase the dictionary's + writes into with the cursor at
+/// [offset] in [lines]: its [first] line, the line the cursor ends on
+/// ([row], one of the phrase's) and the cursor's [column]. The cursor on
+/// one of its lines, or on the line just above it (a line of names or a
+/// heading: not blank, not a string line), whose column then counts on
+/// the phrase's first line. String lines that touch, a multiple of
+/// [strings] of them, are that many phrases: the cursor's is the one it's
+/// in. Null for any other line, or a phrase of other than [strings]
+/// lines.
+({int first, int row, int column})? _phraseAt(
+  List<String> lines,
+  int offset,
+  int strings,
+) {
+  var (row, column) = _rowColumn(lines, offset);
+  if (!_isStringLine(lines[row])) {
+    final below = row + 1;
+    if (lines[row].trim().isEmpty ||
+        below >= lines.length ||
+        !_isStringLine(lines[below])) {
+      return null;
+    }
+    row = below;
+  }
+  var (first, last) = _staffAround(lines, row);
+  final count = last - first + 1;
+  if (count % strings != 0) return null;
+  first += (row - first) ~/ strings * strings;
+  return (first: first, row: row, column: column);
+}
+
+/// Whether [phrase]'s lines run low E to high E from the top: their
+/// names, where they have them, read `E A D G B E` more than the usual
+/// `e B G D A E`.
+bool _lowOnTop(List<String> phrase) {
+  const high = 'EBGDAE', low = 'EADGBE';
+  var highs = 0, lows = 0;
+  for (final (k, line) in phrase.indexed) {
+    final name = _stringName.firstMatch(line)?.group(1)?.toUpperCase();
+    if (name == null || k >= high.length) continue;
+    if (name == high[k]) highs++;
+    if (name == low[k]) lows++;
+  }
+  return lows > highs;
+}
+
+/// A string line's name, before its opening bar (`e` in `e|--0--|`).
+final RegExp _stringName = RegExp(r'^\s*([A-Ga-g])[#b]?\s*\|');
 
 /// Writes [name] above the phrase whose first line is [first], at
 /// [column], where [width] characters were just put into each of its

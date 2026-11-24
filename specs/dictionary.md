@@ -254,9 +254,11 @@ preview, a capture shared read only) there's no text to write in, and no
 +. What's written:
 
 - **A chord**: that voicing, as one column across the six strings, its
-  frets on the strings it plays and dashes on the others, the high E on
-  the phrase's first line (`x32010` is `0 1 0 2 3 -`, top to bottom),
-  then a dash.
+  frets on the strings it plays and dashes on the others, each fret on
+  its own string: the high E on the phrase's first line (`x32010` is
+  `0 1 0 2 3 -`, top to bottom), or the low E when the lines' names read
+  `E A D G B e` from the top (a tab written low string first); then a
+  dash.
 - **A scale**: one position on the neck, its notes going up one at a
   time, a column each, from the root on the low E string: five frets
   from the fret under that root (the open strings and the first four
@@ -283,17 +285,27 @@ phrase starts with its line of names, `   C` over `e|-0-`
 ([`nameAbove`](../tabcam_app/lib/screens/tab_editing.dart)).
 
 **Where**: with the text's cursor on a six-line phrase (it stays where
-it was while the dictionary's field is typed in), at the cursor's
-column across the phrase, pushing the rest of every line right so the
-columns stay lined up (a line too short to reach it is lengthened with
-dashes before its closing bar, and nothing goes into a line's name or
-opening bar). Anywhere else (a line of words, a phrase of other than six
-lines, no cursor yet), in a **new phrase** like the editing tools' New
-phrase, at least 80 characters wide, under the cursor's line or phrase
-(at the end without a cursor), its lines `e|-`, what's written, dashes,
-`|`. Either way the cursor ends just after what was written, so the next
-+ follows it: tapping chord after chord writes a progression on one
-phrase. It's an edit as any other (saved a second later, and the text the
+it was while the dictionary's field is typed in), on any of its lines
+or on the line just above it (its line of names, or a heading), at the
+cursor's column across the phrase, pushing the rest of every line right
+so the columns stay lined up. Which line the cursor is on doesn't
+change which string gets which fret. Six-line phrases that touch
+(twelve string lines with no blank between) are each a phrase: the
+cursor's takes it. What's at the cursor doesn't matter either: it never
+goes inside a note (a cursor in `12`, on its line or on another in that
+column, puts it before the `12`, which stays whole), never runs
+together with the note before it (when one ends at that column on any
+line, a dash goes first on every line, so `12` and a `0` after it read
+`12-0`, not `120`, and the name goes over the chord), and never into a
+line's name or opening bar (any line's); a line too short to reach the
+column is lengthened with dashes before its closing bar. Anywhere else
+(a line of words, a phrase of other than six lines, no cursor yet), in
+a **new phrase** like the editing tools' New phrase, at least 80
+characters wide, under the cursor's line or phrase (at the end without
+a cursor), its lines `e|-`, what's written, dashes, `|`. Either way the
+cursor ends just after what was written (on the phrase's first line
+when it was on the line above), so the next + follows it: tapping chord
+after chord writes a progression on one phrase. It's an edit as any other (saved a second later, and the text the
 user's). While Rescan reads or Fix's review shows, it says "The text
 can't be changed right now" and writes nothing
 ([`writeColumns`](../tabcam_app/lib/screens/tab_editing.dart)).

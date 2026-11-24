@@ -383,16 +383,16 @@ void main() {
       test(
         'an existing phrase with no line of names: one goes in above it',
         () {
-          final written = writeColumns(_at(six, 'e|--0'.length), const [
+          final written = writeColumns(_at(six, 'e|--0-'.length), const [
             g,
           ], name: 'G');
           final lines = written.text.split('\n');
-          expect(lines.first, '     G');
-          expect(lines[1], 'e|--03---|');
+          expect(lines.first, '      G');
+          expect(lines[1], 'e|--0-3--|');
           // The cursor still after the chord, now a line down.
           expect(
             written.selection.baseOffset,
-            '     G\n'.length + 'e|--03-'.length,
+            '      G\n'.length + 'e|--0-3-'.length,
           );
         },
       );
@@ -445,17 +445,111 @@ void main() {
 
     test('on a six-line phrase, at the cursor\'s column across it', () {
       const text = 'e|--0--|\nB|--1--|\nG|--0--|\nD|--2--|\nA|--3--|\nE|-----|';
-      // After the 0 on the first string.
-      final written = writeColumns(_at(text, 'e|--0'.length), const [g]);
+      // A dash after the 0 on the first string.
+      final written = writeColumns(_at(text, 'e|--0-'.length), const [g]);
       expect(written.text.split('\n'), [
-        'e|--03---|',
-        'B|--10---|',
-        'G|--00---|',
-        'D|--20---|',
-        'A|--32---|',
-        'E|---3---|',
+        'e|--0-3--|',
+        'B|--1-0--|',
+        'G|--0-0--|',
+        'D|--2-0--|',
+        'A|--3-2--|',
+        'E|----3--|',
       ]);
-      expect(written.selection.baseOffset, 'e|--03-'.length);
+      expect(written.selection.baseOffset, 'e|--0-3-'.length);
+    });
+
+    group('each fret on its own string, wherever the cursor is', () {
+      const phrase =
+          'e|--12--|\nB|--10--|\nG|------|\nD|------|\nA|------|\nE|------|';
+      final rows = phrase.split('\n');
+      int at(int row, int column) =>
+          rows.take(row).fold(0, (o, l) => o + l.length + 1) + column;
+      const written = [
+        'e|-0--12--|',
+        'B|-1--10--|',
+        'G|-0------|',
+        'D|-2------|',
+        'A|-3------|',
+        'E|--------|',
+      ];
+
+      test('on any line of the phrase', () {
+        for (var row = 0; row < 6; row++) {
+          final value = writeColumns(_at(phrase, at(row, 3)), const [c]);
+          expect(value.text.split('\n'), written, reason: 'line $row');
+          // After the chord, on the cursor's line (each line above it two
+          // longer).
+          expect(value.selection.baseOffset, at(row, 3 + 2) + 2 * row);
+        }
+      });
+
+      test('on the line of names just above it, the cursor then on its '
+          'first line', () {
+        const text = '   Am\n$phrase';
+        final value = writeColumns(_at(text, 3), const [c], name: 'C');
+        final lines = value.text.split('\n');
+        expect(lines.first, '   C Am');
+        expect(lines.sublist(1), [
+          'e|-0-12--|'.replaceFirst('-0-', '-0--'),
+          ...written.skip(1),
+        ]);
+        expect(value.selection.baseOffset, '   C Am\ne|-0-'.length);
+      });
+
+      test('a cursor inside a note, on any line, puts it before the note, '
+          'which stays whole', () {
+        // Between the 1 and the 2 of 12; and in that column on the G line.
+        for (final offset in [at(0, 5), at(2, 5)]) {
+          final lines = writeColumns(_at(phrase, offset), const [
+            c,
+          ]).text.split('\n');
+          expect(lines.take(2), [
+            'e|--0-12--|',
+            'B|--1-10--|',
+          ], reason: 'offset $offset');
+          expect(lines[4], 'A|--3-----|');
+        }
+      });
+
+      test('right after a note: a dash first, on every line, so it isn\'t '
+          'read as one with it', () {
+        final value = writeColumns(_at(phrase, at(0, 6)), const [c]);
+        expect(value.text.split('\n'), [
+          'e|--12-0---|',
+          'B|--10-1---|',
+          'G|-----0---|',
+          'D|-----2---|',
+          'A|-----3---|',
+          'E|---------|',
+        ]);
+        expect(value.selection.baseOffset, 'e|--12-0-'.length);
+        // Its name over the chord, not the dash.
+        final named = writeColumns(_at(phrase, at(0, 6)), const [c], name: 'C');
+        expect(named.text.split('\n').take(2), ['       C', 'e|--12-0---|']);
+      });
+
+      test('low E on top, as its lines\' names say: still each on its own', () {
+        const low =
+            'E|------|\nA|------|\nD|------|\nG|------|\nB|------|\ne|------|';
+        expect(writeColumns(_at(low, 3), const [c]).text.split('\n'), [
+          'E|--------|',
+          'A|-3------|',
+          'D|-2------|',
+          'G|-0------|',
+          'B|-1------|',
+          'e|-0------|',
+        ]);
+      });
+
+      test('two phrases that touch: the cursor\'s', () {
+        const touching = '$phrase\n$phrase';
+        final lines = writeColumns(
+          _at(touching, at(2, 3) + phrase.length + 1),
+          const [c],
+        ).text.split('\n');
+        expect(lines.take(6), rows);
+        expect(lines.skip(6), written);
+      });
     });
 
     test('a short line is lengthened with dashes before its closing bar; '
