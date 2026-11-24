@@ -300,6 +300,23 @@ it). A read that ends while the view shows fills it in, unless the user
 has started editing. Read only for an event shared read only (no editing
 tools, no Fix). Sharing is the event screen's **Share** in the app bar.
 
+<a id="column-ruler"></a>**Column ruler**: over the editor's text, a
+line numbering its columns, counted from 1: every fifth column numbered,
+the number's last figure on its column, a dot on each of the others
+(`····5···10···15···20`, [`columnRuler`](../tabcam_app/lib/screens/tab_editing.dart)).
+It's in the text's own font, size and letter spacing (the field's:
+the theme's bodyLarge under Roboto Mono) and starts at the text's left
+margin, so each figure or dot stands over its column; it runs across
+the text's whole width, a thin line under it. It scrolls sideways with
+the text and zooms with it, and stays at the top as the text scrolls
+down. The cursor's column (the character it's before, which overtype
+would replace; counted on the cursor's line) is marked, on the primary
+container colour; with a selection, none is. To look at: screen readers
+skip it, and a tap on it keeps the cursor in the text. Only in the
+editor: not in Columns, which is for reading, nor in Fix's review
+([lib/screens/tab_text_view.dart](../tabcam_app/lib/screens/tab_text_view.dart),
+`_ColumnRuler`).
+
 <a id="zoom-and-drag-to-move"></a>**Zoom and Drag to move**, as a PDF's
 view has them ([file screen](event-screen.md#file-screen)): over the
 text's bottom right, one over the other, round tonal buttons
