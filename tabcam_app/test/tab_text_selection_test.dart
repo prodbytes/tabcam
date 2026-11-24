@@ -307,6 +307,8 @@ void main() {
     );
     final text = await pump(tester);
     await clickText(tester);
+    // Overtype on (it starts off).
+    await press(tester, find.byKey(const Key('text-overtype')));
     await press(tester, find.byKey(const Key('text-vertical')));
     // As a drag leaves it.
     text.selection = const TextSelection(baseOffset: 3, extentOffset: 38);
