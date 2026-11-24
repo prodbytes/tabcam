@@ -1184,13 +1184,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textViewCopy => 'Copy';
 
   @override
-  String get textViewColumns => 'Two columns';
+  String get textViewColumns => 'Columns';
 
   @override
-  String get textViewColumnsTip => 'Show the tab in two columns, split in half';
+  String get textViewColumnsTip =>
+      'Columns: show the tab in two columns, split in half';
 
   @override
-  String get textViewColumnsOn => 'Back to one column, to edit';
+  String get textViewColumnsOn => 'Columns: back to one column, to edit';
 
   @override
   String get textViewDragTip => 'Move the tab by dragging it';

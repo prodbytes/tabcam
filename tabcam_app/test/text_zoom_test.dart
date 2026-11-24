@@ -196,7 +196,7 @@ void main() {
     expect(_editorSize(tester), closeTo(30, 0.01));
   });
 
-  testWidgets('Two columns zoom and move too', (tester) async {
+  testWidgets('Columns zoom and move too', (tester) async {
     await _open(tester);
     await tester.tap(find.byKey(const Key('text-columns')));
     await tester.pumpAndSettle();

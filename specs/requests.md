@@ -5225,3 +5225,17 @@ spec.
    and `video_edit_frame_test.dart` (Home, End). Built on the Redo and
    New take change before it. See [Cam](cam.md) and
    [video edit](video-edit.md).
+
+## 2026-11-24
+
+1. **"Make the icon for two column display be two column, currently
+   three," and "let it be named Columns as well."** The Text view's
+   **Two columns** toggle is now **Columns**, and its icon shows two
+   columns side by side: Material's two stacked bars (`view_agenda`,
+   outlined while off, filled while on) turned upright, in place of
+   `view_column`, which has three. Its tooltips name it: "Columns: show
+   the tab in two columns, split in half" and "Columns: back to one
+   column, to edit" (Colunas / Columnas in Portuguese and Spanish). In
+   `tab_text_view.dart` (`_columnsIcon`); tested in
+   `two_columns_test.dart` (the name, both icons, no three-column icon).
+   See [tab recognition](tab-recognition.md).
