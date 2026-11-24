@@ -1450,12 +1450,14 @@ class _TabTextViewState extends State<TabTextView> implements TabWriter {
     );
   }
 
-  /// The tab text, unwrapped: long lines scroll sideways.
+  /// The tab text, unwrapped: long lines scroll sideways. The column
+  /// ruler over it ([_ColumnRuler]).
   Widget _editor(BuildContext context, bool editable) {
     return _Unwrapped(
       zoom: _zoom,
       down: _down,
       across: _across,
+      ruler: _ColumnRuler(text: _text, style: _zoomed, zoom: _zoom),
       // Its keys first, before the app's: ⌘A, ⌘L, and ⌘C and ⌘X on a
       // vertical selection ([_key]).
       child: Focus(
@@ -1680,6 +1682,7 @@ class _Unwrapped extends StatelessWidget {
     this.zoom = 1,
     this.down,
     this.across,
+    this.ruler,
     required this.child,
   });
 
@@ -1689,6 +1692,10 @@ class _Unwrapped extends StatelessWidget {
   /// Its scrolls, down and sideways (Fix's review has its own).
   final ScrollController? down;
   final ScrollController? across;
+
+  /// Over the text, scrolling sideways with it but not down: the column
+  /// ruler, in the editor.
+  final Widget? ruler;
   final Widget child;
 
   @override
@@ -1702,6 +1709,12 @@ class _Unwrapped extends StatelessWidget {
       // At least the view's width; at most 1600 (times the zoom), or the
       // view's when wider than that.
       final most = 1600 * zoom;
+      final text = SingleChildScrollView(
+        controller: down,
+        physics: const TextZoomScrollPhysics(),
+        child: child,
+      );
+      final ruler = this.ruler;
       return SingleChildScrollView(
         controller: across,
         physics: const TextZoomScrollPhysics(),
@@ -1711,15 +1724,109 @@ class _Unwrapped extends StatelessWidget {
             minWidth: width,
             maxWidth: width > most ? width : most,
           ),
-          child: SingleChildScrollView(
-            controller: down,
-            physics: const TextZoomScrollPhysics(),
-            child: child,
-          ),
+          child: ruler == null
+              ? text
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ruler,
+                    Expanded(child: text),
+                  ],
+                ),
         ),
       );
     },
   );
+}
+
+/// The editor's column ruler, over its text: the columns numbered every
+/// five, a dot on each of the others ([columnRuler]), in the text's own
+/// font and size ([style], zoomed with it) and from its left margin, so
+/// each stands over its column, scrolling sideways with the text and
+/// staying put as it scrolls down. The cursor's column (the character
+/// it's before) is marked. Across the whole width; to look at, not read
+/// out, and a tap on it keeps the cursor in the text.
+class _ColumnRuler extends StatelessWidget {
+  const _ColumnRuler({
+    required this.text,
+    required this.style,
+    required this.zoom,
+  });
+
+  final TextEditingController text;
+  final TextStyle style;
+  final double zoom;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final scaler = MediaQuery.textScalerOf(context);
+    // The text field's style: the theme's bodyLarge under the text's, as
+    // a Material 3 field has it (its letter spacing too), so each column
+    // is as wide as the text's.
+    final style = (theme.textTheme.bodyLarge ?? const TextStyle()).merge(
+      this.style,
+    );
+    return TextFieldTapRegion(
+      child: ExcludeSemantics(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
+          ),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // As many columns as the width holds.
+              final probe = TextPainter(
+                text: TextSpan(text: '0' * 10, style: style),
+                textDirection: TextDirection.ltr,
+                textScaler: scaler,
+              )..layout();
+              final column = probe.width / 10;
+              probe.dispose();
+              final ruler = columnRuler(
+                column > 0 ? ((box.maxWidth - 16) / column).ceil() : 0,
+              );
+              return ListenableBuilder(
+                listenable: text,
+                builder: (context, _) {
+                  final at = cursorColumn(text.value);
+                  final dim = style.copyWith(color: scheme.onSurfaceVariant);
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(16, 6 * zoom, 0, 2 * zoom),
+                    child: Text.rich(
+                      key: const Key('text-ruler'),
+                      TextSpan(
+                        style: dim,
+                        children: [
+                          if (at == null || at >= ruler.length)
+                            TextSpan(text: ruler)
+                          else ...[
+                            TextSpan(text: ruler.substring(0, at)),
+                            TextSpan(
+                              text: ruler[at],
+                              style: TextStyle(
+                                color: scheme.onPrimaryContainer,
+                                backgroundColor: scheme.primaryContainer,
+                              ),
+                            ),
+                            TextSpan(text: ruler.substring(at + 1)),
+                          ],
+                        ],
+                      ),
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
+                      textScaler: scaler,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Fix's corrections under review: each one accepted, rejected, or not

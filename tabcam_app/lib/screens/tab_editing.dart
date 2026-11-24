@@ -1090,3 +1090,26 @@ class BlockFormatter extends TextInputFormatter {
     );
   }
 }
+
+/// The Text view's column ruler for [columns] columns, one character
+/// each, counted from 1: every fifth column numbered, the number's last
+/// figure on its column (`····5···10···15`), a dot on each of the others.
+String columnRuler(int columns) {
+  if (columns <= 0) return '';
+  final chars = List.filled(columns, '·');
+  for (var c = 5; c <= columns; c += 5) {
+    final n = '$c';
+    chars.setRange(c - n.length, c, n.split(''));
+  }
+  return chars.join();
+}
+
+/// The column the cursor is on in [value] (from 0, on its line: the
+/// character it's before, which overtype would replace); null with no
+/// cursor, or a selection.
+int? cursorColumn(TextEditingValue value) {
+  final selection = value.selection;
+  if (!selection.isValid || !selection.isCollapsed) return null;
+  final at = selection.baseOffset.clamp(0, value.text.length);
+  return at == 0 ? 0 : at - (value.text.lastIndexOf('\n', at - 1) + 1);
+}

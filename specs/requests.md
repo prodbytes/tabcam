@@ -5225,3 +5225,20 @@ spec.
    and `video_edit_frame_test.dart` (Home, End). Built on the Redo and
    New take change before it. See [Cam](cam.md) and
    [video edit](video-edit.md).
+
+## 2026-11-24
+
+1. **"Show columns ruler at top of text view."** The Text view's editor
+   has a **column ruler** over its text: the columns counted from 1,
+   every fifth numbered (the number's last figure on its column), dots
+   between (`····5···10···15`). It's in the text's font, size and
+   letter spacing and starts at its margin, so each mark stands over its
+   column; it scrolls sideways and zooms with the text and stays at the
+   top as the text scrolls down. The cursor's column is marked. Not in
+   Columns (reading) nor Fix's review. In `tab_text_view.dart`
+   (`_ColumnRuler`, `_Unwrapped`'s `ruler`) and `tab_editing.dart`
+   (`columnRuler`, `cursorColumn`); tested in `column_ruler_test.dart`
+   (the ruler's characters, the cursor's column, the ruler lined up with
+   the text's columns at 100%, zoomed and scrolled sideways, staying put
+   as the text scrolls down, none in Columns). See
+   [tab recognition](tab-recognition.md#column-ruler).
