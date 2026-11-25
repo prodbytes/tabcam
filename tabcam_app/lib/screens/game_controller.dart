@@ -84,10 +84,11 @@ abstract final class GameController {
     );
     final isDown = HardwareKeyboard.instance.lookUpLayout(button) != null;
     if (isDown == down) return;
-    // A key that types (the space bar, 0, ., /) types its character.
-    final types =
-        (key.keyId & LogicalKeyboardKey.planeMask) ==
-        LogicalKeyboardKey.unicodePlane;
+    // A key that types (the space bar, 0, ., /) types its character: its
+    // id is the character's code point; the others' are far above. (Not
+    // by its plane, `keyId & planeMask`: on the web `&` keeps 32 bits,
+    // and the arrows would look like characters.)
+    final types = key.keyId <= 0x10ffff;
     // The engine's own way in: it updates the keyboard's state and goes
     // through the focus and the shortcuts, as a key pressed does.
     ServicesBinding.instance.platformDispatcher.onKeyData?.call(

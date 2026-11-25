@@ -5345,7 +5345,9 @@ spec.
    *Game controller* section: the buttons for the screen's keys, "=",
    the keys. Tested in `game_controller_test.dart` (each button's key,
    once while held, the channel, the buttons read each frame),
-   `web_game_controller_test.dart` (the browser's controllers),
+   `web_game_controller_test.dart` (the browser's controllers, and
+   every button's key event on the web, whose `&` keeps 32 bits; now
+   in `scripts/test-browser.sh`),
    `play_along_test.dart` (Cam from a controller) and
    `keys_help_test.dart` (the overlay's section). See
    [keyboard shortcuts](keyboard-shortcuts.md#game-controller) and

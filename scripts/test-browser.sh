@@ -27,6 +27,7 @@ cd "$(dirname "$0")/../tabcam_app"
 tests=("$@")
 if [[ ${#tests[@]} -eq 0 ]]; then
   tests=(test/web_take_recorder_test.dart test/web_video_editor_test.dart
-    test/ding_web_test.dart test/web_sound_reader_test.dart)
+    test/ding_web_test.dart test/web_sound_reader_test.dart
+    test/web_game_controller_test.dart)
 fi
 CHROME_EXECUTABLE="$wrapper" flutter test --platform chrome "${tests[@]}"

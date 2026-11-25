@@ -5,13 +5,17 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tabcam_app/screens/game_controller.dart';
 import 'package:tabcam_app/screens/game_controller_web.dart';
 import 'package:web/web.dart' as web;
 
 /// The browser's controllers read each frame
 /// (`bash scripts/test-browser.sh test/web_game_controller_test.dart`),
-/// with made-up controllers in place of the browser's list.
+/// with made-up controllers in place of the browser's list; and every
+/// button's key event, as the web makes it (its ids, past 32 bits).
 void main() {
   /// The controllers the browser lists ([web.Navigator.getGamepads]).
   var pads = <JSObject?>[];
@@ -79,4 +83,32 @@ void main() {
       await frames();
     },
   );
+
+  testWidgets('every button presses its key on the web too', (tester) async {
+    final reached = <KeyEvent>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Focus(
+          autofocus: true,
+          onKeyEvent: (_, event) {
+            reached.add(event);
+            return KeyEventResult.handled;
+          },
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+    for (final MapEntry(key: number, value: key)
+        in GameController.keys.entries) {
+      reached.clear();
+      GameController.press(number, down: true);
+      GameController.press(number, down: false);
+      await tester.pump();
+      expect(reached.map((e) => (e.runtimeType, e.logicalKey)), [
+        (KeyDownEvent, key),
+        (KeyUpEvent, key),
+      ], reason: 'button $number');
+    }
+    expect(reached.first.character, isNull); // The D-pad's → types nothing.
+  });
 }

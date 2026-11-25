@@ -94,8 +94,9 @@
   standard name, as the AWS CLI reads it.
 - **Checks**: `flutter analyze` and `flutter test` in `tabcam_app/`;
   the browser tests (`@TestOn('browser')`: the web take recorder, the
-  web [video editor](video-edit.md), the ding and the web
-  [sound reader](cam.md#the-song-found-in-the-takes-sound)) with
+  web [video editor](video-edit.md), the ding, the web
+  [sound reader](cam.md#the-song-found-in-the-takes-sound) and the
+  [game controller](keyboard-shortcuts.md#game-controller)'s) with
   `bash scripts/test-browser.sh`,
   which runs them in Chrome with sound allowed without a tap
   (`--autoplay-policy=no-user-gesture-required`, through a wrapper named
