@@ -37,6 +37,7 @@ import 'package:tabcam_app/library/library.dart';
 import 'package:tabcam_app/screens/delete_confirm.dart';
 import 'package:tabcam_app/screens/event_screen.dart';
 import 'package:tabcam_app/screens/file_delete.dart';
+import 'package:tabcam_app/screens/game_controller.dart';
 import 'package:tabcam_app/screens/messages.dart';
 import 'package:tabcam_app/screens/sidebar_widths.dart';
 import 'package:tabcam_app/screens/video_edit_screen.dart';
@@ -1287,6 +1288,58 @@ B|--5--8--|
     expect(find.text('2 / 3'), findsOneWidget);
     expect(camera.recording, isFalse);
     expect(video.playing, isEmpty);
+  });
+
+  testWidgets('a game controller\'s buttons are Cam\'s keys: ✕ plays and '
+      'pauses the song, the D-pad turns the tab, L1 does nothing, △ starts '
+      'a take', (tester) async {
+    final (library, id) = await capture(tester, tab: _tab);
+    await tester.runAsync(() async {
+      await library.addMedia(library.byId(id)!, [
+        Media(
+          XFile.fromData(Uint8List.fromList([1]), name: 'riff.m4a'),
+          PageKind.audio,
+          'm4a',
+        ),
+      ]);
+    });
+    await tester.pumpWidget(
+      app(
+        PlayAlongScreen(
+          library: library,
+          eventId: id,
+          cameras: () async => [_front],
+          headTracking: (_, _) => null,
+          takeRecorder: () => null,
+        ),
+      ),
+    );
+    await frames(tester);
+    Future<void> pad(int button) async {
+      GameController.press(button, down: true);
+      GameController.press(button, down: false);
+      await frames(tester);
+    }
+
+    // ✕, the space bar: the song plays, and pauses.
+    await pad(0);
+    expect(video.playing, hasLength(1));
+    expect(find.text('1 / 3'), findsOneWidget);
+    await pad(0);
+    expect(video.playing, isEmpty);
+    // The D-pad's ↓ and ↑: the next phrase, and back.
+    await pad(13);
+    expect(find.text('2 / 3'), findsOneWidget);
+    await pad(12);
+    expect(find.text('1 / 3'), findsOneWidget);
+    // L1: no key.
+    await pad(4);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(camera.recording, isFalse);
+    expect(video.playing, isEmpty);
+    // △, the /: a take starts.
+    await pad(3);
+    expect(camera.recording, isTrue);
   });
 
   testWidgets('the space bar pausing the song while a take records stops '

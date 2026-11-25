@@ -1,7 +1,8 @@
 /// The keyboard shortcuts' help: a button in the app bar of the screens
 /// that have keys (Cam, a capture's and a file's screens, the video
 /// editor), and the **H** key there, open an overlay listing the screen's
-/// keys; H, Esc or Close shuts it.
+/// keys, and the game controller's buttons that press them
+/// ([GameController]); H, Esc or Close shuts it.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/language.dart';
+import 'game_controller.dart';
 
 /// Which screen's keys the help lists.
 enum KeysScreen {
@@ -215,6 +217,27 @@ class _KeysHelp extends StatelessWidget {
         ],
       ),
     ];
+    // The controller's buttons for the screen's keys ([GameController]):
+    // each button's cap, then the keys it presses.
+    final controller = <(_KeyCap, List<String>)>[
+      (_KeyCap(l10n.buttonCross, icon: Icons.close), [l10n.keySpace]),
+      if (screen != KeysScreen.videoEdit)
+        (_KeyCap(l10n.buttonCircle, icon: Icons.circle_outlined), ['0']),
+      if (screen == KeysScreen.cam) ...[
+        (_KeyCap(l10n.buttonSquare, icon: Icons.crop_square), ['.']),
+        (_KeyCap(l10n.buttonTriangle, icon: Icons.change_history), ['/']),
+      ],
+      (const _KeyCap('R1'), ['←']),
+      (const _KeyCap('R2'), ['→']),
+      (
+        _KeyCap(l10n.buttonDpad, icon: Icons.gamepad),
+        [
+          if (screen == KeysScreen.cam) ...['↑', '↓'],
+          '←',
+          '→',
+        ],
+      ),
+    ];
     final theme = Theme.of(context);
     void close() => Navigator.of(context).pop();
     return CallbackShortcuts(
@@ -260,6 +283,31 @@ class _KeysHelp extends StatelessWidget {
                 ],
                 const SizedBox(height: 16),
                 Text(
+                  l10n.keysController,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  key: const Key('keys-help-controller'),
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    for (final (button, keys) in controller)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 4,
+                        children: [
+                          button,
+                          const Text('='),
+                          for (final k in keys) _KeyCap(k),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
                   l10n.keysInFields,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -280,11 +328,14 @@ class _KeysHelp extends StatelessWidget {
   }
 }
 
-/// A key as on the keyboard: its name in a rounded box.
+/// A key as on the keyboard: its name in a rounded box; or a game
+/// controller's button, its [icon] (its symbol: ✕, ○…) read out as
+/// [label].
 class _KeyCap extends StatelessWidget {
-  const _KeyCap(this.label);
+  const _KeyCap(this.label, {this.icon});
 
   final String label;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -297,14 +348,16 @@ class _KeyCap extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outline),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          fontFamily: 'RobotoMono',
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      child: icon != null
+          ? Icon(icon, size: 18, semanticLabel: label)
+          : Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontFamily: 'RobotoMono',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     );
   }
 }

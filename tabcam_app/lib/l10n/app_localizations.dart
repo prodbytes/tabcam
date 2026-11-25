@@ -4768,6 +4768,42 @@ abstract class AppLocalizations {
   /// **'Ctrl'**
   String get keyCtrl;
 
+  /// Keyboard shortcuts: the section listing which key each of a game controller's buttons presses
+  ///
+  /// In en, this message translates to:
+  /// **'Game controller'**
+  String get keysController;
+
+  /// A game controller's button, read out for its symbol ✕ (a PlayStation controller's)
+  ///
+  /// In en, this message translates to:
+  /// **'Cross'**
+  String get buttonCross;
+
+  /// A game controller's button, read out for its symbol ○
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get buttonCircle;
+
+  /// A game controller's button, read out for its symbol □
+  ///
+  /// In en, this message translates to:
+  /// **'Square'**
+  String get buttonSquare;
+
+  /// A game controller's button, read out for its symbol △
+  ///
+  /// In en, this message translates to:
+  /// **'Triangle'**
+  String get buttonTriangle;
+
+  /// A game controller's directional pad, read out for its symbol
+  ///
+  /// In en, this message translates to:
+  /// **'D-pad'**
+  String get buttonDpad;
+
   /// Video edit: the song delay control's label, beside its millisecond steps
   ///
   /// In en, this message translates to:

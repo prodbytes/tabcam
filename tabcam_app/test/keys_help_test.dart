@@ -130,6 +130,51 @@ void main() {
     expect(find.text('Play or pause the song'), findsNothing);
   });
 
+  testWidgets('lists the game controller\'s buttons for the screen\'s keys', (
+    tester,
+  ) async {
+    final reached = <KeyEvent>[];
+    final controller = find.byKey(const Key('keys-help-controller'));
+    Finder button(IconData icon) =>
+        find.descendant(of: controller, matching: find.byIcon(icon));
+    Finder cap(String text) =>
+        find.descendant(of: controller, matching: find.text(text));
+
+    await tester.pumpWidget(screen(KeysScreen.cam, reached: reached));
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await tester.pumpAndSettle();
+    expect(find.text('Game controller'), findsOneWidget);
+    for (final (icon, name) in [
+      (Icons.close, 'Cross'),
+      (Icons.circle_outlined, 'Circle'),
+      (Icons.crop_square, 'Square'),
+      (Icons.change_history, 'Triangle'),
+      (Icons.gamepad, 'D-pad'),
+    ]) {
+      expect(button(icon), findsOneWidget, reason: name);
+      expect(tester.widget<Icon>(button(icon)).semanticLabel, name);
+    }
+    for (final text in ['R1', 'R2', 'Space', '0', '.', '/', '↑', '↓']) {
+      expect(cap(text), findsOneWidget, reason: text);
+    }
+    expect(cap('←'), findsNWidgets(2));
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await tester.pumpAndSettle();
+
+    // The editor: ✕, R1, R2 and the D-pad's ← and →; no 0, ., / nor ↑ ↓.
+    await tester.pumpWidget(screen(KeysScreen.videoEdit, reached: reached));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await tester.pumpAndSettle();
+    expect(button(Icons.close), findsOneWidget);
+    expect(button(Icons.gamepad), findsOneWidget);
+    expect(button(Icons.circle_outlined), findsNothing);
+    expect(button(Icons.crop_square), findsNothing);
+    expect(button(Icons.change_history), findsNothing);
+    expect(cap('R1'), findsOneWidget);
+    expect(cap('↑'), findsNothing);
+  });
+
   testWidgets('a phone has the key but no button', (tester) async {
     tester.view.physicalSize = const Size(360, 740);
     tester.view.devicePixelRatio = 1;

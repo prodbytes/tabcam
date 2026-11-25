@@ -31,6 +31,7 @@ import 'maintenance/maintenance.dart';
 import 'export/incoming_links.dart';
 import 'metronome/metronome.dart';
 import 'recognition/auto_reader.dart';
+import 'screens/game_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/messages.dart';
 import 'screens/sidebar_widths.dart';
@@ -44,6 +45,8 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   // Before runApp, so capture links reach it before the Navigator.
   IncomingLinks.instance.start();
+  // A game controller's buttons are the shortcuts' keys.
+  GameController.start();
   final maintenance = MaintenanceCheck(url: MaintenanceCheck.defaultUrl())
     ..start();
   // Nothing starts (library, sign-in, sync) until the status says the

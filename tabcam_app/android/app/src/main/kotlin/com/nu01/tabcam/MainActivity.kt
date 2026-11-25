@@ -3,6 +3,7 @@ package com.nu01.tabcam
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Process
+import android.view.KeyEvent
 import androidx.media3.common.util.UnstableApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -13,6 +14,7 @@ class MainActivity : FlutterActivity() {
     private var cameraPermission: CameraPermission? = null
     private var sound: Sound? = null
     private var takeSound: TakeSound? = null
+    private var gameController: GameController? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -20,6 +22,7 @@ class MainActivity : FlutterActivity() {
         cameraPermission = CameraPermission(this, flutterEngine.dartExecutor.binaryMessenger)
         sound = Sound(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         takeSound = TakeSound(this, flutterEngine.dartExecutor.binaryMessenger)
+        gameController = GameController(flutterEngine.dartExecutor.binaryMessenger)
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
@@ -31,8 +34,13 @@ class MainActivity : FlutterActivity() {
         sound = null
         takeSound?.dispose()
         takeSound = null
+        gameController = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
+
+    /** A game controller's buttons go to [GameController], before Flutter. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        gameController?.onKey(event) == true || super.dispatchKeyEvent(event)
 
     override fun onRequestPermissionsResult(
         requestCode: Int,

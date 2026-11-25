@@ -1,6 +1,7 @@
 import AVFoundation
 import AudioToolbox
 import Flutter
+import GameController
 import ImageIO
 import MediaToolbox
 import QuartzCore
@@ -11,6 +12,7 @@ import UIKit
   private var videoEditChannel: FlutterMethodChannel?
   private var soundChannel: FlutterMethodChannel?
   private var takeAudioChannel: FlutterMethodChannel?
+  private var controllerButtons: ControllerButtons?
 
   override func application(
     _ application: UIApplication,
@@ -40,6 +42,61 @@ import UIKit
         name: "tabcam/audio", binaryMessenger: registrar.messenger())
       channel.setMethodCallHandler(TakeAudio.handle)
       takeAudioChannel = channel
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "GameController") {
+      controllerButtons = ControllerButtons(
+        channel: FlutterMethodChannel(
+          name: "tabcam/controller", binaryMessenger: registrar.messenger()))
+    }
+  }
+}
+
+/// A game controller's buttons (a PS4's, or any the GameController
+/// framework gives a gamepad's layout), for lib/screens/game_controller.dart,
+/// which presses the key each stands for: each press and release is told
+/// on the channel `tabcam/controller` (`button`, with `[number, down]`, the
+/// button numbered as on the web's standard gamepad), those of the
+/// controllers connected now and of those connected later. The handlers
+/// run on the main queue (the controllers' default), where the channel is
+/// used.
+final class ControllerButtons {
+  private let channel: FlutterMethodChannel
+  private var connected: NSObjectProtocol?
+
+  init(channel: FlutterMethodChannel) {
+    self.channel = channel
+    connected = NotificationCenter.default.addObserver(
+      forName: .GCControllerDidConnect, object: nil, queue: .main
+    ) { [weak self] note in
+      if let controller = note.object as? GCController { self?.watch(controller) }
+    }
+    GCController.controllers().forEach(watch)
+  }
+
+  deinit {
+    if let connected { NotificationCenter.default.removeObserver(connected) }
+  }
+
+  private func watch(_ controller: GCController) {
+    guard let pad = controller.extendedGamepad else { return }
+    let buttons: [(GCControllerButtonInput, Int)] = [
+      (pad.buttonA, 0),  // ✕
+      (pad.buttonB, 1),  // ○
+      (pad.buttonX, 2),  // □
+      (pad.buttonY, 3),  // △
+      (pad.leftShoulder, 4),
+      (pad.rightShoulder, 5),
+      (pad.leftTrigger, 6),
+      (pad.rightTrigger, 7),
+      (pad.dpad.up, 12),
+      (pad.dpad.down, 13),
+      (pad.dpad.left, 14),
+      (pad.dpad.right, 15),
+    ]
+    for (button, number) in buttons {
+      button.pressedChangedHandler = { [weak self] _, _, pressed in
+        self?.channel.invokeMethod("button", arguments: [number, pressed])
+      }
     }
   }
 }

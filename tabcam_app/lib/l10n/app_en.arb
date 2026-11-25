@@ -3846,6 +3846,30 @@
   "@keyCtrl": {
     "description": "A key's name, as on the keyboard: Control"
   },
+  "keysController": "Game controller",
+  "@keysController": {
+    "description": "Keyboard shortcuts: the section listing which key each of a game controller's buttons presses"
+  },
+  "buttonCross": "Cross",
+  "@buttonCross": {
+    "description": "A game controller's button, read out for its symbol ✕ (a PlayStation controller's)"
+  },
+  "buttonCircle": "Circle",
+  "@buttonCircle": {
+    "description": "A game controller's button, read out for its symbol ○"
+  },
+  "buttonSquare": "Square",
+  "@buttonSquare": {
+    "description": "A game controller's button, read out for its symbol □"
+  },
+  "buttonTriangle": "Triangle",
+  "@buttonTriangle": {
+    "description": "A game controller's button, read out for its symbol △"
+  },
+  "buttonDpad": "D-pad",
+  "@buttonDpad": {
+    "description": "A game controller's directional pad, read out for its symbol"
+  },
   "videoEditDelay": "Delay",
   "@videoEditDelay": {
     "description": "Video edit: the song delay control's label, beside its millisecond steps"
