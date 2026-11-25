@@ -5322,3 +5322,31 @@ spec.
    and a clone, every chord and scale read back, pinning, the end
    section, looking up, unpinning, read only, Home, the event screen).
    See [dictionary](dictionary.md#pinned) and [library](library.md#events).
+
+## 2026-11-25
+
+1. **"Let's add PS4 controller support just like shortcuts. Make the R1
+   be left arrow, R2 right arrow, X same as space, circle same as zero,
+   triangle same as "/", square same as ".", arrows same as arrows."**
+   A game controller now works as a keyboard with those keys: ✕ Space,
+   ○ 0, □ ., △ /, R1 ←, R2 →, the D-pad the arrows. Each press goes
+   through the app's key handling as that key would, so every screen's
+   shortcuts work from it (Cam's tab and takes, the play-along player,
+   the video editor) with the same rules (the screen on top, not while
+   typing in a field); the other buttons do nothing, and a held button
+   doesn't repeat. The buttons are read on the device: on Android
+   `GameController.kt` takes them in `MainActivity.dispatchKeyEvent` and
+   tells Dart on the channel `tabcam/controller` (the D-pad is Android's
+   arrow keys); on iOS the GameController framework (`ControllerButtons`
+   in `AppDelegate.swift`), on the same channel; on the web the Gamepad
+   API, read each frame while a controller is connected
+   (`game_controller_web.dart`). `screens/game_controller.dart` turns
+   each button into its key's event. The shortcuts overlay ends with a
+   *Game controller* section: the buttons for the screen's keys, "=",
+   the keys. Tested in `game_controller_test.dart` (each button's key,
+   once while held, the channel, the buttons read each frame),
+   `web_game_controller_test.dart` (the browser's controllers),
+   `play_along_test.dart` (Cam from a controller) and
+   `keys_help_test.dart` (the overlay's section). See
+   [keyboard shortcuts](keyboard-shortcuts.md#game-controller) and
+   [platforms](platforms.md).
