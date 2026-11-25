@@ -107,7 +107,8 @@ review notes ([app stores](app-stores.md)).
 - [Keyboard shortcuts](keyboard-shortcuts.md): a keyboard button in the
   app bar of Cam, a capture's and a file's screens and the video editor
   (on the web, computers and tablets), or the **H** key, opens an overlay
-  listing that screen's keys.
+  listing that screen's keys. A game controller's buttons press them
+  too (✕ Space, ○ 0, □ ., △ /, R1 ←, R2 →, the D-pad the arrows).
 - [Video edit](video-edit.md): basic edits of a video from its file
   screen, in a fixed frame like a small video editor's: the viewer on
   top, the editor's sidebar at the right (its Download tab: the master,

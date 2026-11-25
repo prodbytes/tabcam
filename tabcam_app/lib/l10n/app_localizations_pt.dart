@@ -2853,6 +2853,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get keyCtrl => 'Ctrl';
 
   @override
+  String get keysController => 'Controle de videogame';
+
+  @override
+  String get buttonCross => 'Xis';
+
+  @override
+  String get buttonCircle => 'Círculo';
+
+  @override
+  String get buttonSquare => 'Quadrado';
+
+  @override
+  String get buttonTriangle => 'Triângulo';
+
+  @override
+  String get buttonDpad => 'Direcional';
+
+  @override
   String get videoEditDelay => 'Atraso';
 
   @override

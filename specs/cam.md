@@ -92,7 +92,9 @@ the view shows it with the widgets in
   on its left ("Previous phrase (↑)") and **↓** on its right ("Next
   phrase (↓)"), arrows as the keys are (until 2026-11-22 they were ‹
   and ›, "Previous line" and "Next line"). It stops at the first and
-  the last.
+  the last. A game controller presses these keys too: the D-pad is
+  the arrows, and ✕, ○, □, △, R1 and R2 the space bar, 0, ., /, ← and
+  → ([game controller](keyboard-shortcuts.md#game-controller)).
 - <a id="head-gestures"></a>**Head gestures** (Android, iOS and the web): a nod
   **up**, or a turn of the head to the user's **right**, goes to the next
   phrase; a nod **down** or a turn to the **left**, to the one before

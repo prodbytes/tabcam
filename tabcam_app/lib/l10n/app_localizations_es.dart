@@ -2859,6 +2859,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get keyCtrl => 'Ctrl';
 
   @override
+  String get keysController => 'Mando de juego';
+
+  @override
+  String get buttonCross => 'Equis';
+
+  @override
+  String get buttonCircle => 'Círculo';
+
+  @override
+  String get buttonSquare => 'Cuadrado';
+
+  @override
+  String get buttonTriangle => 'Triángulo';
+
+  @override
+  String get buttonDpad => 'Cruceta';
+
+  @override
   String get videoEditDelay => 'Retraso';
 
   @override

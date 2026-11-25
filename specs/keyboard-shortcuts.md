@@ -83,9 +83,70 @@ section, each key in a box as on the keyboard, then what it does:
   **Home** / **End** go to the start / end of the kept part (again: of
   the video); **←**, **→** a tenth of a second back or on; **Shift +
   ←**, **Shift + →** a second.
-- Every screen: *Everywhere*: **H** shows or hides these shortcuts.
+- Every screen: *Everywhere*: **H** shows or hides these shortcuts;
+  then *Game controller*, the buttons that press the screen's keys
+  ([below](#game-controller)).
 
 Under the list: "Typing in a field, the keys type as usual." It scrolls
 where the screen is short, and fits a phone at the largest text size. In
 English, Spanish and Portuguese, the keys' names too (Espacio, Inicio,
 Fin, Retroceso, Re Pág, Mayús in Spanish).
+
+## Game controller
+
+A game controller (a PS4's, or any the system knows as a gamepad) works
+as a keyboard with these keys
+([`game_controller.dart`](../tabcam_app/lib/screens/game_controller.dart)):
+
+| Button | Key |
+|---|---|
+| ✕ | Space |
+| ○ | 0 |
+| □ | . |
+| △ | / |
+| R1 | ← |
+| R2 | → |
+| D-pad | ↑ ↓ ← → |
+
+A press is that key pressed, through the same shortcuts and focus, so
+every screen's keys work from it as from the keyboard, where they would
+(the screen on top, not while typing in a field), and do what the key
+does there: in Cam R1 is 10 seconds back while the play-along sidebar
+shows and the previous phrase while nothing plays along, in the video
+editor a tenth of a second back. L1, L2, Share, Options, the sticks'
+buttons and the PS button do nothing (nor are they Cam's "any key"). A
+button held is one press, with no repeat (Android's D-pad, which comes
+as arrow keys, repeats as they do). Each key event is the controller's:
+its physical key the button's (Game Button 1 for ✕), its device a
+gamepad, its logical key the keyboard's.
+
+The buttons are read on the device, each numbered as on the web's
+standard gamepad (0 ✕, 1 ○, 2 □, 3 △, 4 L1, 5 R1, 6 L2, 7 R2, 12 to
+15 the D-pad's ↑ ↓ ← →):
+
+- **Android**: the activity hands a gamepad button's key events to
+  `GameController.kt` before Flutter: each press and release goes to
+  Dart on the method channel `tabcam/controller` (`button`, `[number,
+  down]`) and no further. The D-pad is Android's arrow keys (a
+  controller's hat is made into them by the system), which Flutter
+  takes as the arrows itself.
+- **iOS**: Apple's GameController framework (`ControllerButtons` in
+  `AppDelegate.swift`): the face buttons, shoulders, triggers and D-pad
+  of each controller with a gamepad's layout, connected before the app
+  started or after, on the same channel. A press told while its button
+  is still down (its release missed while the app was away) is a new
+  press.
+- **Web**: the browser's Gamepad API: while a controller is connected,
+  each animation frame reads the buttons pressed on those with the
+  standard mapping (another mapping's numbers are other buttons, so
+  it's left out); with none left, every key goes up and the reading
+  stops until the next `gamepadconnected`. Browsers tell of a
+  controller at its first press on the page.
+
+**In the overlay**, the *Game controller* section ("Mando de juego",
+"Controle de videogame") shows each button that presses one of the
+screen's keys, "=", then the key: the face buttons as their symbols
+(read out as Cross, Circle, Square, Triangle), R1 and R2 by name, the
+D-pad as its icon. Cam has them all; a capture's or a file's screen ✕,
+○, R1, R2 and the D-pad's ← →; the video editor ✕, R1, R2 and the
+D-pad's ← →.
